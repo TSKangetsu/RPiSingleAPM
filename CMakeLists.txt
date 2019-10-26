@@ -1,0 +1,8 @@
+IF(UNIX)
+    cmake_minimum_required(VERSION 3.10)
+    set(CMAKE_C_COMPILER "/usr/bin/gcc")
+    set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+    find_library(wiringPi_LIB wiringPi)
+    add_executable(SingleAPM "SingleAPM.cpp" "SingleAPM.hpp")
+    target_link_libraries( SingleAPM ${wiringPi_LIB})
+ENDIF()
