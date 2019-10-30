@@ -3,4 +3,8 @@
 int main()
 {
 	std::cout << "Welcome" << "\n";
+	while (true)
+	{
+
+	}
 }
