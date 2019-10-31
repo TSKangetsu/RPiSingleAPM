@@ -15,14 +15,14 @@ static int PCA9685_Address = 0x40;
 bool _uORB_Start;
 bool _uORB_Stop;
 //_uORB_Output_Pin
-int _uORB_A1_Pin = 0;
-int _uORB_A2_Pin = 1;
-int _uORB_B1_Pin = 2;
-int _uORB_B2_Pin = 3;
+int _flag_A1_Pin = 0;
+int _flag_A2_Pin = 1;
+int _flag_B1_Pin = 2;
+int _flag_B2_Pin = 3;
 //Throttle_Flag
-int _uORB_Lazy_Throttle = 2000;
-int _uORB_Base_Throttle = 2000;
-int _uORB_Lock_Throttle = 2300;
+int _flag_Lazy_Throttle = 2000;
+int _flag_Base_Throttle = 2000;
+int _flag_Lock_Throttle = 2300;
 //Flying Throttle , speed MAX = 800; speed MIN = 2100;
 int _uORB_A1_Speed;
 int _uORB_A2_Speed;
@@ -41,34 +41,43 @@ class Manaul_Mode
 	{
 		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
 	}
+
+	inline void ControlRead()
+	{
+		_uORB_A1_Speed = _uORB_REC_Throttle_Level + _uORB_REC_Yall_Level + _uORB_REC_Yoll_Level + _uORB_REC_Pitch_Level;
+		_uORB_A2_Speed = _uORB_REC_Throttle_Level + _uORB_REC_Yall_Level + _uORB_REC_Yoll_Level + _uORB_REC_Pitch_Level;
+		_uORB_B1_Speed = _uORB_REC_Throttle_Level - _uORB_REC_Yall_Level - _uORB_REC_Yoll_Level - _uORB_REC_Pitch_Level;
+		_uORB_B2_Speed = _uORB_REC_Throttle_Level - _uORB_REC_Yall_Level - _uORB_REC_Yoll_Level - _uORB_REC_Pitch_Level;
+	}
 	inline void MotorUpdate()
 	{
 		if (_uORB_Start && !_uORB_Stop)
 		{
-			pca9685PWMWrite(PCA9658_fd, _uORB_A1_Pin, _uORB_Lazy_Throttle, 0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_A2_Pin, _uORB_Lazy_Throttle, 0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_B1_Pin, _uORB_Lazy_Throttle, 0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_B2_Pin, _uORB_Lazy_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, _flag_Lazy_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, _flag_Lazy_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, _flag_Lazy_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, _flag_Lazy_Throttle, 0);
 		}
 		if (!_uORB_Start && _uORB_Stop)
 		{
-			pca9685PWMWrite(PCA9658_fd, _uORB_A1_Pin, _uORB_Lock_Throttle, 0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_A2_Pin, _uORB_Lock_Throttle, 0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_B1_Pin, _uORB_Lock_Throttle, 0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_B2_Pin, _uORB_Lock_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, _flag_Lock_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, _flag_Lock_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, _flag_Lock_Throttle, 0);
+			pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, _flag_Lock_Throttle, 0);
 		}
-		else
+		else   
 		{
-			pca9685PWMWrite(PCA9658_fd, _uORB_A1_Pin,
+			pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin,
 				_uORB_A1_Speed,
 				0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_A2_Pin,
+			pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin,
 				_uORB_A2_Speed,
 				0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_B1_Pin,
-				_uORB_B1_Speed,
-				0);
-			pca9685PWMWrite(PCA9658_fd, _uORB_B2_Pin,
+			pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin,
+				pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin,
+					_uORB_B1_Speed,
+					0);
+			pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin,
 				_uORB_B2_Speed,
 				0);
 		}
