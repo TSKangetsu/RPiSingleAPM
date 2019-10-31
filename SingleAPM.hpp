@@ -23,12 +23,15 @@ int _flag_B2_Pin = 3;
 int _flag_Lazy_Throttle = 2000;
 int _flag_Base_Throttle = 2000;
 int _flag_Lock_Throttle = 2300;
+int _flag_Middle_Yall = 1500;
+int _flag_Middle_Yoll = 1500;
+int _flag_Middle_Pitch = 1500;
 //Flying Throttle , speed MAX = 800; speed MIN = 2100;
 int _uORB_A1_Speed;
 int _uORB_A2_Speed;
 int _uORB_B1_Speed;
 int _uORB_B2_Speed;
-//REC_Reading_Yall_Pitch_Yoll_Throttle_Level
+//REC_Reading_Yall_Pitch_Yoll_Throttle_Level, Max = 800
 int _uORB_REC_Yall_Level;
 int _uORB_REC_Pitch_Level;
 int _uORB_REC_Yoll_Level;
@@ -44,10 +47,22 @@ class Manaul_Mode
 
 	inline void ControlRead()
 	{
-		_uORB_A1_Speed = _uORB_REC_Throttle_Level + _uORB_REC_Yall_Level + _uORB_REC_Yoll_Level + _uORB_REC_Pitch_Level;
-		_uORB_A2_Speed = _uORB_REC_Throttle_Level + _uORB_REC_Yall_Level + _uORB_REC_Yoll_Level + _uORB_REC_Pitch_Level;
-		_uORB_B1_Speed = _uORB_REC_Throttle_Level - _uORB_REC_Yall_Level - _uORB_REC_Yoll_Level - _uORB_REC_Pitch_Level;
-		_uORB_B2_Speed = _uORB_REC_Throttle_Level - _uORB_REC_Yall_Level - _uORB_REC_Yoll_Level - _uORB_REC_Pitch_Level;
+		_uORB_A1_Speed = _uORB_REC_Throttle_Level
+			+ (_uORB_REC_Yall_Level - _flag_Middle_Yall) / 2
+			+ (_flag_Middle_Yoll - _uORB_REC_Yoll_Level) / 4
+			+ (_flag_Middle_Pitch - _uORB_REC_Pitch_Level) / 4;
+		_uORB_A2_Speed = _uORB_REC_Throttle_Level
+			+ (_flag_Middle_Yall - _uORB_REC_Yall_Level) / 2
+			+ (_flag_Middle_Yoll - _uORB_REC_Yoll_Level) / 4
+			+ (_uORB_REC_Pitch_Level - _flag_Middle_Pitch) / 4;
+		_uORB_B1_Speed = _uORB_REC_Throttle_Level
+			+ (_flag_Middle_Yall - _uORB_REC_Yall_Level) / 2
+			+ (_uORB_REC_Yoll_Level - _flag_Middle_Yoll) / 4
+			+ (_flag_Middle_Pitch - _uORB_REC_Pitch_Level) / 4;
+		_uORB_B2_Speed = _uORB_REC_Throttle_Level
+			+ (_uORB_REC_Yall_Level - _flag_Middle_Yall) / 2
+			+ (_uORB_REC_Yoll_Level - _flag_Middle_Yoll) / 4
+			+ (_uORB_REC_Pitch_Level - _flag_Middle_Pitch) / 4;
 	}
 	inline void MotorUpdate()
 	{
@@ -65,7 +80,7 @@ class Manaul_Mode
 			pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, _flag_Lock_Throttle, 0);
 			pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, _flag_Lock_Throttle, 0);
 		}
-		else   
+		else
 		{
 			pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin,
 				_uORB_A1_Speed,
@@ -74,9 +89,8 @@ class Manaul_Mode
 				_uORB_A2_Speed,
 				0);
 			pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin,
-				pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin,
-					_uORB_B1_Speed,
-					0);
+				_uORB_B1_Speed,
+				0);
 			pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin,
 				_uORB_B2_Speed,
 				0);
