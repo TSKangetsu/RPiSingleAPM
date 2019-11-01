@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <ctime>
 #include <cstdio>
-#include "pca9685.h"
+#include "_thirdparty/pca9685.h"
+#include "_thirdparty/pid.h"
 //Setup
 static int PCA9658_fd;
 static int PWM_Freq = 490;
@@ -39,12 +40,21 @@ int _uORB_REC_Yall_Level;
 int _uORB_REC_Pitch_Level;
 int _uORB_REC_Yoll_Level;
 int _uORB_REC_Throttle_Level;
-//PID Reasult
-
+//SensorsRead
+int _uORB_MPU9250_A_X;
+int _uORB_MPU9250_A_Y;
+int _uORB_MPU9250_A_Z;
+int _uORB_MPU9250_M_X;
+int _uORB_MPU9250_M_Y;
+int _uORB_MPU9250_M_Z;
+int _uORB_MPU9250_X;
+int _uORB_MPU9250_Y;
+int _uORB_MPU9250_Z;
 
 //Manaull Mode
 class Manaul_Mode
 {
+public:
 	Manaul_Mode()
 	{
 		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
@@ -111,24 +121,14 @@ class Stablize_Mode
 		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
 	}
 
+	inline void SensorsRead()
+	{
+
+	}
+
 	inline void ControlRead()
 	{
-		_uORB_A1_Speed = _uORB_REC_Throttle_Level
-			+ (_uORB_REC_Yall_Level - _flag_Middle_Yall) / 2
-			+ (_flag_Middle_Yoll - _uORB_REC_Yoll_Level) / 2
-			+ (_flag_Middle_Pitch - _uORB_REC_Pitch_Level) / 2;
-		_uORB_A2_Speed = _uORB_REC_Throttle_Level
-			+ (_flag_Middle_Yall - _uORB_REC_Yall_Level) / 2
-			+ (_flag_Middle_Yoll - _uORB_REC_Yoll_Level) / 2
-			+ (_uORB_REC_Pitch_Level - _flag_Middle_Pitch) / 2;
-		_uORB_B1_Speed = _uORB_REC_Throttle_Level
-			+ (_flag_Middle_Yall - _uORB_REC_Yall_Level) / 2
-			+ (_uORB_REC_Yoll_Level - _flag_Middle_Yoll) / 2
-			+ (_flag_Middle_Pitch - _uORB_REC_Pitch_Level) / 2;
-		_uORB_B2_Speed = _uORB_REC_Throttle_Level
-			+ (_uORB_REC_Yall_Level - _flag_Middle_Yall) / 2
-			+ (_uORB_REC_Yoll_Level - _flag_Middle_Yoll) / 2
-			+ (_uORB_REC_Pitch_Level - _flag_Middle_Pitch) / 2;
+
 	}
 	inline void MotorUpdate()
 	{
