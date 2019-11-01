@@ -9,6 +9,7 @@
 #include "_thirdparty/pid.h"
 //Setup
 static int PCA9658_fd;
+static int RECReader_fd;
 static int PWM_Freq = 490;
 static int PCA9685_PinBase = 65;
 static int PCA9685_Address = 0x40;
@@ -27,15 +28,16 @@ int _flag_B2_Pin = 3;
 */
 int _flag_Lazy_Throttle = 2300;
 int _flag_Lock_Throttle = 2200;
-int _flag_Middle_Yall = 2650;
-int _flag_Middle_Yoll = 2650;
-int _flag_Middle_Pitch = 2650;
+int _flag_Middle_Yall = 613;
+int _flag_Middle_Yoll = 613;
+int _flag_Middle_Pitch = 613;
 //MotorOutput_finally
 int _uORB_A1_Speed;
 int _uORB_A2_Speed;
 int _uORB_B1_Speed;
 int _uORB_B2_Speed;
 //REC_Reading_Yall_Pitch_Yoll_Throttle_Level, Max = 800
+int data[36];
 int _uORB_REC_Yall_Level;
 int _uORB_REC_Pitch_Level;
 int _uORB_REC_Yoll_Level;
@@ -57,10 +59,26 @@ class Manaul_Mode
 public:
 	Manaul_Mode()
 	{
+		RECReader_fd = serialOpen("/dev/ttyS0", 115200);
 		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
 	}
 
 	inline void ControlRead()
+	{
+		if (serialDataAvail(RECReader_fd) > 0)
+		{
+			for (int i = 0; i <= 34; i++)
+			{
+				data[i] = serialGetchar(RECReader_fd);
+			}
+		}
+		_uORB_REC_Throttle_Level = data[5] * 255 + data[6];
+		_uORB_REC_Yall_Level = data[7] * 255 + data[8];
+		_uORB_REC_Yoll_Level = data[2] * 255 + data[3];
+		_uORB_REC_Pitch_Level = data[3] * 255 + data[4];
+	}
+
+	inline void AttitudeUpdate()
 	{
 		_uORB_A1_Speed = _uORB_REC_Throttle_Level
 			+ (_uORB_REC_Yall_Level - _flag_Middle_Yall) / 2
@@ -128,8 +146,39 @@ class Stablize_Mode
 
 	inline void ControlRead()
 	{
-
+		if (serialDataAvail(RECReader_fd) > 0)
+		{
+			for (int i = 0; i <= 34; i++)
+			{
+				data[i] = serialGetchar(RECReader_fd);
+			}
+		}
+		_uORB_REC_Throttle_Level = data[5] * 255 + data[6];
+		_uORB_REC_Yall_Level = data[7] * 255 + data[8];
+		_uORB_REC_Yoll_Level = data[2] * 255 + data[3];
+		_uORB_REC_Pitch_Level = data[3] * 255 + data[4];
 	}
+
+	inline void AttitudeUpdate()
+	{
+		_uORB_A1_Speed = _uORB_REC_Throttle_Level
+			+ (_uORB_REC_Yall_Level - _flag_Middle_Yall) / 2
+			+ (_flag_Middle_Yoll - _uORB_REC_Yoll_Level) / 2
+			+ (_flag_Middle_Pitch - _uORB_REC_Pitch_Level) / 2;
+		_uORB_A2_Speed = _uORB_REC_Throttle_Level
+			+ (_flag_Middle_Yall - _uORB_REC_Yall_Level) / 2
+			+ (_flag_Middle_Yoll - _uORB_REC_Yoll_Level) / 2
+			+ (_uORB_REC_Pitch_Level - _flag_Middle_Pitch) / 2;
+		_uORB_B1_Speed = _uORB_REC_Throttle_Level
+			+ (_flag_Middle_Yall - _uORB_REC_Yall_Level) / 2
+			+ (_uORB_REC_Yoll_Level - _flag_Middle_Yoll) / 2
+			+ (_flag_Middle_Pitch - _uORB_REC_Pitch_Level) / 2;
+		_uORB_B2_Speed = _uORB_REC_Throttle_Level
+			+ (_uORB_REC_Yall_Level - _flag_Middle_Yall) / 2
+			+ (_uORB_REC_Yoll_Level - _flag_Middle_Yoll) / 2
+			+ (_uORB_REC_Pitch_Level - _flag_Middle_Pitch) / 2;
+	}
+
 	inline void MotorUpdate()
 	{
 		if (_uORB_Start && !_uORB_Stop)
