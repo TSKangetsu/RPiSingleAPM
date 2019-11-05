@@ -2,37 +2,38 @@
 
 int main()
 {
-	std::cout << (float)14 / (float)18;
-	std::cout << "Test\n";
+	clock_t end;
+	clock_t start;
+	bool fuckdebug;
 	Manaul_Mode test;
 	std::thread ConRead([&]
 		{
-			std::cout << "Test Controller\n";
 			while (true)
 			{
 				test.ControlRead();
-				usleep(10000);
+				usleep(5000);
 			}
 		});
 	while (true)
 	{
-		test.AttitudeUpdate();
+		test.AttitudeUpdate_Test();
+ 		std::cout << _uORB_REC_roll << " ";
+		std::cout << _uORB_REC_pitch << " ";
+		std::cout << _uORB_REC_yall << " ";
+		std::cout << _uORB_REC_throttle << " ------>";
+
 		std::cout << _uORB_B1_Speed << " ";
 		std::cout << _uORB_A1_Speed << " ";
 		std::cout << _uORB_A2_Speed << " ";
-		std::cout << _uORB_B2_Speed << "---->";
+		std::cout << _uORB_B2_Speed << "----->";
 
-		std::cout << _Tmp_Prenset_B1 << " ";
-		std::cout << _Tmp_Prenset_A1 << " ";
-		std::cout << _Tmp_Prenset_A1 << " ";
-		std::cout << _Tmp_Prenset_B2 << "---->";
-
-		std::cout << _uORB_REC_roll << " ";
-		std::cout << _uORB_REC_pitch << " ";
-		std::cout << _uORB_REC_throttle << " ";
-		std::cout << _uORB_REC_yall << "\r";
-
+		std::cout << _UNTest_Roll[0] << " ";
+		std::cout << _UNTest_Roll[1] << "->";
+		std::cout << _UNTest_Pitch[0] << " ";
+		std::cout << _UNTest_Pitch[1] << "->";
+		std::cout << _UNTest_Yall[0] << " ";
+		std::cout << _UNTest_Yall[1] << "------------->\r";
 		test.MotorUpdate();
-		usleep(10000);
+		usleep(5000);
 	}
 }

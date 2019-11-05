@@ -60,10 +60,10 @@ int _uORB_MPU9250_Y;
 int _uORB_MPU9250_Z;
 
 //UNTest_FUNC------------------------------------------------//
-int _UNTest_Roll[2];
-int _UNTest_Pitch[2];
-int _UNTest_Throttle[2];
-int _UNTest_Yall[2];
+unsigned int _UNTest_Roll[2];
+unsigned int _UNTest_Pitch[2];
+unsigned int _UNTest_Throttle[2];
+unsigned int _UNTest_Yall[2];
 //UNTest_FUNC------------------------------------------------//
 //Manaull Mode
 class Manaul_Mode
@@ -120,13 +120,51 @@ public:
 		if (_uORB_REC_roll - _flag_Middle_Roll > 0)
 		{
 			_UNTest_Roll[0] = 0;
+			_UNTest_Roll[1] = ((float)_uORB_REC_roll - (float)_flag_Middle_Roll) / (float)650 * (float)300;
+		}
+		else if (_uORB_REC_roll - _flag_Middle_Roll <= 0)
+		{
 			_UNTest_Roll[1] = 0;
+			_UNTest_Roll[0] = (-(float)_uORB_REC_roll + (float)_flag_Middle_Roll) / (float)650 * (float)300;
 		}
 
-		_uORB_B1_Speed = _uORB_REC_throttle;
-		_uORB_A1_Speed = _uORB_REC_throttle;
-		_uORB_A2_Speed = _uORB_REC_throttle;
-		_uORB_B2_Speed = _uORB_REC_throttle;
+
+		if (_uORB_REC_pitch - _flag_Middle_Pitch > 0)
+		{
+			_UNTest_Pitch[0] = 0;
+			_UNTest_Pitch[1] = ((float)_uORB_REC_pitch - (float)_flag_Middle_Pitch) / (float)650 * (float)300;
+		}
+		else if (_uORB_REC_pitch - _flag_Middle_Pitch <= 0)
+		{
+			_UNTest_Pitch[1] = 0;
+			_UNTest_Pitch[0] = (-(float)_uORB_REC_pitch + (float)_flag_Middle_Pitch) / (float)650 * (float)300;
+		}
+
+
+		if (_uORB_REC_yall - _flag_Middle_Yall > 0)
+		{
+			_UNTest_Yall[0] = 0;
+			_UNTest_Yall[1] = ((float)_uORB_REC_yall - (float)_flag_Middle_Yall) / (float)650 * (float)300;
+		}
+		else if (_uORB_REC_yall - _flag_Middle_Yall <= 0)
+		{
+			_UNTest_Yall[1] = 0;
+			_UNTest_Yall[0] = (-(float)_uORB_REC_yall + (float)_flag_Middle_Yall) / (float)650 * (float)300;
+		}
+
+		_uORB_B1_Speed = _uORB_REC_throttle - _UNTest_Pitch[0] - _UNTest_Roll[0] - _UNTest_Yall[0];
+		_uORB_A1_Speed = _uORB_REC_throttle - _UNTest_Pitch[1] - _UNTest_Roll[0] - _UNTest_Yall[1];
+		_uORB_A2_Speed = _uORB_REC_throttle - _UNTest_Pitch[1] - _UNTest_Roll[1] - _UNTest_Yall[0];
+		_uORB_B2_Speed = _uORB_REC_throttle - _UNTest_Pitch[0] - _UNTest_Roll[1] - _UNTest_Yall[1];
+		_Tmp_Prenset_A1 = ((float)_uORB_A1_Speed - (float)300) / (float)1400;
+		_Tmp_Prenset_A2 = ((float)_uORB_A2_Speed - (float)300) / (float)1400;
+		_Tmp_Prenset_B1 = ((float)_uORB_B1_Speed - (float)300) / (float)1400;
+		_Tmp_Prenset_B2 = ((float)_uORB_B2_Speed - (float)300) / (float)1400;
+		_uORB_A1_Speed = 700 * _Tmp_Prenset_A1 + 2300;
+		_uORB_A2_Speed = 700 * _Tmp_Prenset_A2 + 2300;
+		_uORB_B1_Speed = 700 * _Tmp_Prenset_B1 + 2300;
+		_uORB_B2_Speed = 700 * _Tmp_Prenset_B2 + 2300;
+
 	}
 	//UNTest_FUNC------------------------------------------------//
 
