@@ -29,10 +29,10 @@ int _flag_Middle_Roll = 1000;
 int _flag_Middle_Pitch = 1000;
 //REC_Reading_Yall_Pitch_Yoll_Throttle_Level
 int data[36];
-int _uORB_RC_roll;
-int _uORB_RC_pitch;
-int _uORB_RC_throttle;
-int _uORB_RC_yall;
+int _uORB_RC_Roll;
+int _uORB_RC_Pitch;
+int _uORB_RC_Throttle;
+int _uORB_RC_Yall;
 
 //AttitudeUpdate_Data
 unsigned int _uORB_True_Roll[2];
@@ -75,53 +75,53 @@ public:
 				data[i] = serialGetchar(RECReader_fd);
 			}
 		}
-		_uORB_RC_roll = data[1] * 255 + data[2];
-		_uORB_RC_pitch = data[3] * 255 + data[4];
-		_uORB_RC_throttle = data[5] * 255 + data[6];
-		_uORB_RC_yall = data[7] * 255 + data[8];
+		_uORB_RC_Roll = data[1] * 255 + data[2];
+		_uORB_RC_Pitch = data[3] * 255 + data[4];
+		_uORB_RC_Throttle = data[5] * 255 + data[6];
+		_uORB_RC_Yall = data[7] * 255 + data[8];
 	}
 
 	inline void AttitudeUpdate()
 	{
-		if (_uORB_RC_roll - _flag_Middle_Roll > 0)
+		if (_uORB_RC_Roll - _flag_Middle_Roll > 0)
 		{
 			_uORB_True_Roll[0] = 0;
-			_uORB_True_Roll[1] = ((float)_uORB_RC_roll - (float)_flag_Middle_Roll) / (float)650 * (float)300;
+			_uORB_True_Roll[1] = ((float)_uORB_RC_Roll - (float)_flag_Middle_Roll) / (float)650 * (float)300;
 		}
-		else if (_uORB_RC_roll - _flag_Middle_Roll <= 0)
+		else if (_uORB_RC_Roll - _flag_Middle_Roll <= 0)
 		{
 			_uORB_True_Roll[1] = 0;
-			_uORB_True_Roll[0] = (-(float)_uORB_RC_roll + (float)_flag_Middle_Roll) / (float)650 * (float)300;
+			_uORB_True_Roll[0] = (-(float)_uORB_RC_Roll + (float)_flag_Middle_Roll) / (float)650 * (float)300;
 		}
 
 
-		if (_uORB_RC_pitch - _flag_Middle_Pitch > 0)
+		if (_uORB_RC_Pitch - _flag_Middle_Pitch > 0)
 		{
 			_uORB_True_Pitch[0] = 0;
-			_uORB_True_Pitch[1] = ((float)_uORB_RC_pitch - (float)_flag_Middle_Pitch) / (float)650 * (float)300;
+			_uORB_True_Pitch[1] = ((float)_uORB_RC_Pitch - (float)_flag_Middle_Pitch) / (float)650 * (float)300;
 		}
-		else if (_uORB_RC_pitch - _flag_Middle_Pitch <= 0)
+		else if (_uORB_RC_Pitch - _flag_Middle_Pitch <= 0)
 		{
 			_uORB_True_Pitch[1] = 0;
-			_uORB_True_Pitch[0] = (-(float)_uORB_RC_pitch + (float)_flag_Middle_Pitch) / (float)650 * (float)300;
+			_uORB_True_Pitch[0] = (-(float)_uORB_RC_Pitch + (float)_flag_Middle_Pitch) / (float)650 * (float)300;
 		}
 
 
-		if (_uORB_RC_yall - _flag_Middle_Yall > 0)
+		if (_uORB_RC_Yall - _flag_Middle_Yall > 0)
 		{
 			_uORB_True_Yall[0] = 0;
-			_uORB_True_Yall[1] = ((float)_uORB_RC_yall - (float)_flag_Middle_Yall) / (float)650 * (float)300;
+			_uORB_True_Yall[1] = ((float)_uORB_RC_Yall - (float)_flag_Middle_Yall) / (float)650 * (float)300;
 		}
-		else if (_uORB_RC_yall - _flag_Middle_Yall <= 0)
+		else if (_uORB_RC_Yall - _flag_Middle_Yall <= 0)
 		{
 			_uORB_True_Yall[1] = 0;
-			_uORB_True_Yall[0] = (-(float)_uORB_RC_yall + (float)_flag_Middle_Yall) / (float)650 * (float)300;
+			_uORB_True_Yall[0] = (-(float)_uORB_RC_Yall + (float)_flag_Middle_Yall) / (float)650 * (float)300;
 		}
 
-		_uORB_B1_Speed = _uORB_RC_throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[0] - _uORB_True_Yall[0];
-		_uORB_A1_Speed = _uORB_RC_throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[0] - _uORB_True_Yall[1];
-		_uORB_A2_Speed = _uORB_RC_throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[1] - _uORB_True_Yall[0];
-		_uORB_B2_Speed = _uORB_RC_throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[1] - _uORB_True_Yall[1];
+		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[0] - _uORB_True_Yall[0];
+		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[0] - _uORB_True_Yall[1];
+		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[1] - _uORB_True_Yall[0];
+		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[1] - _uORB_True_Yall[1];
 		_Tmp_Prenset_A1 = ((float)_uORB_A1_Speed - (float)300) / (float)1400;
 		_Tmp_Prenset_A2 = ((float)_uORB_A2_Speed - (float)300) / (float)1400;
 		_Tmp_Prenset_B1 = ((float)_uORB_B1_Speed - (float)300) / (float)1400;
@@ -185,53 +185,53 @@ class Stablize_Mode
 				data[i] = serialGetchar(RECReader_fd);
 			}
 		}
-		_uORB_RC_roll = data[1] * 255 + data[2];
-		_uORB_RC_pitch = data[3] * 255 + data[4];
-		_uORB_RC_throttle = data[5] * 255 + data[6];
-		_uORB_RC_yall = data[7] * 255 + data[8];
+		_uORB_RC_Roll = data[1] * 255 + data[2];
+		_uORB_RC_Pitch = data[3] * 255 + data[4];
+		_uORB_RC_Throttle = data[5] * 255 + data[6];
+		_uORB_RC_Yall = data[7] * 255 + data[8];
 	}
 
 	inline void AttitudeUpdate()
 	{
-		if (_uORB_RC_roll - _flag_Middle_Roll > 0)
+		if (_uORB_RC_Roll - _flag_Middle_Roll > 0)
 		{
 			_uORB_True_Roll[0] = 0;
-			_uORB_True_Roll[1] = ((float)_uORB_RC_roll - (float)_flag_Middle_Roll) / (float)650 * (float)300;
+			_uORB_True_Roll[1] = ((float)_uORB_RC_Roll - (float)_flag_Middle_Roll) / (float)650 * (float)300;
 		}
-		else if (_uORB_RC_roll - _flag_Middle_Roll <= 0)
+		else if (_uORB_RC_Roll - _flag_Middle_Roll <= 0)
 		{
 			_uORB_True_Roll[1] = 0;
-			_uORB_True_Roll[0] = (-(float)_uORB_RC_roll + (float)_flag_Middle_Roll) / (float)650 * (float)300;
+			_uORB_True_Roll[0] = (-(float)_uORB_RC_Roll + (float)_flag_Middle_Roll) / (float)650 * (float)300;
 		}
 
 
-		if (_uORB_RC_pitch - _flag_Middle_Pitch > 0)
+		if (_uORB_RC_Pitch - _flag_Middle_Pitch > 0)
 		{
 			_uORB_True_Pitch[0] = 0;
-			_uORB_True_Pitch[1] = ((float)_uORB_RC_pitch - (float)_flag_Middle_Pitch) / (float)650 * (float)300;
+			_uORB_True_Pitch[1] = ((float)_uORB_RC_Pitch - (float)_flag_Middle_Pitch) / (float)650 * (float)300;
 		}
-		else if (_uORB_RC_pitch - _flag_Middle_Pitch <= 0)
+		else if (_uORB_RC_Pitch - _flag_Middle_Pitch <= 0)
 		{
 			_uORB_True_Pitch[1] = 0;
-			_uORB_True_Pitch[0] = (-(float)_uORB_RC_pitch + (float)_flag_Middle_Pitch) / (float)650 * (float)300;
+			_uORB_True_Pitch[0] = (-(float)_uORB_RC_Pitch + (float)_flag_Middle_Pitch) / (float)650 * (float)300;
 		}
 
 
-		if (_uORB_RC_yall - _flag_Middle_Yall > 0)
+		if (_uORB_RC_Yall - _flag_Middle_Yall > 0)
 		{
 			_uORB_True_Yall[0] = 0;
-			_uORB_True_Yall[1] = ((float)_uORB_RC_yall - (float)_flag_Middle_Yall) / (float)650 * (float)300;
+			_uORB_True_Yall[1] = ((float)_uORB_RC_Yall - (float)_flag_Middle_Yall) / (float)650 * (float)300;
 		}
-		else if (_uORB_RC_yall - _flag_Middle_Yall <= 0)
+		else if (_uORB_RC_Yall - _flag_Middle_Yall <= 0)
 		{
 			_uORB_True_Yall[1] = 0;
-			_uORB_True_Yall[0] = (-(float)_uORB_RC_yall + (float)_flag_Middle_Yall) / (float)650 * (float)300;
+			_uORB_True_Yall[0] = (-(float)_uORB_RC_Yall + (float)_flag_Middle_Yall) / (float)650 * (float)300;
 		}
 
-		_uORB_B1_Speed = _uORB_RC_throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[0] - _uORB_True_Yall[0];
-		_uORB_A1_Speed = _uORB_RC_throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[0] - _uORB_True_Yall[1];
-		_uORB_A2_Speed = _uORB_RC_throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[1] - _uORB_True_Yall[0];
-		_uORB_B2_Speed = _uORB_RC_throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[1] - _uORB_True_Yall[1];
+		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[0] - _uORB_True_Yall[0];
+		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[0] - _uORB_True_Yall[1];
+		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[1] - _uORB_True_Yall[0];
+		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[1] - _uORB_True_Yall[1];
 		_Tmp_Prenset_A1 = ((float)_uORB_A1_Speed - (float)300) / (float)1400;
 		_Tmp_Prenset_A2 = ((float)_uORB_A2_Speed - (float)300) / (float)1400;
 		_Tmp_Prenset_B1 = ((float)_uORB_B1_Speed - (float)300) / (float)1400;
