@@ -2,22 +2,10 @@
 
 int main()
 {
-	clock_t end;
-	clock_t start;
-	bool fuckdebug;
-	Manaul_Mode test;
-	std::thread ConRead([&]
-		{
-			while (true)
-			{
-				test.ControlRead();
-				usleep(5000);
-			}
-		});
+	Stablize_Mode test;
 	while (true)
 	{
-		test.AttitudeUpdate_Test();
-		test.MotorUpdate();
+		test.SensorsRead();
 		usleep(5000);
 	}
 }
