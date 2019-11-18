@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 #include <wiringSerial.h>
@@ -94,7 +95,6 @@ public:
 			_uORB_True_Roll[0] = (-(float)_uORB_RC_Roll + (float)_flag_Middle_Roll) / (float)650 * (float)300;
 		}
 
-
 		if (_uORB_RC_Pitch - _flag_Middle_Pitch > 0)
 		{
 			_uORB_True_Pitch[0] = 0;
@@ -160,19 +160,23 @@ class Stablize_Mode
 public:
 	const int MPU9250_ADDR = 0x68;
 	int MPU9250_fd;
+	int _Tmp_MPU9250_Buffer[14];
 
-	int _uORB_MPU9250_Buf[14];
-	int buf;
+	long _uORB_MPU9250_A_X;
+	long _uORB_MPU9250_A_Y;
+	long _uORB_MPU9250_A_Z;
+	long _Tmp_IMU_Accel_Vector;
 
-	int _uORB_MPU9250_A_X;
-	int _uORB_MPU9250_A_Y;
-	int _uORB_MPU9250_A_Z;
-	int _uORB_MPU9250_M_X;
-	int _uORB_MPU9250_M_Y;
-	int _uORB_MPU9250_M_Z;
-	int _uORB_MPU9250_X;
-	int _uORB_MPU9250_Y;
-	int _uORB_MPU9250_Z;
+	float _uORB_MPU9250_G_X;
+	float _uORB_MPU9250_G_Y;
+	float _uORB_MPU9250_G_Z;
+
+	float _uORB_MPU9250_G_X_Cali;
+	float _uORB_MPU9250_G_Y_Cali;
+	float _uORB_MPU9250_G_Z_Cali;
+
+	double _uORB_Angel_Pitch;
+	double _uORB_Angel__Roll;
 	Stablize_Mode()
 	{
 		MPU9250_fd = wiringPiI2CSetup(MPU9250_ADDR);
@@ -182,12 +186,10 @@ public:
 		}
 		else
 		{
-			wiringPiI2CWriteReg16(MPU9250_fd, 0x37, 0x02);
-			wiringPiI2CWriteReg16(MPU9250_fd, 29, 0x06);
-			wiringPiI2CWriteReg16(MPU9250_fd, 28, 0x08);
-			wiringPiI2CWriteReg16(MPU9250_fd, 27, 0x10);
-			wiringPiI2CWriteReg16(MPU9250_fd, 26, 0x06);
-			wiringPiI2CWriteReg16(0x0c, 0x37, 0x02);
+			wiringPiI2CWriteReg8(MPU9250_fd, 107, 0x00); //reset
+			wiringPiI2CWriteReg8(MPU9250_fd, 28, 0x10); //Accel
+			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x08); // Gryo
+			wiringPiI2CWriteReg8(MPU9250_fd, 26, 0x03); //config
 		}
 
 		RCReader_fd = serialOpen("/dev/ttyS0", 115200);
@@ -195,6 +197,7 @@ public:
 		{
 			std::cout << "[Controller] Serial open failed; \n";
 		}
+
 		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
 		if (PCA9658_fd < 0)
 		{
@@ -202,21 +205,17 @@ public:
 		}
 	}
 
-	inline void SensorsRead()
+	inline void SensorsGryoCalibration()
 	{
-		buf = wiringPiI2CReadReg16(MPU9250_fd, 0x3B);
-		std::cout << buf;
 
-		//int16_t ax = -(_uORB_MPU9250_Buf[0] << 8 | _uORB_MPU9250_Buf[1]);
-		//int16_t ay = -(_uORB_MPU9250_Buf[2] << 8 | _uORB_MPU9250_Buf[3]);
-		//int16_t az = _uORB_MPU9250_Buf[4] << 8 | _uORB_MPU9250_Buf[5];
-		//std::cout << ax << " ";
-		//std::cout << ay << " ";
-		//std::cout << az << "\r";
+	}
 
-		//int16_t gx = -(_uORB_MPU9250_Buf[8] << 8 | _uORB_MPU9250_Buf[9]);
-		//int16_t gy = -(_uORB_MPU9250_Buf[10] << 8 | _uORB_MPU9250_Buf[11]);
-		//int16_t gz = _uORB_MPU9250_Buf[12] << 8 | _uORB_MPU9250_Buf[13];
+	inline void SensorsParse()
+	{
+		SensorsDataRead();
+		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
+		_uORB_Angel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
+		_uORB_Angel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
 	}
 
 	inline void ControlRead()
@@ -305,5 +304,29 @@ public:
 			pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, 0,
 				_uORB_B2_Speed);
 		}
+	}
+
+private:
+	inline void SensorsDataRead()
+	{
+		_Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(MPU9250_fd, 0x3B);
+		_Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(MPU9250_fd, 0x3C);
+		_uORB_MPU9250_A_X = (_Tmp_MPU9250_Buffer[0] << 8 | _Tmp_MPU9250_Buffer[1]);
+		_Tmp_MPU9250_Buffer[2] = wiringPiI2CReadReg8(MPU9250_fd, 0x3D);
+		_Tmp_MPU9250_Buffer[3] = wiringPiI2CReadReg8(MPU9250_fd, 0x3E);
+		_uORB_MPU9250_A_Y = (_Tmp_MPU9250_Buffer[2] << 8 | _Tmp_MPU9250_Buffer[3]);
+		_Tmp_MPU9250_Buffer[4] = wiringPiI2CReadReg8(MPU9250_fd, 0x3F);
+		_Tmp_MPU9250_Buffer[5] = wiringPiI2CReadReg8(MPU9250_fd, 0x40);
+		_uORB_MPU9250_A_Z = (_Tmp_MPU9250_Buffer[4] << 8 | _Tmp_MPU9250_Buffer[5]);
+
+		_Tmp_MPU9250_Buffer[6] = wiringPiI2CReadReg8(MPU9250_fd, 0x43);
+		_Tmp_MPU9250_Buffer[7] = wiringPiI2CReadReg8(MPU9250_fd, 0x44);
+		_uORB_MPU9250_G_X = (_Tmp_MPU9250_Buffer[6] << 8 | _Tmp_MPU9250_Buffer[7]);
+		_Tmp_MPU9250_Buffer[8] = wiringPiI2CReadReg8(MPU9250_fd, 0x45);
+		_Tmp_MPU9250_Buffer[9] = wiringPiI2CReadReg8(MPU9250_fd, 0x46);
+		_uORB_MPU9250_G_Y = (_Tmp_MPU9250_Buffer[8] << 8 | _Tmp_MPU9250_Buffer[9]);
+		_Tmp_MPU9250_Buffer[10] = wiringPiI2CReadReg8(MPU9250_fd, 0x47);
+		_Tmp_MPU9250_Buffer[11] = wiringPiI2CReadReg8(MPU9250_fd, 0x48);
+		_uORB_MPU9250_G_Z = (_Tmp_MPU9250_Buffer[10] << 8 | _Tmp_MPU9250_Buffer[11]);
 	}
 };
