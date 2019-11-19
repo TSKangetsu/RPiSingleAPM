@@ -7,7 +7,5 @@ int main()
 	while (true)
 	{
 		test.SensorsParse();
-		std::cout << test._uORB_Angel_Pitch << " ";
-		std::cout << test._uORB_Angel__Roll << " ->\r";
 	}
 }

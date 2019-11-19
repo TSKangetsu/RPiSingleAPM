@@ -54,8 +54,11 @@ class Stablize_Mode
 {
 public:
 	const int MPU9250_ADDR = 0x68;
+
 	int MPU9250_fd;
 	int _Tmp_MPU9250_Buffer[14];
+
+	bool _flag_first_StartUp = false;
 
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
@@ -70,14 +73,14 @@ public:
 	long _uORB_MPU9250_G_Y_Cali;
 	long _uORB_MPU9250_G_Z_Cali;
 
-	double _uORB_Angel_Pitch;
-	double _uORB_Angel__Roll;
+	double _uORB_Accel_Pitch;
+	double _uORB_Accel__Roll;
 
 	double _uORB_Gryo_Pitch;
 	double _uORB_Gryo__Roll;
 
 	double _uORB_Real_Pitch;
-	double _uORB_Real_Roll;
+	double _uORB_Real__Roll;
 
 	Stablize_Mode()
 	{
@@ -129,10 +132,26 @@ public:
 		_uORB_MPU9250_G_X -= _uORB_MPU9250_G_X_Cali;
 		_uORB_MPU9250_G_Y -= _uORB_MPU9250_G_Y_Cali;
 		_uORB_MPU9250_G_Z -= _uORB_MPU9250_G_Z_Cali;
-
+		_uORB_Gryo_Pitch += _uORB_MPU9250_G_Y * 0.0000611;
+		_uORB_Gryo__Roll += _uORB_MPU9250_G_X * 0.0000611;
+		_uORB_Gryo_Pitch += _uORB_Gryo__Roll * sin(_uORB_MPU9250_G_Z * 0.000001066);
+		_uORB_Gryo__Roll -= _uORB_Gryo_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
+		//--------------------------------------------------------------------------//
 		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
-		_uORB_Angel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
-		_uORB_Angel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
+		_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
+		_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
+		//--------------------------------------------------------------------------//
+		if (_flag_first_StartUp)
+		{
+			_uORB_Real__Roll = _uORB_Accel__Roll * 0.9996 + _uORB_Gryo__Roll * 0.0004;
+			_uORB_Real_Pitch = _uORB_Accel_Pitch * 0.9996 + _uORB_Gryo_Pitch * 0.0004;
+		}
+		else
+		{
+			_uORB_Real__Roll = _uORB_Accel__Roll;
+			_uORB_Real_Pitch = _uORB_Accel_Pitch;
+			_flag_first_StartUp = true;
+		}
 	}
 
 	inline void ControlRead()
