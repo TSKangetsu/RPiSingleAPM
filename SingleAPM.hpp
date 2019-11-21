@@ -80,6 +80,8 @@ public:
 	double _uORB_Gryo__Roll;
 	double _uORB_Real_Pitch;
 	double _uORB_Real__Roll;
+
+	int wait;
 	Stablize_Mode()
 	{
 		MPU9250_fd = wiringPiI2CSetup(MPU9250_ADDR);
@@ -90,9 +92,9 @@ public:
 		else
 		{
 			wiringPiI2CWriteReg8(MPU9250_fd, 107, 0x00); //reset
-			wiringPiI2CWriteReg8(MPU9250_fd, 28, 0x10); //Accel
-			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x08); // Gryo
-			wiringPiI2CWriteReg8(MPU9250_fd, 26, 0x03); //config
+			wiringPiI2CWriteReg8(MPU9250_fd, 28, 0x10);  //Accel
+			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x08);  //Gryo
+			wiringPiI2CWriteReg8(MPU9250_fd, 26, 0x03);  //config
 		}
 
 		RCReader_fd = serialOpen("/dev/ttyS0", 115200);
@@ -114,6 +116,9 @@ public:
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
 			SensorsDataRead();
+			std::cout << _uORB_MPU9250_G_X << " __";
+			std::cout << _uORB_MPU9250_G_Y << " __";
+			std::cout << _uORB_MPU9250_G_Z << " __\n";
 			_uORB_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
 			_uORB_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
 			_uORB_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
@@ -122,6 +127,10 @@ public:
 		_uORB_MPU9250_G_X_Cali = _uORB_MPU9250_G_X_Cali / 2000;
 		_uORB_MPU9250_G_Y_Cali = _uORB_MPU9250_G_Y_Cali / 2000;
 		_uORB_MPU9250_G_Z_Cali = _uORB_MPU9250_G_Z_Cali / 2000;
+		std::cout << "Gryo_X_Caili :" << _uORB_MPU9250_G_X_Cali << "\n";
+		std::cout << "Gryo_Y_Caili :" << _uORB_MPU9250_G_Y_Cali << "\n";
+		std::cout << "Gryo_Z_Caili :" << _uORB_MPU9250_G_Z_Cali << "\n";
+		std::cin >> wait;
 	}
 
 	inline void SensorsParse()

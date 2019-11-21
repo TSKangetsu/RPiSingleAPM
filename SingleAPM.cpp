@@ -8,13 +8,12 @@ int main()
 	test.SensorsGryoCalibration();
 	while (true)
 	{
-		timer = clock();
 		test.SensorsParse();
-		std::cout << test._uORB_Accel_Pitch << " ";
-		std::cout << test._uORB_Accel__Roll << "____";
-		std::cout << test._uORB_Real_Pitch << " ";
-		std::cout << test._uORB_Real__Roll << "____";
-		timer_end = clock();
-		std::cout << timer_end - timer  << "  --\r";
+		if (test._uORB_MPU9250_G_X > 50000)
+		{
+			std::cout << test._uORB_MPU9250_G_X << " ____";
+			std::cout << test._uORB_MPU9250_G_Y << " ____";
+			std::cout << test._uORB_MPU9250_G_Z << " ____\n";
+		}
 	}
 }
