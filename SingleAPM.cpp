@@ -9,11 +9,8 @@ int main()
 	while (true)
 	{
 		test.SensorsParse();
-		if (test._uORB_MPU9250_G_X > 50000)
-		{
-			std::cout << test._uORB_MPU9250_G_X << " ____";
-			std::cout << test._uORB_MPU9250_G_Y << " ____";
-			std::cout << test._uORB_MPU9250_G_Z << " ____\n";
-		}
+		std::cout << test._uORB_MPU9250_G_X << " ____";
+		std::cout << test._uORB_MPU9250_G_Y << " ____";
+		std::cout << test._uORB_MPU9250_G_Z << " ____\n";
 	}
 }
