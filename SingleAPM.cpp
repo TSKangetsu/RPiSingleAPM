@@ -8,9 +8,9 @@ int main()
 	test.SensorsGryoCalibration();
 	while (true)
 	{
+		timer = clock();
 		test.SensorsParse();
-		std::cout << test._uORB_MPU9250_G_X << " ____";
-		std::cout << test._uORB_MPU9250_G_Y << " ____";
-		std::cout << test._uORB_MPU9250_G_Z << " ____\n";
+		timer_end = clock();
+		usleep(4000 - (timer_end - timer));
 	}
 }

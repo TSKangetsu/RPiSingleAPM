@@ -60,19 +60,27 @@ public:
 
 	bool _flag_first_StartUp = true;
 
+	long _Tmp_IMU_Accel_Vector;
+
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
 	long _uORB_MPU9250_A_Z;
-	long _Tmp_IMU_Accel_Vector;
+	unsigned long _Tmp_MPU9250_A_X;
+	unsigned long _Tmp_MPU9250_A_Y;
+	unsigned long _Tmp_MPU9250_A_Z;
 	long _uORB_MPU9250_A_X_Cali = 0;
 	long _uORB_MPU9250_A_Y_Cali = 0;
 	long _uORB_MPU9250_A_Z_Cali = 0;
+
 	long _uORB_MPU9250_G_X;
 	long _uORB_MPU9250_G_Y;
 	long _uORB_MPU9250_G_Z;
-	long _uORB_MPU9250_G_X_Cali;
-	long _uORB_MPU9250_G_Y_Cali;
-	long _uORB_MPU9250_G_Z_Cali;
+	unsigned long _Tmp_MPU9250_G_X;
+	unsigned long _Tmp_MPU9250_G_Y;
+	unsigned long _Tmp_MPU9250_G_Z;
+	long _uORB_MPU9250_G_X_Cali = 0;
+	long _uORB_MPU9250_G_Y_Cali = 0;
+	long _uORB_MPU9250_G_Z_Cali = 0;
 
 	double _uORB_Accel_Pitch;
 	double _uORB_Accel__Roll;
@@ -116,9 +124,6 @@ public:
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
 			SensorsDataRead();
-			std::cout << _uORB_MPU9250_G_X << " __";
-			std::cout << _uORB_MPU9250_G_Y << " __";
-			std::cout << _uORB_MPU9250_G_Z << " __\n";
 			_uORB_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
 			_uORB_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
 			_uORB_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
@@ -132,52 +137,41 @@ public:
 		std::cout << "Gryo_Z_Caili :" << _uORB_MPU9250_G_Z_Cali << "\n";
 		std::cin >> wait;
 	}
-
 	inline void SensorsParse()
 	{
 		SensorsDataRead();
-		//Gryo----------------------------------------------------------------------//
-		_uORB_MPU9250_G_X -= _uORB_MPU9250_G_X_Cali;
-		_uORB_MPU9250_G_Y -= _uORB_MPU9250_G_Y_Cali;
-		_uORB_MPU9250_G_Z -= _uORB_MPU9250_G_Z_Cali;
-
-		_uORB_Real_Pitch += _uORB_MPU9250_G_Y * 0.0000611;
-		_uORB_Real__Roll += _uORB_MPU9250_G_X * 0.0000611;
-
-		_uORB_Real_Pitch += _uORB_Real__Roll * sin(_uORB_MPU9250_G_Z * 0.000001066);
-		_uORB_Real__Roll -= _uORB_Real_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
-		//ACCEL---------------------------------------------------------------------//
-		if (_uORB_MPU9250_A_X <= 65535 && _uORB_MPU9250_A_X >= 61405)
-		{
-			_uORB_MPU9250_A_X = (65535 - _uORB_MPU9250_A_X);
-		}
-		if (_uORB_MPU9250_A_Y <= 65535 && _uORB_MPU9250_A_Y >= 61405)
-		{
-			_uORB_MPU9250_A_Y = (65535 - _uORB_MPU9250_A_Y);
-		}
-		if (_uORB_MPU9250_A_Z <= 65535 && _uORB_MPU9250_A_Z >= 61405)
-		{
-			_uORB_MPU9250_A_Z = (65535 - _uORB_MPU9250_A_Z);
-		}
+		//Cail----------------------------------------------------------------------//
 		_uORB_MPU9250_A_X -= _uORB_MPU9250_A_X_Cali;
 		_uORB_MPU9250_A_Y -= _uORB_MPU9250_A_Y_Cali;
 		_uORB_MPU9250_A_Z -= _uORB_MPU9250_A_Z_Cali;
+		_uORB_MPU9250_G_X -= _uORB_MPU9250_G_X_Cali;
+		_uORB_MPU9250_G_Y -= _uORB_MPU9250_G_Y_Cali;
+		_uORB_MPU9250_G_Z -= _uORB_MPU9250_G_Z_Cali;
+		//Gryo----------------------------------------------------------------------//
+		_uORB_Real_Pitch += _uORB_MPU9250_G_X * 0.0000611;
+		_uORB_Real__Roll += _uORB_MPU9250_G_Y * 0.0000611;
+		_uORB_Real_Pitch -= _uORB_Real__Roll * sin(_uORB_MPU9250_G_Z * 0.000001066);
+		_uORB_Real__Roll += _uORB_Real_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
+		//ACCEL---------------------------------------------------------------------//
 		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
-		_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
-		_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * 57.296;
+		if (abs(_uORB_MPU9250_G_X) < _Tmp_IMU_Accel_Vector)
+			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
+		if (abs(_uORB_MPU9250_G_Y) < _Tmp_IMU_Accel_Vector)
+			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.9996 + _uORB_Accel__Roll * 0.0004;
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.9996 + _uORB_Accel_Pitch * 0.0004;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.9 + _uORB_Accel_Pitch * 0.1;
+			_uORB_Real__Roll = _uORB_Real__Roll * 0.9 + _uORB_Accel__Roll * 0.1;
 		}
 		else
 		{
-			_uORB_Real__Roll = _uORB_Accel__Roll;
 			_uORB_Real_Pitch = _uORB_Accel_Pitch;
+			_uORB_Real__Roll = _uORB_Accel__Roll;
 			_flag_first_StartUp = false;
 		}
-		usleep(4000);
+		std::cout << _uORB_Real_Pitch << " ____";
+		std::cout << _uORB_Real__Roll << " ____>\r";
 	}
 
 	inline void ControlRead()
@@ -268,27 +262,32 @@ public:
 		}
 	}
 private:
-
 	inline void SensorsDataRead()
 	{
 		_Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(MPU9250_fd, 0x3B);
 		_Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(MPU9250_fd, 0x3C);
-		_uORB_MPU9250_A_X = (_Tmp_MPU9250_Buffer[0] << 8 | _Tmp_MPU9250_Buffer[1]);
+		_Tmp_MPU9250_A_X = (_Tmp_MPU9250_Buffer[0] << 8 | _Tmp_MPU9250_Buffer[1]);
+		_uORB_MPU9250_A_X = (short)_Tmp_MPU9250_A_X;
 		_Tmp_MPU9250_Buffer[2] = wiringPiI2CReadReg8(MPU9250_fd, 0x3D);
 		_Tmp_MPU9250_Buffer[3] = wiringPiI2CReadReg8(MPU9250_fd, 0x3E);
-		_uORB_MPU9250_A_Y = (_Tmp_MPU9250_Buffer[2] << 8 | _Tmp_MPU9250_Buffer[3]);
+		_Tmp_MPU9250_A_Y = (_Tmp_MPU9250_Buffer[2] << 8 | _Tmp_MPU9250_Buffer[3]);
+		_uORB_MPU9250_A_Y = (short)_Tmp_MPU9250_A_Y;
 		_Tmp_MPU9250_Buffer[4] = wiringPiI2CReadReg8(MPU9250_fd, 0x3F);
 		_Tmp_MPU9250_Buffer[5] = wiringPiI2CReadReg8(MPU9250_fd, 0x40);
-		_uORB_MPU9250_A_Z = (_Tmp_MPU9250_Buffer[4] << 8 | _Tmp_MPU9250_Buffer[5]);
+		_Tmp_MPU9250_A_Z = (_Tmp_MPU9250_Buffer[4] << 8 | _Tmp_MPU9250_Buffer[5]);
+		_uORB_MPU9250_A_Z = (short)_Tmp_MPU9250_A_Z;
 
 		_Tmp_MPU9250_Buffer[6] = wiringPiI2CReadReg8(MPU9250_fd, 0x43);
 		_Tmp_MPU9250_Buffer[7] = wiringPiI2CReadReg8(MPU9250_fd, 0x44);
-		_uORB_MPU9250_G_X = (_Tmp_MPU9250_Buffer[6] << 8 | _Tmp_MPU9250_Buffer[7]);
+		_Tmp_MPU9250_G_X = (_Tmp_MPU9250_Buffer[6] << 8 | _Tmp_MPU9250_Buffer[7]);
+		_uORB_MPU9250_G_X = (short)_Tmp_MPU9250_G_X;
 		_Tmp_MPU9250_Buffer[8] = wiringPiI2CReadReg8(MPU9250_fd, 0x45);
 		_Tmp_MPU9250_Buffer[9] = wiringPiI2CReadReg8(MPU9250_fd, 0x46);
-		_uORB_MPU9250_G_Y = (_Tmp_MPU9250_Buffer[8] << 8 | _Tmp_MPU9250_Buffer[9]);
+		_Tmp_MPU9250_G_Y = (_Tmp_MPU9250_Buffer[8] << 8 | _Tmp_MPU9250_Buffer[9]);
+		_uORB_MPU9250_G_Y = (short)_Tmp_MPU9250_G_Y;
 		_Tmp_MPU9250_Buffer[10] = wiringPiI2CReadReg8(MPU9250_fd, 0x47);
 		_Tmp_MPU9250_Buffer[11] = wiringPiI2CReadReg8(MPU9250_fd, 0x48);
-		_uORB_MPU9250_G_Z = (_Tmp_MPU9250_Buffer[10] << 8 | _Tmp_MPU9250_Buffer[11]);
+		_Tmp_MPU9250_G_Z = (_Tmp_MPU9250_Buffer[10] << 8 | _Tmp_MPU9250_Buffer[11]);
+		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
 	}
 };
