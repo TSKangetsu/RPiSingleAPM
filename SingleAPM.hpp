@@ -50,6 +50,14 @@ int _uORB_A2_Speed;
 int _uORB_B1_Speed;
 int _uORB_B2_Speed;
 
+//PID Args
+float _Flag_PID_P_Gain = 1;
+float _Flag_PID_I_Gain = 0;
+float _Flag_PID_D_Gain = 0;
+
+float _uORB_Leveling_Roll;
+float _uORB_Leveling_Pitch;
+
 class Stablize_Mode
 {
 public:
@@ -82,14 +90,13 @@ public:
 	long _uORB_MPU9250_G_Y_Cali = 0;
 	long _uORB_MPU9250_G_Z_Cali = 0;
 
-	double _uORB_Accel_Pitch;
-	double _uORB_Accel__Roll;
-	double _uORB_Gryo_Pitch;
-	double _uORB_Gryo__Roll;
-	double _uORB_Real_Pitch;
-	double _uORB_Real__Roll;
+	float _uORB_Accel_Pitch;
+	float _uORB_Accel__Roll;
+	float _uORB_Gryo_Pitch;
+	float _uORB_Gryo__Roll;
+	float _uORB_Real_Pitch;
+	float  _uORB_Real__Roll;
 
-	int wait;
 	Stablize_Mode()
 	{
 		MPU9250_fd = wiringPiI2CSetup(MPU9250_ADDR);
@@ -135,8 +142,8 @@ public:
 		std::cout << "Gryo_X_Caili :" << _uORB_MPU9250_G_X_Cali << "\n";
 		std::cout << "Gryo_Y_Caili :" << _uORB_MPU9250_G_Y_Cali << "\n";
 		std::cout << "Gryo_Z_Caili :" << _uORB_MPU9250_G_Z_Cali << "\n";
-		std::cin >> wait;
 	}
+
 	inline void SensorsParse()
 	{
 		SensorsDataRead();
@@ -148,15 +155,17 @@ public:
 		_uORB_MPU9250_G_Y -= _uORB_MPU9250_G_Y_Cali;
 		_uORB_MPU9250_G_Z -= _uORB_MPU9250_G_Z_Cali;
 		//Gryo----------------------------------------------------------------------//
+		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_Y / 65.5) * 0.3);
+		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_X / 65.5) * 0.3);
 		_uORB_Real_Pitch += _uORB_MPU9250_G_X * 0.0000611;
 		_uORB_Real__Roll += _uORB_MPU9250_G_Y * 0.0000611;
 		_uORB_Real_Pitch -= _uORB_Real__Roll * sin(_uORB_MPU9250_G_Z * 0.000001066);
 		_uORB_Real__Roll += _uORB_Real_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
 		//ACCEL---------------------------------------------------------------------//
 		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
-		if (abs(_uORB_MPU9250_G_X) < _Tmp_IMU_Accel_Vector)
+		if (abs(_uORB_MPU9250_A_X) < _Tmp_IMU_Accel_Vector)
 			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
-		if (abs(_uORB_MPU9250_G_Y) < _Tmp_IMU_Accel_Vector)
+		if (abs(_uORB_MPU9250_A_Y) < _Tmp_IMU_Accel_Vector)
 			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
 		if (!_flag_first_StartUp)
@@ -170,8 +179,6 @@ public:
 			_uORB_Real__Roll = _uORB_Accel__Roll;
 			_flag_first_StartUp = false;
 		}
-		std::cout << _uORB_Real_Pitch << " ____";
-		std::cout << _uORB_Real__Roll << " ____>\r";
 	}
 
 	inline void ControlRead()
@@ -191,53 +198,10 @@ public:
 
 	inline void AttitudeUpdate()
 	{
-		if (_uORB_RC_Roll - _flag_Middle_Roll > 0)
-		{
-			_uORB_True_Roll[0] = 0;
-			_uORB_True_Roll[1] = ((float)_uORB_RC_Roll - (float)_flag_Middle_Roll) / (float)650 * (float)300;
-		}
-		else if (_uORB_RC_Roll - _flag_Middle_Roll <= 0)
-		{
-			_uORB_True_Roll[1] = 0;
-			_uORB_True_Roll[0] = (-(float)_uORB_RC_Roll + (float)_flag_Middle_Roll) / (float)650 * (float)300;
-		}
-
-
-		if (_uORB_RC_Pitch - _flag_Middle_Pitch > 0)
-		{
-			_uORB_True_Pitch[0] = 0;
-			_uORB_True_Pitch[1] = ((float)_uORB_RC_Pitch - (float)_flag_Middle_Pitch) / (float)650 * (float)300;
-		}
-		else if (_uORB_RC_Pitch - _flag_Middle_Pitch <= 0)
-		{
-			_uORB_True_Pitch[1] = 0;
-			_uORB_True_Pitch[0] = (-(float)_uORB_RC_Pitch + (float)_flag_Middle_Pitch) / (float)650 * (float)300;
-		}
-
-
-		if (_uORB_RC_Yall - _flag_Middle_Yall > 0)
-		{
-			_uORB_True_Yall[0] = 0;
-			_uORB_True_Yall[1] = ((float)_uORB_RC_Yall - (float)_flag_Middle_Yall) / (float)650 * (float)300;
-		}
-		else if (_uORB_RC_Yall - _flag_Middle_Yall <= 0)
-		{
-			_uORB_True_Yall[1] = 0;
-			_uORB_True_Yall[0] = (-(float)_uORB_RC_Yall + (float)_flag_Middle_Yall) / (float)650 * (float)300;
-		}
-
-		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[0] - _uORB_True_Yall[0];
-		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[0] - _uORB_True_Yall[1];
-		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[1] - _uORB_True_Roll[1] - _uORB_True_Yall[0];
-		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_True_Pitch[0] - _uORB_True_Roll[1] - _uORB_True_Yall[1];
-		_Tmp_Prenset_A1 = ((float)_uORB_A1_Speed - (float)300) / (float)1400;
-		_Tmp_Prenset_A2 = ((float)_uORB_A2_Speed - (float)300) / (float)1400;
-		_Tmp_Prenset_B1 = ((float)_uORB_B1_Speed - (float)300) / (float)1400;
-		_Tmp_Prenset_B2 = ((float)_uORB_B2_Speed - (float)300) / (float)1400;
-		_uORB_A1_Speed = 700 * _Tmp_Prenset_A1 + 2350;
-		_uORB_A2_Speed = 700 * _Tmp_Prenset_A2 + 2350;
-		_uORB_B1_Speed = 700 * _Tmp_Prenset_B1 + 2350;
-		_uORB_B2_Speed = 700 * _Tmp_Prenset_B2 + 2350;
+		//Roll PID Mix
+		P_I_D_Caculate(_uORB_Gryo__Roll, _uORB_Leveling_Roll);
+		_uORB_Leveling_Roll -= _uORB_Real__Roll * 15;
+		std::cout << _uORB_Leveling_Roll << "__\n";
 	}
 
 	inline void MotorUpdate()
@@ -262,6 +226,12 @@ public:
 		}
 	}
 private:
+	inline void P_I_D_Caculate(float inputData, float& outputData)
+	{
+		//P caculate only
+		outputData = _Flag_PID_P_Gain * inputData;
+	}
+
 	inline void SensorsDataRead()
 	{
 		_Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(MPU9250_fd, 0x3B);
