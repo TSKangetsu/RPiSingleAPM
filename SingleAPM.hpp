@@ -35,28 +35,20 @@ int _uORB_RC_Pitch;
 int _uORB_RC_Throttle;
 int _uORB_RC__Yall;
 
-//AttitudeUpdate_Data
-unsigned int _uORB_True_Roll[2];
-unsigned int _uORB_True_Pitch[2];
-unsigned int _uORB_True_Yall[2];
-float _Tmp_Prenset_A1;
-float _Tmp_Prenset_A2;
-float _Tmp_Prenset_B1;
-float _Tmp_Prenset_B2;
-
 //MotorOutput_finally
+
 int _uORB_A1_Speed;
 int _uORB_A2_Speed;
 int _uORB_B1_Speed;
 int _uORB_B2_Speed;
+float _uORB_Leveling__Roll;
+float _uORB_Leveling_Pitch;
 
 //PID Args
 float _Flag_PID_P_Gain = 1;
 float _Flag_PID_I_Gain = 0;
 float _Flag_PID_D_Gain = 0;
 float _Flag_PID_Level_Max = 400;
-float _uORB_Leveling__Roll;
-float _uORB_Leveling_Pitch;
 
 class Stablize_Mode
 {
@@ -214,7 +206,7 @@ public:
 	inline void AttitudeUpdate()
 	{
 		//Pitch PID Mix
-		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch, 
+		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch,
 			_uORB_Leveling_Pitch);
 
 		if (_uORB_Leveling_Pitch > _Flag_PID_Level_Max)
@@ -223,7 +215,7 @@ public:
 			_uORB_Leveling_Pitch = _Flag_PID_Level_Max * -1;
 
 		//Roll PID Mix
-		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll, 
+		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll,
 			_uORB_Leveling__Roll);
 
 		if (_uORB_Leveling__Roll > _Flag_PID_Level_Max)
@@ -236,11 +228,15 @@ public:
 		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
 		_uORB_B2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
 
-		_Tmp_Prenset_A1 = ((float)_uORB_A1_Speed - (float)300) / (float)1400;
 	}
 
 	inline void MotorUpdate()
 	{
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2350;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2350;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2350;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2350;
+
 		if (_flag_ForceFailed_Safe)
 		{
 			pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, 0, _flag_Lock_Throttle);
