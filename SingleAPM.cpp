@@ -10,10 +10,11 @@ int main()
 	{
 		timer = clock();
 		test.SensorsParse();
+		test.ControlRead();
 		test.AttitudeUpdate();
-		std::cout << _uORB_Leveling_Pitch << "___";
-		std::cout << _uORB_Leveling__Roll << "___\n";
+		test.MotorUpdate();
 		timer_end = clock();
+		std::cout << "timer: " << timer_end - timer << "\n";
 		usleep(4000 - (timer_end - timer));
 	}
 }

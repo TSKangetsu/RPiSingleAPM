@@ -25,15 +25,15 @@ int _flag_B2_Pin = 3;
 bool _flag_ForceFailed_Safe;
 int _flag_Lazy_Throttle = 2300;
 int _flag_Lock_Throttle = 2200;
-int _flag_Middle_Yall = 1000;
-int _flag_Middle_Roll = 1000;
+int _flag_Middle__Yall = 1000;
+int _flag_Middle__Roll = 1000;
 int _flag_Middle_Pitch = 1000;
 //REC_Reading_Yall_Pitch_Yoll_Throttle_Level
 int data[36];
-int _uORB_RC_Roll;
+int _uORB_RC__Roll;
 int _uORB_RC_Pitch;
 int _uORB_RC_Throttle;
-int _uORB_RC_Yall;
+int _uORB_RC__Yall;
 
 //AttitudeUpdate_Data
 unsigned int _uORB_True_Roll[2];
@@ -190,23 +190,42 @@ public:
 				data[i] = serialGetchar(RCReader_fd);
 			}
 		}
-		_uORB_RC_Roll = data[1] * 255 + data[2];
+		_uORB_RC__Roll = data[1] * 255 + data[2];
 		_uORB_RC_Pitch = data[3] * 255 + data[4];
 		_uORB_RC_Throttle = data[5] * 255 + data[6];
-		_uORB_RC_Yall = data[7] * 255 + data[8];
+		_uORB_RC__Yall = data[7] * 255 + data[8];
+
+		if (_uORB_RC__Roll < _flag_Middle__Roll + 20 && _uORB_RC__Roll < _flag_Middle__Roll - 20)
+			_uORB_RC__Roll = 0;
+		else
+			_uORB_RC__Roll -= _flag_Middle__Roll;
+
+		if (_uORB_RC_Pitch < _flag_Middle_Pitch + 20 && _uORB_RC_Pitch < _flag_Middle_Pitch - 20)
+			_uORB_RC_Pitch = 0;
+		else
+			_uORB_RC_Pitch -= _flag_Middle_Pitch;
+
+		if (_uORB_RC__Yall < _flag_Middle__Yall + 20 && _uORB_RC__Yall < _flag_Middle__Yall - 20)
+			_uORB_RC__Yall = 0;
+		else
+			_uORB_RC__Yall -= _flag_Middle__Yall;
 	}
 
 	inline void AttitudeUpdate()
 	{
 		//Pitch PID Mix
-		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15, _uORB_Leveling_Pitch);
+		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch, 
+			_uORB_Leveling_Pitch);
+
 		if (_uORB_Leveling_Pitch > _Flag_PID_Level_Max)
 			_uORB_Leveling_Pitch = _Flag_PID_Level_Max;
 		if (_uORB_Leveling_Pitch < _Flag_PID_Level_Max * -1)
 			_uORB_Leveling_Pitch = _Flag_PID_Level_Max * -1;
 
 		//Roll PID Mix
-		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15, _uORB_Leveling__Roll);
+		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll, 
+			_uORB_Leveling__Roll);
+
 		if (_uORB_Leveling__Roll > _Flag_PID_Level_Max)
 			_uORB_Leveling__Roll = _Flag_PID_Level_Max;
 		if (_uORB_Leveling__Roll < _Flag_PID_Level_Max * -1)
