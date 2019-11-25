@@ -179,10 +179,6 @@ public:
 			_uORB_Real__Roll = _uORB_Accel__Roll;
 			_flag_first_StartUp = false;
 		}
-		std::cout << _uORB_Gryo_Pitch << "___";
-		std::cout << _uORB_Gryo__Roll << "___";
-		std::cout << _uORB_Real_Pitch << "___";
-		std::cout << _uORB_Real__Roll << "___";
 	}
 
 	inline void ControlRead()
@@ -204,21 +200,18 @@ public:
 	{
 
 		//Pitch PID Mix
-		P_I_D_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch, _uORB_Leveling_Pitch);
+		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15, _uORB_Leveling_Pitch);
 		if (_uORB_Leveling_Pitch > _Flag_PID_Level_Max)
 			_uORB_Leveling_Pitch = _Flag_PID_Level_Max;
 		if (_uORB_Leveling_Pitch < _Flag_PID_Level_Max * -1)
-			_uORB_Leveling_Pitch = _Flag_PID_Level_Max;
+			_uORB_Leveling_Pitch = _Flag_PID_Level_Max * -1;
 
 		//Roll PID Mix
-		P_I_D_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll, _uORB_Leveling__Roll);
+		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15, _uORB_Leveling__Roll);
 		if (_uORB_Leveling__Roll > _Flag_PID_Level_Max)
 			_uORB_Leveling__Roll = _Flag_PID_Level_Max;
 		if (_uORB_Leveling__Roll < _Flag_PID_Level_Max * -1)
-			_uORB_Leveling__Roll = _Flag_PID_Level_Max;
-
-		std::cout << _uORB_Leveling_Pitch << "____";
-		std::cout << _uORB_Leveling__Roll << "____\r";
+			_uORB_Leveling__Roll = _Flag_PID_Level_Max * -1;
 	}
 
 	inline void MotorUpdate()
@@ -243,7 +236,7 @@ public:
 		}
 	}
 private:
-	inline void P_I_D_Caculate(float inputData, float& outputData)
+	inline void PID_Caculate(float inputData, float& outputData)
 	{
 		//P caculate only
 		outputData = _Flag_PID_P_Gain * inputData;
