@@ -198,7 +198,6 @@ public:
 
 	inline void AttitudeUpdate()
 	{
-
 		//Pitch PID Mix
 		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15, _uORB_Leveling_Pitch);
 		if (_uORB_Leveling_Pitch > _Flag_PID_Level_Max)
@@ -212,6 +211,13 @@ public:
 			_uORB_Leveling__Roll = _Flag_PID_Level_Max;
 		if (_uORB_Leveling__Roll < _Flag_PID_Level_Max * -1)
 			_uORB_Leveling__Roll = _Flag_PID_Level_Max * -1;
+
+		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
+		_uORB_A2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
+		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
+		_uORB_B2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
+
+		_Tmp_Prenset_A1 = ((float)_uORB_A1_Speed - (float)300) / (float)1400;
 	}
 
 	inline void MotorUpdate()
