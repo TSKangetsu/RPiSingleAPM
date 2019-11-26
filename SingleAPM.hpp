@@ -54,11 +54,13 @@ float _uORB_Leveling__Roll;
 float _uORB_Leveling_Pitch;
 
 //PID Args
-float _flag_PID_P_Gain = 1;
+float _flag_PID_P_Gain = 0.5;
 float _flag_PID_I_Gain = 0;
 float _flag_PID_D_Gain = 0;
-float _uORB_PID_D_Last_Value = 0;
-float _flag_PID_I_Last_Value = 0;
+float _uORB_PID_D_Last_Value__Roll = 0;
+float _uORB_PID_D_Last_Value_Pitch = 0;
+float _uORB_PID_I_Last_Value__Roll = 0;
+float _uORB_PID_I_Last_Value_Pitch = 0;
 float _flag_PID_I_Max__Value = 400;
 float _flag_PID_Level_Max = 400;
 
@@ -164,8 +166,10 @@ public:
 	{
 		SensorsDataRead();
 		//Cail----------------------------------------------------------------------//
+		//Acel_cali
 		_uORB_MPU9250_A_X -= _uORB_MPU9250_A_X_Cali;
 		_uORB_MPU9250_A_Y -= _uORB_MPU9250_A_Y_Cali;
+		//Gryo_cail
 		_uORB_MPU9250_G_X -= _uORB_MPU9250_G_X_Cali;
 		_uORB_MPU9250_G_Y -= _uORB_MPU9250_G_Y_Cali;
 		_uORB_MPU9250_G_Z -= _uORB_MPU9250_G_Z_Cali;
@@ -219,10 +223,28 @@ public:
 				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
 			if (_uORB_RC__Yall > _flag_RC_Min__Yall)
 				_flag_RC_Min__Yall = _uORB_RC__Yall;
-			std::cout << "[Controller] Calibration will finshed"
-				<< " Please Check the tick middle and throttle down and pass enter" << "\n";
-			std::cin;
 		}
+		std::cout << "[Controller] Calibration will finshed"
+			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
+		std::cin;
+		_flag_RC_Middle_Pitch = _uORB_RC_Pitch;
+		_flag_RC_Middle__Roll = _uORB_RC__Roll;
+		_flag_RC_Middle__Yall = _uORB_RC__Yall;
+		std::cout << "[Controler] Controller calitbration comfirm:"
+			<< "Max__Roll    = " << _flag_RC_Max__Roll << "\n"
+			<< "Max_Pitch    = " << _flag_RC_Max_Pitch << "\n"
+			<< "Max_Throttle = " << _flag_RC_Max_Throttle << "\n"
+			<< "Max__Yall    = " << _flag_RC_Max__Yall << "\n\n"
+
+			<< "Middle__Roll = " << _flag_RC_Middle__Roll << "\n"
+			<< "Middle_Pitch = " << _flag_RC_Middle_Pitch << "\n"
+			<< "Middle__Yall = " << _flag_RC_Middle__Yall << "\n\n"
+
+			<< "Min__Roll    = " << _flag_RC_Min_Pitch << "\n"
+			<< "Min_Pitch    = " << _flag_RC_Min_Pitch << "\n"
+			<< "Min_Throttle = " << _flag_RC_Min_Pitch << "\n"
+			<< "Min__Yall    = " << _flag_RC_Min_Pitch << "\n";
+		std::cout << "-----------calibration_over----------------";
 	}
 
 	inline void ControlParse()
@@ -247,23 +269,23 @@ public:
 
 	inline void AttitudeUpdate()
 	{
-		//Pitch PID Mix
-		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch,
-			_uORB_Leveling_Pitch, _flag_PID_I_Last_Value, _uORB_PID_D_Last_Value);
-
-		if (_uORB_Leveling_Pitch > _flag_PID_Level_Max)
-			_uORB_Leveling_Pitch = _flag_PID_Level_Max;
-		if (_uORB_Leveling_Pitch < _flag_PID_Level_Max * -1)
-			_uORB_Leveling_Pitch = _flag_PID_Level_Max * -1;
-
 		//Roll PID Mix
 		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll,
-			_uORB_Leveling__Roll, _flag_PID_I_Last_Value, _uORB_PID_D_Last_Value);
+			_uORB_Leveling__Roll, _uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch);
 
 		if (_uORB_Leveling__Roll > _flag_PID_Level_Max)
 			_uORB_Leveling__Roll = _flag_PID_Level_Max;
 		if (_uORB_Leveling__Roll < _flag_PID_Level_Max * -1)
 			_uORB_Leveling__Roll = _flag_PID_Level_Max * -1;
+
+		//Pitch PID Mix
+		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch,
+			_uORB_Leveling_Pitch, _uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch);
+
+		if (_uORB_Leveling_Pitch > _flag_PID_Level_Max)
+			_uORB_Leveling_Pitch = _flag_PID_Level_Max;
+		if (_uORB_Leveling_Pitch < _flag_PID_Level_Max * -1)
+			_uORB_Leveling_Pitch = _flag_PID_Level_Max * -1;
 
 		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
 		_uORB_A2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch;

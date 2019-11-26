@@ -11,12 +11,12 @@ int main()
 		timer = clock();
 		test.SensorsParse();
 		test.AttitudeUpdate();
-		std::cout << test._uORB_MPU9250_A_X << "___";
-		std::cout << test._uORB_MPU9250_A_Y << "___";
+		std::cout << test._uORB_Real_Pitch << "___";
+		std::cout << test._uORB_Real__Roll << "___";
 		std::cout << _uORB_Leveling_Pitch << "___";
-		std::cout << _uORB_Leveling_Pitch << "___";
+		std::cout << _uORB_Leveling__Roll << "___";
 		timer_end = clock();
-		std::cout << "timer: " << timer_end - timer << "\r";
+		std::cout << "timer: " << timer_end - timer << "\n";
 		usleep(4000 - (timer_end - timer));
 	}
 }
