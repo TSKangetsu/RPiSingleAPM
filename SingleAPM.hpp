@@ -21,7 +21,7 @@ int _flag_B1_Pin = 2;
 int _flag_B2_Pin = 3;
 
 //Base_Motor_Flags
-bool _flag_ForceFailed_Safe;
+bool _flag_ForceFailed_Safe = true;
 int _flag_Lazy_Throttle = 2300;
 int _flag_Lock_Throttle = 2200;
 
@@ -361,6 +361,10 @@ private:
 		_uORB_RC_Pitch = data[3] * 255 + data[4];
 		_uORB_RC_Throttle = data[5] * 255 + data[6];
 		_uORB_RC__Yall = data[7] * 255 + data[8];
+		if (data[9] + data[10] > 1500)
+		{
+			_flag_ForceFailed_Safe = false;
+		}
 	}
 
 	inline void SensorsDataRead()

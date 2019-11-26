@@ -5,18 +5,21 @@ int main()
 	long int timer;
 	long int timer_end;
 	Stablize_Mode test;
+	test.ControlCalibration();
 	test.SensorsGryoCalibration();
 	while (true)
 	{
 		timer = clock();
 		test.SensorsParse();
+		test.ControlParse();
 		test.AttitudeUpdate();
-		std::cout << test._uORB_Real_Pitch << "___";
-		std::cout << test._uORB_Real__Roll << "___";
-		std::cout << _uORB_Leveling_Pitch << "___";
-		std::cout << _uORB_Leveling__Roll << "___";
+		test.MotorUpdate();
 		timer_end = clock();
-		std::cout << "timer: " << timer_end - timer << "\n";
+		if ((timer_end - timer) > 4000)
+		{
+			std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!!";
+			_flag_ForceFailed_Safe = true;
+		}
 		usleep(4000 - (timer_end - timer));
 	}
 }
