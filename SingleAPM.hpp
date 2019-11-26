@@ -8,7 +8,6 @@
 #include <thread>
 #include <cstdio>
 #include "_thirdparty/pca9685.h"
-#include "_thirdparty/pid.hpp"
 //Setup
 static int PCA9658_fd;
 static int RCReader_fd;
@@ -21,13 +20,24 @@ int _flag_A2_Pin = 1;
 int _flag_B1_Pin = 2;
 int _flag_B2_Pin = 3;
 
-//Base_Flags
+//Base_Motor_Flags
 bool _flag_ForceFailed_Safe;
 int _flag_Lazy_Throttle = 2300;
 int _flag_Lock_Throttle = 2200;
-int _flag_Middle__Yall = 1000;
-int _flag_Middle__Roll = 1000;
-int _flag_Middle_Pitch = 1000;
+
+//RC_Base_Flags
+int _flag_RC_Middle__Yall = 1000;
+int _flag_RC_Middle__Roll = 1000;
+int _flag_RC_Middle_Pitch = 1000;
+int _flag_RC_Max__Roll = 0;
+int _flag_RC_Max_Pitch = 0;
+int _flag_RC_Max_Throttle = 0;
+int _flag_RC_Max__Yall = 0;
+int _flag_RC_Min__Roll = 0;
+int _flag_RC_Min_Pitch = 0;
+int _flag_RC_Min_Throttle = 0;
+int _flag_RC_Min__Yall = 0;
+
 //REC_Reading_Yall_Pitch_Yoll_Throttle_Level
 int data[36];
 int _uORB_RC__Roll;
@@ -36,7 +46,6 @@ int _uORB_RC_Throttle;
 int _uORB_RC__Yall;
 
 //MotorOutput_finally
-
 int _uORB_A1_Speed;
 int _uORB_A2_Speed;
 int _uORB_B1_Speed;
@@ -48,6 +57,9 @@ float _uORB_Leveling_Pitch;
 float _Flag_PID_P_Gain = 1;
 float _Flag_PID_I_Gain = 0;
 float _Flag_PID_D_Gain = 0;
+float _Flag_PID_D_Last_Value = 0;
+float _Flag_PID_I_Last_Value = 0;
+float _Flag_PID_I_Max__Value = 400;
 float _Flag_PID_Level_Max = 400;
 
 class Stablize_Mode
@@ -173,41 +185,61 @@ public:
 		}
 	}
 
-	inline void ControlRead()
+	inline void ControlCalibration()
 	{
-		if (serialDataAvail(RCReader_fd) > 0)
+		std::cout << "[Controller] ControlCalibraion start ......";
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
-			for (int i = 0; i <= 34; i++)
-			{
-				data[i] = serialGetchar(RCReader_fd);
-			}
-		}
-		_uORB_RC__Roll = data[1] * 255 + data[2];
-		_uORB_RC_Pitch = data[3] * 255 + data[4];
-		_uORB_RC_Throttle = data[5] * 255 + data[6];
-		_uORB_RC__Yall = data[7] * 255 + data[8];
+			ControlRead();
+			if (_uORB_RC__Roll > _flag_RC_Max__Roll)
+				_flag_RC_Max__Roll = _uORB_RC__Roll;
+			if (_uORB_RC_Pitch > _flag_RC_Max_Pitch)
+				_flag_RC_Max_Pitch = _uORB_RC_Pitch;
+			if (_uORB_RC_Throttle > _flag_RC_Max_Throttle)
+				_flag_RC_Max_Throttle = _uORB_RC_Throttle;
+			if (_uORB_RC__Yall > _flag_RC_Max__Yall)
+				_flag_RC_Max__Yall = _uORB_RC__Yall;
 
-		if (_uORB_RC__Roll < _flag_Middle__Roll + 20 && _uORB_RC__Roll < _flag_Middle__Roll - 20)
+			if (_uORB_RC__Roll > _flag_RC_Min__Roll)
+				_flag_RC_Min__Roll = _uORB_RC__Roll;
+			if (_uORB_RC_Pitch > _flag_RC_Min_Pitch)
+				_flag_RC_Min_Pitch = _uORB_RC_Pitch;
+			if (_uORB_RC_Throttle > _flag_RC_Min_Throttle)
+				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
+			if (_uORB_RC__Yall > _flag_RC_Min__Yall)
+				_flag_RC_Min__Yall = _uORB_RC__Yall;
+			std::cout << "[Controller] Calibration will finshed"
+				<< " Please Check the tick middle and throttle down and pass enter" << "\n";
+			std::cin;
+
+		}
+	}
+
+	inline void ControlParse()
+	{
+		ControlRead();
+
+		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 20 && _uORB_RC__Roll < _flag_RC_Middle__Roll - 20)
 			_uORB_RC__Roll = 0;
 		else
-			_uORB_RC__Roll -= _flag_Middle__Roll;
+			_uORB_RC__Roll -= _flag_RC_Middle__Roll;
 
-		if (_uORB_RC_Pitch < _flag_Middle_Pitch + 20 && _uORB_RC_Pitch < _flag_Middle_Pitch - 20)
+		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 20 && _uORB_RC_Pitch < _flag_RC_Middle_Pitch - 20)
 			_uORB_RC_Pitch = 0;
 		else
-			_uORB_RC_Pitch -= _flag_Middle_Pitch;
+			_uORB_RC_Pitch -= _flag_RC_Middle_Pitch;
 
-		if (_uORB_RC__Yall < _flag_Middle__Yall + 20 && _uORB_RC__Yall < _flag_Middle__Yall - 20)
+		if (_uORB_RC__Yall < _flag_RC_Middle__Yall + 20 && _uORB_RC__Yall < _flag_RC_Middle__Yall - 20)
 			_uORB_RC__Yall = 0;
 		else
-			_uORB_RC__Yall -= _flag_Middle__Yall;
+			_uORB_RC__Yall -= _flag_RC_Middle__Yall;
 	}
 
 	inline void AttitudeUpdate()
 	{
 		//Pitch PID Mix
 		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch,
-			_uORB_Leveling_Pitch);
+			_uORB_Leveling_Pitch, _Flag_PID_I_Last_Value, _Flag_PID_D_Last_Value);
 
 		if (_uORB_Leveling_Pitch > _Flag_PID_Level_Max)
 			_uORB_Leveling_Pitch = _Flag_PID_Level_Max;
@@ -216,7 +248,7 @@ public:
 
 		//Roll PID Mix
 		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll,
-			_uORB_Leveling__Roll);
+			_uORB_Leveling__Roll, _Flag_PID_I_Last_Value, _Flag_PID_D_Last_Value);
 
 		if (_uORB_Leveling__Roll > _Flag_PID_Level_Max)
 			_uORB_Leveling__Roll = _Flag_PID_Level_Max;
@@ -227,7 +259,6 @@ public:
 		_uORB_A2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
 		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
 		_uORB_B2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
-
 	}
 
 	inline void MotorUpdate()
@@ -257,10 +288,32 @@ public:
 		}
 	}
 private:
-	inline void PID_Caculate(float inputData, float& outputData)
+	inline void PID_Caculate(float inputData, float& outputData, float& last_I_Data, float& last_D_Data)
 	{
-		//P caculate only
+		//P caculate
 		outputData = _Flag_PID_P_Gain * inputData;
+		//D caculate
+		outputData += _Flag_PID_D_Gain * (inputData - last_D_Data);
+		last_D_Data = inputData;
+		//I caculate
+		last_I_Data += inputData * _Flag_PID_I_Gain;
+		//P_I_D Mix OUTPUT
+		outputData += inputData + last_I_Data;
+	}
+
+	inline void ControlRead()
+	{
+		if (serialDataAvail(RCReader_fd) > 0)
+		{
+			for (int i = 0; i <= 34; i++)
+			{
+				data[i] = serialGetchar(RCReader_fd);
+			}
+		}
+		_uORB_RC__Roll = data[1] * 255 + data[2];
+		_uORB_RC_Pitch = data[3] * 255 + data[4];
+		_uORB_RC_Throttle = data[5] * 255 + data[6];
+		_uORB_RC__Yall = data[7] * 255 + data[8];
 	}
 
 	inline void SensorsDataRead()
