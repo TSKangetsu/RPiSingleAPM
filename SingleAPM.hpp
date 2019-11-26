@@ -361,7 +361,7 @@ private:
 		_uORB_RC_Pitch = data[3] * 255 + data[4];
 		_uORB_RC_Throttle = data[5] * 255 + data[6];
 		_uORB_RC__Yall = data[7] * 255 + data[8];
-		if (data[9] + data[10] > 1500)
+		if (data[9] * 255 + data[10] > 1500)
 		{
 			_flag_ForceFailed_Safe = false;
 		}
