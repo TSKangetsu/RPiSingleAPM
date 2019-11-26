@@ -54,13 +54,13 @@ float _uORB_Leveling__Roll;
 float _uORB_Leveling_Pitch;
 
 //PID Args
-float _Flag_PID_P_Gain = 1;
-float _Flag_PID_I_Gain = 0;
-float _Flag_PID_D_Gain = 0;
-float _Flag_PID_D_Last_Value = 0;
-float _Flag_PID_I_Last_Value = 0;
-float _Flag_PID_I_Max__Value = 400;
-float _Flag_PID_Level_Max = 400;
+float _flag_PID_P_Gain = 1;
+float _flag_PID_I_Gain = 0;
+float _flag_PID_D_Gain = 0;
+float _uORB_PID_D_Last_Value = 0;
+float _flag_PID_I_Last_Value = 0;
+float _flag_PID_I_Max__Value = 400;
+float _flag_PID_Level_Max = 400;
 
 class Stablize_Mode
 {
@@ -82,7 +82,6 @@ public:
 	unsigned long _Tmp_MPU9250_A_Z;
 	long _uORB_MPU9250_A_X_Cali = 0;
 	long _uORB_MPU9250_A_Y_Cali = 0;
-	long _uORB_MPU9250_A_Z_Cali = 0;
 
 	long _uORB_MPU9250_G_X;
 	long _uORB_MPU9250_G_Y;
@@ -146,6 +145,19 @@ public:
 		std::cout << "Gryo_X_Caili :" << _uORB_MPU9250_G_X_Cali << "\n";
 		std::cout << "Gryo_Y_Caili :" << _uORB_MPU9250_G_Y_Cali << "\n";
 		std::cout << "Gryo_Z_Caili :" << _uORB_MPU9250_G_Z_Cali << "\n";
+
+		std::cout << "[Sensors] Accel Calibration ......" << "\n";
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			SensorsDataRead();
+			_uORB_MPU9250_A_X_Cali += _uORB_MPU9250_A_X;
+			_uORB_MPU9250_A_Y_Cali += _uORB_MPU9250_A_Y;
+			usleep(3);
+		}
+		_uORB_MPU9250_A_X_Cali = _uORB_MPU9250_A_X_Cali / 2000;
+		_uORB_MPU9250_A_Y_Cali = _uORB_MPU9250_A_Y_Cali / 2000;
+		std::cout << "Accel_X_Caili :" << _uORB_MPU9250_A_X_Cali << "\n";
+		std::cout << "Accel_Y_Caili :" << _uORB_MPU9250_A_Y_Cali << "\n";
 	}
 
 	inline void SensorsParse()
@@ -154,7 +166,6 @@ public:
 		//Cail----------------------------------------------------------------------//
 		_uORB_MPU9250_A_X -= _uORB_MPU9250_A_X_Cali;
 		_uORB_MPU9250_A_Y -= _uORB_MPU9250_A_Y_Cali;
-		_uORB_MPU9250_A_Z -= _uORB_MPU9250_A_Z_Cali;
 		_uORB_MPU9250_G_X -= _uORB_MPU9250_G_X_Cali;
 		_uORB_MPU9250_G_Y -= _uORB_MPU9250_G_Y_Cali;
 		_uORB_MPU9250_G_Z -= _uORB_MPU9250_G_Z_Cali;
@@ -211,7 +222,6 @@ public:
 			std::cout << "[Controller] Calibration will finshed"
 				<< " Please Check the tick middle and throttle down and pass enter" << "\n";
 			std::cin;
-
 		}
 	}
 
@@ -239,21 +249,21 @@ public:
 	{
 		//Pitch PID Mix
 		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch,
-			_uORB_Leveling_Pitch, _Flag_PID_I_Last_Value, _Flag_PID_D_Last_Value);
+			_uORB_Leveling_Pitch, _flag_PID_I_Last_Value, _uORB_PID_D_Last_Value);
 
-		if (_uORB_Leveling_Pitch > _Flag_PID_Level_Max)
-			_uORB_Leveling_Pitch = _Flag_PID_Level_Max;
-		if (_uORB_Leveling_Pitch < _Flag_PID_Level_Max * -1)
-			_uORB_Leveling_Pitch = _Flag_PID_Level_Max * -1;
+		if (_uORB_Leveling_Pitch > _flag_PID_Level_Max)
+			_uORB_Leveling_Pitch = _flag_PID_Level_Max;
+		if (_uORB_Leveling_Pitch < _flag_PID_Level_Max * -1)
+			_uORB_Leveling_Pitch = _flag_PID_Level_Max * -1;
 
 		//Roll PID Mix
 		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll,
-			_uORB_Leveling__Roll, _Flag_PID_I_Last_Value, _Flag_PID_D_Last_Value);
+			_uORB_Leveling__Roll, _flag_PID_I_Last_Value, _uORB_PID_D_Last_Value);
 
-		if (_uORB_Leveling__Roll > _Flag_PID_Level_Max)
-			_uORB_Leveling__Roll = _Flag_PID_Level_Max;
-		if (_uORB_Leveling__Roll < _Flag_PID_Level_Max * -1)
-			_uORB_Leveling__Roll = _Flag_PID_Level_Max * -1;
+		if (_uORB_Leveling__Roll > _flag_PID_Level_Max)
+			_uORB_Leveling__Roll = _flag_PID_Level_Max;
+		if (_uORB_Leveling__Roll < _flag_PID_Level_Max * -1)
+			_uORB_Leveling__Roll = _flag_PID_Level_Max * -1;
 
 		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
 		_uORB_A2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
@@ -291,14 +301,18 @@ private:
 	inline void PID_Caculate(float inputData, float& outputData, float& last_I_Data, float& last_D_Data)
 	{
 		//P caculate
-		outputData = _Flag_PID_P_Gain * inputData;
+		outputData = _flag_PID_P_Gain * inputData;
 		//D caculate
-		outputData += _Flag_PID_D_Gain * (inputData - last_D_Data);
+		outputData += _flag_PID_D_Gain * (inputData - last_D_Data);
 		last_D_Data = inputData;
 		//I caculate
-		last_I_Data += inputData * _Flag_PID_I_Gain;
+		last_I_Data += inputData * _flag_PID_I_Gain;
+		if (last_I_Data > _flag_PID_I_Max__Value)
+			last_I_Data = _flag_PID_I_Max__Value;
+		if (last_I_Data < _flag_PID_I_Max__Value * -1)
+			last_I_Data = _flag_PID_I_Max__Value * -1;
 		//P_I_D Mix OUTPUT
-		outputData += inputData + last_I_Data;
+		outputData += last_I_Data;
 	}
 
 	inline void ControlRead()
