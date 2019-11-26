@@ -26,9 +26,9 @@ int _flag_Lazy_Throttle = 2300;
 int _flag_Lock_Throttle = 2200;
 
 //RC_Base_Flags
-int _flag_RC_Middle__Yall = 1000;
 int _flag_RC_Middle__Roll = 1000;
 int _flag_RC_Middle_Pitch = 1000;
+int _flag_RC_Middle__Yall = 1000;
 int _flag_RC_Max__Roll = 0;
 int _flag_RC_Max_Pitch = 0;
 int _flag_RC_Max_Throttle = 0;
@@ -52,6 +52,7 @@ int _uORB_B1_Speed;
 int _uORB_B2_Speed;
 float _uORB_Leveling__Roll;
 float _uORB_Leveling_Pitch;
+float _uORB_Leveling__Yall;
 
 //PID Args
 float _flag_PID_P_Gain = 0.5;
@@ -59,8 +60,10 @@ float _flag_PID_I_Gain = 0;
 float _flag_PID_D_Gain = 0;
 float _uORB_PID_D_Last_Value__Roll = 0;
 float _uORB_PID_D_Last_Value_Pitch = 0;
+float _uORB_PID_D_Last_Value__Yall = 0;
 float _uORB_PID_I_Last_Value__Roll = 0;
 float _uORB_PID_I_Last_Value_Pitch = 0;
+float _uORB_PID_I_Last_Value__Yall = 0;
 float _flag_PID_I_Max__Value = 400;
 float _flag_PID_Level_Max = 400;
 
@@ -95,10 +98,11 @@ public:
 	long _uORB_MPU9250_G_Y_Cali = 0;
 	long _uORB_MPU9250_G_Z_Cali = 0;
 
-	float _uORB_Accel_Pitch;
 	float _uORB_Accel__Roll;
-	float _uORB_Gryo_Pitch;
+	float _uORB_Accel_Pitch;
 	float _uORB_Gryo__Roll;
+	float _uORB_Gryo_Pitch;
+	float _uORB_Gryo__Yall;
 	float _uORB_Real_Pitch;
 	float _uORB_Real__Roll;
 
@@ -176,6 +180,7 @@ public:
 		//Gryo----------------------------------------------------------------------//
 		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_X / 65.5) * 0.3);
 		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_Y / 65.5) * 0.3);
+		_uORB_Gryo__Yall = (_uORB_Gryo__Yall * 0.7) + ((_uORB_MPU9250_G_Z / 65.5) * 0.3);
 		//ACCEL---------------------------------------------------------------------//
 		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
 		if (abs(_uORB_MPU9250_A_X) < _Tmp_IMU_Accel_Vector)
@@ -271,8 +276,7 @@ public:
 	{
 		//Roll PID Mix
 		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll,
-			_uORB_Leveling__Roll, _uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch);
-
+			_uORB_Leveling__Roll, _uORB_PID_I_Last_Value__Roll, _uORB_PID_D_Last_Value__Roll);
 		if (_uORB_Leveling__Roll > _flag_PID_Level_Max)
 			_uORB_Leveling__Roll = _flag_PID_Level_Max;
 		if (_uORB_Leveling__Roll < _flag_PID_Level_Max * -1)
@@ -281,16 +285,23 @@ public:
 		//Pitch PID Mix
 		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch,
 			_uORB_Leveling_Pitch, _uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch);
-
 		if (_uORB_Leveling_Pitch > _flag_PID_Level_Max)
 			_uORB_Leveling_Pitch = _flag_PID_Level_Max;
 		if (_uORB_Leveling_Pitch < _flag_PID_Level_Max * -1)
 			_uORB_Leveling_Pitch = _flag_PID_Level_Max * -1;
 
-		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
-		_uORB_A2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch;
-		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
-		_uORB_B2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch;
+		//Yall PID Mix
+		PID_Caculate(_uORB_Gryo__Yall + _uORB_RC__Yall,
+			_uORB_Leveling__Yall, _uORB_PID_I_Last_Value__Yall, _uORB_PID_D_Last_Value__Yall);
+		if (_uORB_Leveling__Yall > _flag_PID_Level_Max)
+			_uORB_Leveling__Yall = _flag_PID_Level_Max;
+		if (_uORB_Leveling__Yall < _flag_PID_Level_Max * -1)
+			_uORB_Leveling__Yall = _flag_PID_Level_Max * -1;
+
+		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
+		_uORB_A2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_B2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
 	}
 
 	inline void MotorUpdate()
