@@ -14,6 +14,10 @@ int main()
 		test.ControlParse();
 		test.AttitudeUpdate();
 		test.MotorUpdate();
+		std::cout << _uORB_A1_Speed << " ";
+		std::cout << _uORB_A2_Speed << " ";
+		std::cout << _uORB_B1_Speed << " ";
+		std::cout << _uORB_B2_Speed << "__\r";
 		timer_end = clock();
 		if ((timer_end - timer) > 4000)
 		{

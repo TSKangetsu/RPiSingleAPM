@@ -40,10 +40,10 @@ int _flag_RC_Min__Yall = 0;
 
 //REC_Reading_Yall_Pitch_Yoll_Throttle_Level
 int data[36];
-int _uORB_RC__Roll;
-int _uORB_RC_Pitch;
-int _uORB_RC_Throttle;
-int _uORB_RC__Yall;
+int _uORB_RC__Roll = 0;
+int _uORB_RC_Pitch = 0;
+int _uORB_RC_Throttle = 0;
+int _uORB_RC__Yall = 0;
 
 //MotorOutput_finally
 int _uORB_A1_Speed;
@@ -228,6 +228,7 @@ public:
 				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
 			if (_uORB_RC__Yall > _flag_RC_Min__Yall)
 				_flag_RC_Min__Yall = _uORB_RC__Yall;
+			usleep(3);
 		}
 		std::cout << "[Controller] Calibration will finshed"
 			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
@@ -235,7 +236,7 @@ public:
 		_flag_RC_Middle_Pitch = _uORB_RC_Pitch;
 		_flag_RC_Middle__Roll = _uORB_RC__Roll;
 		_flag_RC_Middle__Yall = _uORB_RC__Yall;
-		std::cout << "[Controler] Controller calitbration comfirm:"
+		std::cout << "[Controler] Controller calitbration comfirm:\n"
 			<< "Max__Roll    = " << _flag_RC_Max__Roll << "\n"
 			<< "Max_Pitch    = " << _flag_RC_Max_Pitch << "\n"
 			<< "Max_Throttle = " << _flag_RC_Max_Throttle << "\n"
@@ -245,11 +246,11 @@ public:
 			<< "Middle_Pitch = " << _flag_RC_Middle_Pitch << "\n"
 			<< "Middle__Yall = " << _flag_RC_Middle__Yall << "\n\n"
 
-			<< "Min__Roll    = " << _flag_RC_Min_Pitch << "\n"
+			<< "Min__Roll    = " << _flag_RC_Min__Roll << "\n"
 			<< "Min_Pitch    = " << _flag_RC_Min_Pitch << "\n"
-			<< "Min_Throttle = " << _flag_RC_Min_Pitch << "\n"
-			<< "Min__Yall    = " << _flag_RC_Min_Pitch << "\n";
-		std::cout << "-----------calibration_over----------------";
+			<< "Min_Throttle = " << _flag_RC_Min_Throttle << "\n"
+			<< "Min__Yall    = " << _flag_RC_Min__Yall << "\n";
+		std::cout << "<-----------calibration_over---------------->\n";
 	}
 
 	inline void ControlParse()
