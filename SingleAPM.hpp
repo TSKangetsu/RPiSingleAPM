@@ -55,9 +55,9 @@ float _uORB_Leveling_Pitch;
 float _uORB_Leveling__Yall;
 
 //PID Args
-float _flag_PID_P_Gain = 0.5;
+float _flag_PID_P_Gain = 1;
 float _flag_PID_I_Gain = 0;
-float _flag_PID_D_Gain = 0;
+float _flag_PID_D_Gain = 0.8;
 float _uORB_PID_D_Last_Value__Roll = 0;
 float _uORB_PID_D_Last_Value_Pitch = 0;
 float _uORB_PID_D_Last_Value__Yall = 0;
@@ -108,6 +108,15 @@ public:
 
 	Stablize_Mode()
 	{
+		if (wiringPiSetup() < -1)
+		{
+			std::cout << "[Init] wiringPi Error!";
+		}
+		else
+		{
+			piHiPri(99);
+		}
+
 		MPU9250_fd = wiringPiI2CSetup(MPU9250_ADDR);
 		if (MPU9250_fd < 0)
 		{
@@ -194,8 +203,8 @@ public:
 		_uORB_Real__Roll += _uORB_Real_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.9 + _uORB_Accel_Pitch * 0.1;
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.9 + _uORB_Accel__Roll * 0.1;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.95 + _uORB_Accel_Pitch * 0.05;
+			_uORB_Real__Roll = _uORB_Real__Roll * 0.95 + _uORB_Accel__Roll * 0.05;
 		}
 		else
 		{

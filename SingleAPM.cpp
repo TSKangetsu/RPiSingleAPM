@@ -9,21 +9,24 @@ int main()
 	test.SensorsGryoCalibration();
 	while (true)
 	{
-		timer = clock();
+		timer = micros();
 		test.SensorsParse();
 		test.ControlParse();
 		test.AttitudeUpdate();
 		test.MotorUpdate();
+		//---------test-----------//
 		std::cout << _uORB_B1_Speed << " ";
 		std::cout << _uORB_A1_Speed << " ";
 		std::cout << _uORB_A2_Speed << " ";
-		std::cout << _uORB_B2_Speed << "__\r";
-		timer_end = clock();
+		std::cout << _uORB_B2_Speed << " ";
+		//----------test----------//
+		timer_end = micros();
 		if ((timer_end - timer) > 4000)
 		{
-			std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!!";
+			std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
 			_flag_ForceFailed_Safe = true;
 		}
-		usleep(4000 - (timer_end - timer));
+		std::cout << "timer : " << timer_end - timer << "\n";
+		usleep(3990 - (timer_end - timer));
 	}
 }
