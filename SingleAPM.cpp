@@ -7,7 +7,7 @@ int main()
 	Stablize_Mode test;
 	test.ESCCalibration();
 	test.ControlCalibration();
-	test.SensorsGryoCalibration();
+	test.SensorsCalibration();
 	std::thread controllerUORB([&] {
 		while (true)
 		{
@@ -23,6 +23,8 @@ int main()
 			test.AttitudeUpdate();
 			test.ESCUpdate();
 			//---------test-----------//
+			std::cout << test._uORB_Real_Pitch << " ";
+			std::cout << test._uORB_Real__Roll << " ";
 			std::cout << _uORB_RC__Safe << " ";
 			std::cout << _uORB_B1_Speed << " ";
 			std::cout << _uORB_A1_Speed << " ";
@@ -35,7 +37,7 @@ int main()
 				std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
 				_flag_ForceFailed_Safe = true;
 			}
-			std::cout << "timer : " << timer_end - timer << "\n";
+			std::cout << "-->>timer : " << timer_end - timer << "___\r";
 			usleep(3990 - (timer_end - timer));
 		}
 		});

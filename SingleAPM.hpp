@@ -1,3 +1,5 @@
+#define SPI_MPU9250
+
 #include <iostream>
 #include <math.h>
 #include <wiringPi.h>
@@ -9,6 +11,11 @@
 #include <cstdio>
 #include <string>
 #include "_thirdparty/pca9685.h"
+
+#ifdef SPI_MPU9250
+#include <wiringPiSPI.h>
+#endif
+
 //Setup
 static int PCA9658_fd;
 static int RCReader_fd;
@@ -30,18 +37,18 @@ int _flag_Lock_Throttle = 2200;
 int _flag_RC_Middle__Roll = 1000;
 int _flag_RC_Middle_Pitch = 1000;
 int _flag_RC_Middle__Yall = 1000;
-int _flag_RC_Max__Roll = 0;
-int _flag_RC_Max_Pitch = 0;
-int _flag_RC_Max_Throttle = 0;
-int _flag_RC_Max__Yall = 0;
-int _flag_RC_Min__Roll = 2000;
-int _flag_RC_Min_Pitch = 2000;
-int _flag_RC_Min_Throttle = 2000;
-int _flag_RC_Min__Yall = 2000;
+int _flag_RC_Max__Roll = 1000;
+int _flag_RC_Max_Pitch = 1000;
+int _flag_RC_Max_Throttle = 1000;
+int _flag_RC_Max__Yall = 1000;
+int _flag_RC_Min__Roll = 1000;
+int _flag_RC_Min_Pitch = 1000;
+int _flag_RC_Min_Throttle = 1000;
+int _flag_RC_Min__Yall = 1000;
 
 //REC_Reading_Yall_Pitch_Yoll_Throttle_Level
 int data[36];
-int _uORB_RC__Safe;
+int _uORB_RC__Safe = 0;
 int _uORB_RC__Roll = 0;
 int _uORB_RC_Pitch = 0;
 int _uORB_RC_Throttle = 0;
@@ -66,8 +73,8 @@ float _uORB_PID_D_Last_Value__Yall = 0;
 float _uORB_PID_I_Last_Value__Roll = 0;
 float _uORB_PID_I_Last_Value_Pitch = 0;
 float _uORB_PID_I_Last_Value__Yall = 0;
-float _flag_PID_I_Max__Value = 400;
-float _flag_PID_Level_Max = 400;
+float _flag_PID_I_Max__Value = 500;
+float _flag_PID_Level_Max = 500;
 
 class Stablize_Mode
 {
@@ -76,6 +83,11 @@ public:
 
 	int MPU9250_fd;
 	int _Tmp_MPU9250_Buffer[14];
+
+#ifdef SPI_MPU9250
+	unsigned char _Tmp_MPU9250_SPI_Config[2];
+	unsigned char _Tmp_MPU9250_SPI_Buffer[28];
+#endif
 
 	bool _flag_first_StartUp = true;
 
@@ -119,10 +131,11 @@ public:
 			piHiPri(99);
 		}
 
+#ifdef I2C_MPU9250
 		MPU9250_fd = wiringPiI2CSetup(MPU9250_ADDR);
 		if (MPU9250_fd < 0)
 		{
-			std::cout << "[Sensors] MPU9250 startUP failed; \n";
+			std::cout << "[Sensors] MPU9250 startUP in I2C Mode failed; \n";
 		}
 		else
 		{
@@ -131,6 +144,28 @@ public:
 			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x08);  //Gryo
 			wiringPiI2CWriteReg8(MPU9250_fd, 26, 0x03);  //config
 		}
+#endif
+#ifdef SPI_MPU9250
+		if (wiringPiSPISetup(1, 1000000) < 0)
+		{
+			std::cout << "[Sensors]  MPU9250 startUP in SPI Mode failed;";
+		}
+		else
+		{
+			_Tmp_MPU9250_SPI_Config[0] = 0x6B;
+			_Tmp_MPU9250_SPI_Config[1] = 0x00;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
+			_Tmp_MPU9250_SPI_Config[0] = 0x1C;
+			_Tmp_MPU9250_SPI_Config[1] = 0x10;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
+			_Tmp_MPU9250_SPI_Config[0] = 0x1B;
+			_Tmp_MPU9250_SPI_Config[1] = 0x08;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
+			_Tmp_MPU9250_SPI_Config[0] = 0x1A;
+			_Tmp_MPU9250_SPI_Config[1] = 0x03;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
+		}
+#endif
 
 		RCReader_fd = serialOpen("/dev/ttyS0", 115200);
 		if (RCReader_fd < 0)
@@ -143,38 +178,7 @@ public:
 		{
 			std::cout << "[PCA9685] pca9685setup failed; \n";
 		}
-	}
 
-	inline void SensorsGryoCalibration()
-	{
-		std::cout << "[Sensors] Gyro Calibration ......" << "\n";
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			SensorsDataRead();
-			_uORB_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
-			_uORB_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
-			_uORB_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
-			usleep(3);
-		}
-		_uORB_MPU9250_G_X_Cali = _uORB_MPU9250_G_X_Cali / 2000;
-		_uORB_MPU9250_G_Y_Cali = _uORB_MPU9250_G_Y_Cali / 2000;
-		_uORB_MPU9250_G_Z_Cali = _uORB_MPU9250_G_Z_Cali / 2000;
-		std::cout << "Gryo_X_Caili :" << _uORB_MPU9250_G_X_Cali << "\n";
-		std::cout << "Gryo_Y_Caili :" << _uORB_MPU9250_G_Y_Cali << "\n";
-		std::cout << "Gryo_Z_Caili :" << _uORB_MPU9250_G_Z_Cali << "\n";
-
-		std::cout << "[Sensors] Accel Calibration ......" << "\n";
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			SensorsDataRead();
-			_uORB_MPU9250_A_X_Cali += _uORB_MPU9250_A_X;
-			_uORB_MPU9250_A_Y_Cali += _uORB_MPU9250_A_Y;
-			usleep(3);
-		}
-		_uORB_MPU9250_A_X_Cali = _uORB_MPU9250_A_X_Cali / 2000;
-		_uORB_MPU9250_A_Y_Cali = _uORB_MPU9250_A_Y_Cali / 2000;
-		std::cout << "Accel_X_Caili :" << _uORB_MPU9250_A_X_Cali << "\n";
-		std::cout << "Accel_Y_Caili :" << _uORB_MPU9250_A_Y_Cali << "\n";
 	}
 
 	inline void SensorsParse()
@@ -216,82 +220,21 @@ public:
 		}
 	}
 
-	inline void ControlCalibration()
-	{
-		int  CalibrationComfirm;
-		std::cout << "[Controller] ControlCalibraion start ...... \n";
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			ControlRead();
-			std::cout << " " << _uORB_RC__Roll << " ";
-			std::cout << " " << _uORB_RC_Pitch << " ";
-			std::cout << " " << _uORB_RC_Throttle << " ";
-			std::cout << " " << _uORB_RC__Yall << " \r";
-
-			if (_uORB_RC__Roll > _flag_RC_Max__Roll)
-				_flag_RC_Max__Roll = _uORB_RC__Roll;
-			if (_uORB_RC_Pitch > _flag_RC_Max_Pitch)
-				_flag_RC_Max_Pitch = _uORB_RC_Pitch;
-			if (_uORB_RC_Throttle > _flag_RC_Max_Throttle)
-				_flag_RC_Max_Throttle = _uORB_RC_Throttle;
-			if (_uORB_RC__Yall > _flag_RC_Max__Yall)
-				_flag_RC_Max__Yall = _uORB_RC__Yall;
-
-			if (_uORB_RC__Roll < _flag_RC_Min__Roll && _uORB_RC__Roll != 0)
-				_flag_RC_Min__Roll = _uORB_RC__Roll;
-			if (_uORB_RC_Pitch < _flag_RC_Min_Pitch && _uORB_RC_Pitch != 0)
-				_flag_RC_Min_Pitch = _uORB_RC_Pitch;
-			if (_uORB_RC_Throttle < _flag_RC_Min_Throttle && _uORB_RC_Throttle != 0)
-				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
-			if (_uORB_RC__Yall < _flag_RC_Min__Yall && _uORB_RC__Yall != 0)
-				_flag_RC_Min__Yall = _uORB_RC__Yall;
-			usleep(5000);
-		}
-		std::cout << "\n[Controller] Calibration will finshed"
-			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			ControlCalibration();
-		}
-		ControlRead();
-		ControlRead();
-		ControlRead();
-		_flag_RC_Middle_Pitch = _uORB_RC_Pitch;
-		_flag_RC_Middle__Roll = _uORB_RC__Roll;
-		_flag_RC_Middle__Yall = _uORB_RC__Yall;
-		std::cout << "[Controler] Controller calitbration comfirm:\n"
-			<< "Max__Roll    = " << _flag_RC_Max__Roll << "\n"
-			<< "Max_Pitch    = " << _flag_RC_Max_Pitch << "\n"
-			<< "Max_Throttle = " << _flag_RC_Max_Throttle << "\n"
-			<< "Max__Yall    = " << _flag_RC_Max__Yall << "\n\n"
-
-			<< "Middle__Roll = " << _flag_RC_Middle__Roll << "\n"
-			<< "Middle_Pitch = " << _flag_RC_Middle_Pitch << "\n"
-			<< "Middle__Yall = " << _flag_RC_Middle__Yall << "\n\n"
-
-			<< "Min__Roll    = " << _flag_RC_Min__Roll << "\n"
-			<< "Min_Pitch    = " << _flag_RC_Min_Pitch << "\n"
-			<< "Min_Throttle = " << _flag_RC_Min_Throttle << "\n"
-			<< "Min__Yall    = " << _flag_RC_Min__Yall << "\n";
-		std::cout << "<-----------calibration_over---------------->\n";
-	}
-
 	inline void ControlParse()
 	{
 		ControlRead();
 
-		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 20 && _uORB_RC__Roll < _flag_RC_Middle__Roll - 20)
+		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > _flag_RC_Middle__Roll - 10)
 			_uORB_RC__Roll = 0;
 		else
 			_uORB_RC__Roll -= _flag_RC_Middle__Roll;
 
-		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 20 && _uORB_RC_Pitch < _flag_RC_Middle_Pitch - 20)
+		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > _flag_RC_Middle_Pitch - 10)
 			_uORB_RC_Pitch = 0;
 		else
 			_uORB_RC_Pitch -= _flag_RC_Middle_Pitch;
 
-		if (_uORB_RC__Yall < _flag_RC_Middle__Yall + 20 && _uORB_RC__Yall < _flag_RC_Middle__Yall - 20)
+		if (_uORB_RC__Yall < _flag_RC_Middle__Yall + 10 && _uORB_RC__Yall > _flag_RC_Middle__Yall - 10)
 			_uORB_RC__Yall = 0;
 		else
 			_uORB_RC__Yall -= _flag_RC_Middle__Yall;
@@ -323,39 +266,18 @@ public:
 		if (_uORB_Leveling__Yall < _flag_PID_Level_Max * -1)
 			_uORB_Leveling__Yall = _flag_PID_Level_Max * -1;
 
-		_uORB_B1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
-		_uORB_A1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
-		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
-		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
-	}
-
-	inline void ESCCalibration()
-	{
-		std::string  CalibrationComfirm;
-		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
-		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 'yes'" << " \n";
-		std::cin >> CalibrationComfirm;
-		pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, 0, 3000);
-		pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, 0, 3000);
-		pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, 0, 3000);
-		pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, 0, 3000);
-		std::cout << "[ESCStatus] ESC calibration will finsh , input 'yes' to stop " << " \n";
-		std::cin >> CalibrationComfirm;
-		std::cout << "[ESCStatus] ESC calibration Finsh....." << " \n";
-		pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, 0, 2200);
-		pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, 0, 2200);
-		pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, 0, 2200);
-		pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, 0, 2200);
-		sleep(3);
-		std::cout << "[ESCStatus] ESC calibration over" << " \n";
+		_uORB_B1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_A1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
+		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
 	}
 
 	inline void ESCUpdate()
 	{
-		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2350;
-		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2350;
-		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2350;
-		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2350;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2250;
+		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2250;
+		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2250;
+		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2250;
 
 		if (_flag_ForceFailed_Safe)
 		{
@@ -376,6 +298,141 @@ public:
 				_uORB_B2_Speed);
 		}
 	}
+	//-------------------------------------------------------------------//
+	inline void SensorsCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[Sensors] Calibration will start , input 1 to start" << "\n";
+		std::cin >> CalibrationComfirm;
+		std::cout << "[Sensors] Gyro Calibration ......" << "\n";
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			SensorsDataRead();
+			_uORB_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
+			_uORB_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
+			_uORB_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
+			usleep(3);
+		}
+		_uORB_MPU9250_G_X_Cali = _uORB_MPU9250_G_X_Cali / 2000;
+		_uORB_MPU9250_G_Y_Cali = _uORB_MPU9250_G_Y_Cali / 2000;
+		_uORB_MPU9250_G_Z_Cali = _uORB_MPU9250_G_Z_Cali / 2000;
+		std::cout << "Gryo_X_Caili :" << _uORB_MPU9250_G_X_Cali << "\n";
+		std::cout << "Gryo_Y_Caili :" << _uORB_MPU9250_G_Y_Cali << "\n";
+		std::cout << "Gryo_Z_Caili :" << _uORB_MPU9250_G_Z_Cali << "\n";
+
+		std::cout << "[Sensors] Accel Calibration ......" << "\n";
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			SensorsDataRead();
+			_uORB_MPU9250_A_X_Cali += _uORB_MPU9250_A_X;
+			_uORB_MPU9250_A_Y_Cali += _uORB_MPU9250_A_Y;
+			usleep(3);
+		}
+		_uORB_MPU9250_A_X_Cali = _uORB_MPU9250_A_X_Cali / 2000;
+		_uORB_MPU9250_A_Y_Cali = _uORB_MPU9250_A_Y_Cali / 2000;
+		std::cout << "Accel_X_Caili :" << _uORB_MPU9250_A_X_Cali << "\n";
+		std::cout << "Accel_Y_Caili :" << _uORB_MPU9250_A_Y_Cali << "\n";
+		std::cout << "[Sensors] Gyro Calibration finsh , input -1 to retry" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			SensorsCalibration();
+		}
+	}
+
+	inline void ESCCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
+		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 1 , or input -1 to skip calibration" << " \n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm = -1)
+		{
+			std::cout << "[ESCStatus] Exiting ESC calibration ........." << " \n";
+			return;
+		}
+		pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, 0, 3000);
+		pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, 0, 3000);
+		pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, 0, 3000);
+		pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, 0, 3000);
+		std::cout << "[ESCStatus] ESC calibration will finsh , input 1 to stop " << " \n";
+		std::cin >> CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration Finsh....." << " \n";
+		pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, 0, 2200);
+		pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, 0, 2200);
+		pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, 0, 2200);
+		pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, 0, 2200);
+		sleep(3);
+		std::cout << "[ESCStatus] ESC calibration over" << " \n";
+	}
+
+	inline void ControlCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[Controller] ControlCalibraion start , input 1 to start \n";
+		std::cin >> CalibrationComfirm;
+		sleep(2);
+		std::cout << "[Controller] ControlCalibraion start ...... \n";
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			ControlRead();
+			std::cout << "Roll:" << _uORB_RC__Roll << " ";
+			std::cout << "Pitch:" << _uORB_RC_Pitch << " ";
+			std::cout << "Throttle:" << _uORB_RC_Throttle << " ";
+			std::cout << "Yall:" << _uORB_RC__Yall << " \r";
+
+			if (_uORB_RC__Roll > _flag_RC_Max__Roll&& _uORB_RC__Roll != 0)
+				_flag_RC_Max__Roll = _uORB_RC__Roll;
+			if (_uORB_RC_Pitch > _flag_RC_Max_Pitch&& _uORB_RC_Pitch != 0)
+				_flag_RC_Max_Pitch = _uORB_RC_Pitch;
+			if (_uORB_RC_Throttle > _flag_RC_Max_Throttle&& _uORB_RC_Throttle != 0)
+				_flag_RC_Max_Throttle = _uORB_RC_Throttle;
+			if (_uORB_RC__Yall > _flag_RC_Max__Yall&& _uORB_RC__Yall != 0)
+				_flag_RC_Max__Yall = _uORB_RC__Yall;
+
+			if (_uORB_RC__Roll < _flag_RC_Min__Roll && _uORB_RC__Roll != 0)
+				_flag_RC_Min__Roll = _uORB_RC__Roll;
+			if (_uORB_RC_Pitch < _flag_RC_Min_Pitch && _uORB_RC_Pitch != 0)
+				_flag_RC_Min_Pitch = _uORB_RC_Pitch;
+			if (_uORB_RC_Throttle < _flag_RC_Min_Throttle && _uORB_RC_Throttle != 0)
+				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
+			if (_uORB_RC__Yall < _flag_RC_Min__Yall && _uORB_RC__Yall != 0)
+				_flag_RC_Min__Yall = _uORB_RC__Yall;
+			usleep(2000);
+		}
+		std::cout << "\n[Controller] Calibration will finshed"
+			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
+		std::cin >> CalibrationComfirm;
+		for (int cali_count = 0; cali_count < 1000; cali_count++)
+		{
+			ControlRead();
+			_flag_RC_Middle_Pitch = _uORB_RC_Pitch;
+			_flag_RC_Middle__Roll = _uORB_RC__Roll;
+			_flag_RC_Middle__Yall = _uORB_RC__Yall;
+		}
+		std::cout << "[Controler] Controller calitbration comfirm:\n"
+			<< "Max__Roll    = " << _flag_RC_Max__Roll << "\n"
+			<< "Max_Pitch    = " << _flag_RC_Max_Pitch << "\n"
+			<< "Max_Throttle = " << _flag_RC_Max_Throttle << "\n"
+			<< "Max__Yall    = " << _flag_RC_Max__Yall << "\n\n"
+
+			<< "Middle__Roll = " << _flag_RC_Middle__Roll << "\n"
+			<< "Middle_Pitch = " << _flag_RC_Middle_Pitch << "\n"
+			<< "Middle__Yall = " << _flag_RC_Middle__Yall << "\n\n"
+
+			<< "Min__Roll    = " << _flag_RC_Min__Roll << "\n"
+			<< "Min_Pitch    = " << _flag_RC_Min_Pitch << "\n"
+			<< "Min_Throttle = " << _flag_RC_Min_Throttle << "\n"
+			<< "Min__Yall    = " << _flag_RC_Min__Yall << "\n";
+		std::cout << "<-----------calibration_over---------------->\n";
+		std::cout << "[Controller] Calibration finshed ,if you want to retry input -1" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			ControlCalibration();
+		}
+	}
+	//-------------------------------------------------------------------//
 private:
 	inline void PID_Caculate(float inputData, float& outputData, float& last_I_Data, float& last_D_Data)
 	{
@@ -407,18 +464,24 @@ private:
 		_uORB_RC_Pitch = data[3] * 255 + data[4];
 		_uORB_RC_Throttle = data[5] * 255 + data[6];
 		_uORB_RC__Yall = data[7] * 255 + data[8];
-		if (_uORB_RC__Safe = data[9] * 255 + data[10] > 1500)
+		_uORB_RC__Safe = data[9] * 255 + data[10];
+
+		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && _uORB_RC__Yall < _flag_RC_Min__Yall + 20)
 		{
-			_flag_ForceFailed_Safe = false;
-		}
-		else
-		{
-			_flag_ForceFailed_Safe = true;
+			if (_flag_ForceFailed_Safe == false)
+			{
+				_flag_ForceFailed_Safe == true;
+			}
+			else
+			{
+				_flag_ForceFailed_Safe == false;
+			}
 		}
 	}
 
 	inline void SensorsDataRead()
 	{
+#ifdef I2C_MPU9250
 		_Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(MPU9250_fd, 0x3B);
 		_Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(MPU9250_fd, 0x3C);
 		_Tmp_MPU9250_A_X = (_Tmp_MPU9250_Buffer[0] << 8 | _Tmp_MPU9250_Buffer[1]);
@@ -444,5 +507,23 @@ private:
 		_Tmp_MPU9250_Buffer[11] = wiringPiI2CReadReg8(MPU9250_fd, 0x48);
 		_Tmp_MPU9250_G_Z = (_Tmp_MPU9250_Buffer[10] << 8 | _Tmp_MPU9250_Buffer[11]);
 		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
+#endif
+#ifdef SPI_MPU9250
+		_Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
+		wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Buffer, 20);
+		_Tmp_MPU9250_A_X = ((int)_Tmp_MPU9250_SPI_Buffer[1] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[2]);
+		_uORB_MPU9250_A_X = (short)_Tmp_MPU9250_A_X;
+		_Tmp_MPU9250_A_Y = ((int)_Tmp_MPU9250_SPI_Buffer[3] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[4]);
+		_uORB_MPU9250_A_Y = (short)_Tmp_MPU9250_A_Y;
+		_Tmp_MPU9250_A_Z = ((int)_Tmp_MPU9250_SPI_Buffer[5] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[6]);
+		_uORB_MPU9250_A_Z = (short)_Tmp_MPU9250_A_Z;
+
+		_Tmp_MPU9250_G_X = ((int)_Tmp_MPU9250_SPI_Buffer[9] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[10]);
+		_uORB_MPU9250_G_X = (short)_Tmp_MPU9250_G_X;
+		_Tmp_MPU9250_G_Y = ((int)_Tmp_MPU9250_SPI_Buffer[11] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[12]);
+		_uORB_MPU9250_G_Y = (short)_Tmp_MPU9250_G_Y;
+		_Tmp_MPU9250_G_Z = ((int)_Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[14]);
+		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
+#endif
 	}
 };
