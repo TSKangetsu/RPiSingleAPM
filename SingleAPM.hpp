@@ -7,11 +7,12 @@
 #include <ctime>
 #include <thread>
 #include <cstdio>
+#include <string>
 #include "_thirdparty/pca9685.h"
 //Setup
 static int PCA9658_fd;
 static int RCReader_fd;
-static int PWM_Freq = 490;
+static int PWM_Freq = 400;
 static int PCA9685_PinBase = 65;
 static int PCA9685_Address = 0x40;
 //_uORB_Output_Pin
@@ -33,13 +34,14 @@ int _flag_RC_Max__Roll = 0;
 int _flag_RC_Max_Pitch = 0;
 int _flag_RC_Max_Throttle = 0;
 int _flag_RC_Max__Yall = 0;
-int _flag_RC_Min__Roll = 0;
-int _flag_RC_Min_Pitch = 0;
-int _flag_RC_Min_Throttle = 0;
-int _flag_RC_Min__Yall = 0;
+int _flag_RC_Min__Roll = 2000;
+int _flag_RC_Min_Pitch = 2000;
+int _flag_RC_Min_Throttle = 2000;
+int _flag_RC_Min__Yall = 2000;
 
 //REC_Reading_Yall_Pitch_Yoll_Throttle_Level
 int data[36];
+int _uORB_RC__Safe;
 int _uORB_RC__Roll = 0;
 int _uORB_RC_Pitch = 0;
 int _uORB_RC_Throttle = 0;
@@ -216,10 +218,16 @@ public:
 
 	inline void ControlCalibration()
 	{
-		std::cout << "[Controller] ControlCalibraion start ......";
+		int  CalibrationComfirm;
+		std::cout << "[Controller] ControlCalibraion start ...... \n";
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
 			ControlRead();
+			std::cout << " " << _uORB_RC__Roll << " ";
+			std::cout << " " << _uORB_RC_Pitch << " ";
+			std::cout << " " << _uORB_RC_Throttle << " ";
+			std::cout << " " << _uORB_RC__Yall << " \r";
+
 			if (_uORB_RC__Roll > _flag_RC_Max__Roll)
 				_flag_RC_Max__Roll = _uORB_RC__Roll;
 			if (_uORB_RC_Pitch > _flag_RC_Max_Pitch)
@@ -229,19 +237,26 @@ public:
 			if (_uORB_RC__Yall > _flag_RC_Max__Yall)
 				_flag_RC_Max__Yall = _uORB_RC__Yall;
 
-			if (_uORB_RC__Roll > _flag_RC_Min__Roll)
+			if (_uORB_RC__Roll < _flag_RC_Min__Roll && _uORB_RC__Roll != 0)
 				_flag_RC_Min__Roll = _uORB_RC__Roll;
-			if (_uORB_RC_Pitch > _flag_RC_Min_Pitch)
+			if (_uORB_RC_Pitch < _flag_RC_Min_Pitch && _uORB_RC_Pitch != 0)
 				_flag_RC_Min_Pitch = _uORB_RC_Pitch;
-			if (_uORB_RC_Throttle > _flag_RC_Min_Throttle)
+			if (_uORB_RC_Throttle < _flag_RC_Min_Throttle && _uORB_RC_Throttle != 0)
 				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
-			if (_uORB_RC__Yall > _flag_RC_Min__Yall)
+			if (_uORB_RC__Yall < _flag_RC_Min__Yall && _uORB_RC__Yall != 0)
 				_flag_RC_Min__Yall = _uORB_RC__Yall;
-			usleep(3);
+			usleep(5000);
 		}
-		std::cout << "[Controller] Calibration will finshed"
+		std::cout << "\n[Controller] Calibration will finshed"
 			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
-		std::cin;
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			ControlCalibration();
+		}
+		ControlRead();
+		ControlRead();
+		ControlRead();
 		_flag_RC_Middle_Pitch = _uORB_RC_Pitch;
 		_flag_RC_Middle__Roll = _uORB_RC__Roll;
 		_flag_RC_Middle__Yall = _uORB_RC__Yall;
@@ -314,7 +329,28 @@ public:
 		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
 	}
 
-	inline void MotorUpdate()
+	inline void ESCCalibration()
+	{
+		std::string  CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
+		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 'yes'" << " \n";
+		std::cin >> CalibrationComfirm;
+		pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, 0, 3000);
+		pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, 0, 3000);
+		pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, 0, 3000);
+		pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, 0, 3000);
+		std::cout << "[ESCStatus] ESC calibration will finsh , input 'yes' to stop " << " \n";
+		std::cin >> CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration Finsh....." << " \n";
+		pca9685PWMWrite(PCA9658_fd, _flag_A1_Pin, 0, 2200);
+		pca9685PWMWrite(PCA9658_fd, _flag_A2_Pin, 0, 2200);
+		pca9685PWMWrite(PCA9658_fd, _flag_B1_Pin, 0, 2200);
+		pca9685PWMWrite(PCA9658_fd, _flag_B2_Pin, 0, 2200);
+		sleep(3);
+		std::cout << "[ESCStatus] ESC calibration over" << " \n";
+	}
+
+	inline void ESCUpdate()
 	{
 		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2350;
 		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2350;
@@ -371,9 +407,13 @@ private:
 		_uORB_RC_Pitch = data[3] * 255 + data[4];
 		_uORB_RC_Throttle = data[5] * 255 + data[6];
 		_uORB_RC__Yall = data[7] * 255 + data[8];
-		if (data[9] * 255 + data[10] > 1500)
+		if (_uORB_RC__Safe = data[9] * 255 + data[10] > 1500)
 		{
 			_flag_ForceFailed_Safe = false;
+		}
+		else
+		{
+			_flag_ForceFailed_Safe = true;
 		}
 	}
 

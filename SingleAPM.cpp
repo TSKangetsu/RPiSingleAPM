@@ -5,17 +5,25 @@ int main()
 	long int timer;
 	long int timer_end;
 	Stablize_Mode test;
+	test.ESCCalibration();
+	test.ControlCalibration();
+	test.SensorsGryoCalibration();
+	std::thread controllerUORB([&] {
+		while (true)
+		{
+			test.ControlParse();
+			usleep(4000);
+		}
+		});
 	std::thread AutoLevelingMain([&] {
-		test.ControlCalibration();
-		test.SensorsGryoCalibration();
 		while (true)
 		{
 			timer = micros();
 			test.SensorsParse();
-			test.ControlParse();
 			test.AttitudeUpdate();
-			test.MotorUpdate();
+			test.ESCUpdate();
 			//---------test-----------//
+			std::cout << _uORB_RC__Safe << " ";
 			std::cout << _uORB_B1_Speed << " ";
 			std::cout << _uORB_A1_Speed << " ";
 			std::cout << _uORB_A2_Speed << " ";
