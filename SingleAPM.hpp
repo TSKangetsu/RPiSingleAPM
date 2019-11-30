@@ -1,20 +1,20 @@
-#define SPI_MPU9250
-
-#include <iostream>
-#include <math.h>
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 #include <wiringSerial.h>
-#include <unistd.h>
-#include <ctime>
-#include <thread>
-#include <cstdio>
-#include <string>
-#include "_thirdparty/pca9685.h"
-
 #ifdef SPI_MPU9250
 #include <wiringPiSPI.h>
 #endif
+
+#include <nlohmann/json.hpp>
+
+#include <math.h>
+#include <thread>
+#include <string>
+#include <fstream>
+#include <unistd.h>
+#include <iostream>
+
+#include "_thirdparty/pca9685.h"
 
 //Setup
 static int PCA9658_fd;
@@ -28,7 +28,7 @@ int _flag_A2_Pin = 1;
 int _flag_B1_Pin = 2;
 int _flag_B2_Pin = 3;
 
-//Base_Motor_Flags
+//Base_ESC_Flags
 bool _flag_ForceFailed_Safe = true;
 int _flag_Lazy_Throttle = 2300;
 int _flag_Lock_Throttle = 2200;
@@ -99,8 +99,8 @@ public:
 	unsigned long _Tmp_MPU9250_A_X;
 	unsigned long _Tmp_MPU9250_A_Y;
 	unsigned long _Tmp_MPU9250_A_Z;
-	long _uORB_MPU9250_A_X_Cali = 0;
-	long _uORB_MPU9250_A_Y_Cali = 0;
+	long _Flag_MPU9250_A_X_Cali = 0;
+	long _Flag_MPU9250_A_Y_Cali = 0;
 
 	long _uORB_MPU9250_G_X;
 	long _uORB_MPU9250_G_Y;
@@ -108,9 +108,9 @@ public:
 	unsigned long _Tmp_MPU9250_G_X;
 	unsigned long _Tmp_MPU9250_G_Y;
 	unsigned long _Tmp_MPU9250_G_Z;
-	long _uORB_MPU9250_G_X_Cali = 0;
-	long _uORB_MPU9250_G_Y_Cali = 0;
-	long _uORB_MPU9250_G_Z_Cali = 0;
+	long _Flag_MPU9250_G_X_Cali = 0;
+	long _Flag_MPU9250_G_Y_Cali = 0;
+	long _Flag_MPU9250_G_Z_Cali = 0;
 
 	float _uORB_Accel__Roll;
 	float _uORB_Accel_Pitch;
@@ -122,7 +122,7 @@ public:
 
 	Stablize_Mode()
 	{
-		if (wiringPiSetup() < -1)
+		if (wiringPiSetup() < 0)
 		{
 			std::cout << "[Init] wiringPi Error!";
 		}
@@ -164,6 +164,23 @@ public:
 			_Tmp_MPU9250_SPI_Config[0] = 0x1A;
 			_Tmp_MPU9250_SPI_Config[1] = 0x03;
 			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
+
+			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
+			for (int cali_count = 0; cali_count < 2000; cali_count++)
+			{
+				SensorsDataRead();
+				_Flag_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
+				_Flag_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
+				_Flag_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
+				usleep(3);
+			}
+			_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
+			_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
+			_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
+			std::cout << "Gryo_X_Caili :" << _Flag_MPU9250_G_X_Cali << "\n";
+			std::cout << "Gryo_Y_Caili :" << _Flag_MPU9250_G_Y_Cali << "\n";
+			std::cout << "Gryo_Z_Caili :" << _Flag_MPU9250_G_Z_Cali << "\n";
+			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
 		}
 #endif
 
@@ -186,12 +203,12 @@ public:
 		SensorsDataRead();
 		//Cail----------------------------------------------------------------------//
 		//Acel_cali
-		_uORB_MPU9250_A_X -= _uORB_MPU9250_A_X_Cali;
-		_uORB_MPU9250_A_Y -= _uORB_MPU9250_A_Y_Cali;
+		_uORB_MPU9250_A_X -= _Flag_MPU9250_A_X_Cali;
+		_uORB_MPU9250_A_Y -= _Flag_MPU9250_A_Y_Cali;
 		//Gryo_cail
-		_uORB_MPU9250_G_X -= _uORB_MPU9250_G_X_Cali;
-		_uORB_MPU9250_G_Y -= _uORB_MPU9250_G_Y_Cali;
-		_uORB_MPU9250_G_Z -= _uORB_MPU9250_G_Z_Cali;
+		_uORB_MPU9250_G_X -= _Flag_MPU9250_G_X_Cali;
+		_uORB_MPU9250_G_Y -= _Flag_MPU9250_G_Y_Cali;
+		_uORB_MPU9250_G_Z -= _Flag_MPU9250_G_Z_Cali;
 		//Gryo----------------------------------------------------------------------//
 		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_X / 65.5) * 0.3);
 		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_Y / 65.5) * 0.3);
@@ -298,7 +315,49 @@ public:
 				_uORB_B2_Speed);
 		}
 	}
+
 	//-------------------------------------------------------------------//
+
+	inline void ConfigReader()
+	{
+		std::cout << "[ConfigRead]starting to check out config file ....\n";
+		std::ifstream config("./APMconfig.json");
+		std::string content((std::istreambuf_iterator<char>(config)),
+			(std::istreambuf_iterator<char>()));
+		nlohmann::json Configdata = nlohmann::json::parse(content);
+		_flag_RC_Max__Roll = Configdata["_flag_RC_Max__Roll"].get<int>();
+		_flag_RC_Max_Pitch = Configdata["_flag_RC_Max_Pitch"].get<int>();
+		_flag_RC_Max_Throttle = Configdata["_flag_RC_Max_Throttle"].get<int>();
+		_flag_RC_Max__Yall = Configdata["_flag_RC_Max__Yall"].get<int>();
+
+		_flag_RC_Middle__Roll = Configdata["_flag_RC_Middle__Roll"].get<int>();
+		_flag_RC_Middle_Pitch = Configdata["_flag_RC_Middle_Pitch"].get<int>();
+		_flag_RC_Middle__Yall = Configdata["_flag_RC_Middle__Yall"].get<int>();
+
+		_flag_RC_Min__Roll = Configdata["_flag_RC_Min__Roll"].get<int>();
+		_flag_RC_Min_Pitch = Configdata["_flag_RC_Min_Pitch"].get<int>();
+		_flag_RC_Min_Throttle = Configdata["_flag_RC_Min_Throttle"].get<int>();
+		_flag_RC_Min__Yall = Configdata["_flag_RC_Min__Yall"].get<int>();
+
+		_flag_A1_Pin = Configdata["_flag_A1_Pin"].get<int>();
+		_flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
+		_flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
+		_flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
+
+		_flag_PID_P_Gain = Configdata["_flag_PID_P_Gain"].get<int>();
+		_flag_PID_I_Gain = Configdata["_flag_PID_I_Gain"].get<int>();
+		_flag_PID_D_Gain = Configdata["_flag_PID_D_Gain"].get<int>();
+		_flag_PID_I_Max__Value = Configdata["_flag_PID_I_Max__Value"].get<int>();
+		_flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<int>();
+
+		_Flag_MPU9250_A_X_Cali = Configdata["_Flag_MPU9250_A_X_Cali"].get<int>();
+		_Flag_MPU9250_A_Y_Cali = Configdata["_Flag_MPU9250_A_Y_Cali"].get<int>();
+		//_Flag_MPU9250_G_X_Cali = Configdata["_Flag_MPU9250_G_X_Cali"].get<int>();
+		//_Flag_MPU9250_G_Y_Cali = Configdata["_Flag_MPU9250_G_Y_Cali"].get<int>();
+		//_Flag_MPU9250_G_Z_Cali = Configdata["_Flag_MPU9250_G_Z_Cali"].get<int>();
+		std::cout << "[ConfigRead]Config Set Success!\n";
+	}
+
 	inline void SensorsCalibration()
 	{
 		int CalibrationComfirm;
@@ -308,35 +367,56 @@ public:
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
 			SensorsDataRead();
-			_uORB_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
-			_uORB_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
-			_uORB_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
+			_Flag_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
+			_Flag_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
+			_Flag_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
 			usleep(3);
 		}
-		_uORB_MPU9250_G_X_Cali = _uORB_MPU9250_G_X_Cali / 2000;
-		_uORB_MPU9250_G_Y_Cali = _uORB_MPU9250_G_Y_Cali / 2000;
-		_uORB_MPU9250_G_Z_Cali = _uORB_MPU9250_G_Z_Cali / 2000;
-		std::cout << "Gryo_X_Caili :" << _uORB_MPU9250_G_X_Cali << "\n";
-		std::cout << "Gryo_Y_Caili :" << _uORB_MPU9250_G_Y_Cali << "\n";
-		std::cout << "Gryo_Z_Caili :" << _uORB_MPU9250_G_Z_Cali << "\n";
+		_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
+		_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
+		_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
+		std::cout << "Gryo_X_Caili :" << _Flag_MPU9250_G_X_Cali << "\n";
+		std::cout << "Gryo_Y_Caili :" << _Flag_MPU9250_G_Y_Cali << "\n";
+		std::cout << "Gryo_Z_Caili :" << _Flag_MPU9250_G_Z_Cali << "\n";
 
 		std::cout << "[Sensors] Accel Calibration ......" << "\n";
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
 			SensorsDataRead();
-			_uORB_MPU9250_A_X_Cali += _uORB_MPU9250_A_X;
-			_uORB_MPU9250_A_Y_Cali += _uORB_MPU9250_A_Y;
+			_Flag_MPU9250_A_X_Cali += _uORB_MPU9250_A_X;
+			_Flag_MPU9250_A_Y_Cali += _uORB_MPU9250_A_Y;
 			usleep(3);
 		}
-		_uORB_MPU9250_A_X_Cali = _uORB_MPU9250_A_X_Cali / 2000;
-		_uORB_MPU9250_A_Y_Cali = _uORB_MPU9250_A_Y_Cali / 2000;
-		std::cout << "Accel_X_Caili :" << _uORB_MPU9250_A_X_Cali << "\n";
-		std::cout << "Accel_Y_Caili :" << _uORB_MPU9250_A_Y_Cali << "\n";
-		std::cout << "[Sensors] Gyro Calibration finsh , input -1 to retry" << "\n";
+		_Flag_MPU9250_A_X_Cali = _Flag_MPU9250_A_X_Cali / 2000;
+		_Flag_MPU9250_A_Y_Cali = _Flag_MPU9250_A_Y_Cali / 2000;
+		std::cout << "Accel_X_Caili :" << _Flag_MPU9250_A_X_Cali << "\n";
+		std::cout << "Accel_Y_Caili :" << _Flag_MPU9250_A_Y_Cali << "\n";
+		std::cout << "[Sensors] Gyro Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
 		if (CalibrationComfirm == -1)
 		{
 			SensorsCalibration();
+		}
+		else if(CalibrationComfirm == 1)
+		{
+			std::ifstream config("./APMconfig.json");
+			std::string content((std::istreambuf_iterator<char>(config)),
+				(std::istreambuf_iterator<char>()));
+			nlohmann::json Configdata = nlohmann::json::parse(content);
+
+			Configdata["_Flag_MPU9250_A_X_Cali"] = _Flag_MPU9250_A_X_Cali;
+			Configdata["_Flag_MPU9250_A_Y_Cali"] = _Flag_MPU9250_A_Y_Cali;
+			Configdata["_Flag_MPU9250_G_X_Cali"] = _Flag_MPU9250_G_X_Cali;
+			Configdata["_Flag_MPU9250_G_Y_Cali"] = _Flag_MPU9250_G_Y_Cali;
+			Configdata["_Flag_MPU9250_G_Z_Cali"] = _Flag_MPU9250_G_Z_Cali;
+
+			std::ofstream configIN;
+			configIN.open("./APMconfig.json");
+			configIN.clear();
+			configIN << Configdata.dump(4).c_str();
+			configIN.close();
+
+			std::cout << "[Sensors] Config write success\n";
 		}
 	}
 
@@ -424,15 +504,46 @@ public:
 			<< "Min_Pitch    = " << _flag_RC_Min_Pitch << "\n"
 			<< "Min_Throttle = " << _flag_RC_Min_Throttle << "\n"
 			<< "Min__Yall    = " << _flag_RC_Min__Yall << "\n";
-		std::cout << "<-----------calibration_over---------------->\n";
-		std::cout << "[Controller] Calibration finshed ,if you want to retry input -1" << "\n";
+		std::cout << "<-----------Controller_calibration_over---------------->\n";
+		std::cout << "[Controller] Calibration finshed ,if you want to retry input -1 , to write to configJSON input 1 , input 0 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
 		if (CalibrationComfirm == -1)
 		{
 			ControlCalibration();
 		}
+		else if(CalibrationComfirm == 1)
+		{
+			std::ifstream config("./APMconfig.json");
+			std::string content((std::istreambuf_iterator<char>(config)),
+				(std::istreambuf_iterator<char>()));
+			nlohmann::json Configdata = nlohmann::json::parse(content);
+
+			Configdata["_flag_RC_Max__Roll"] = _flag_RC_Max__Roll;
+			Configdata["_flag_RC_Max_Pitch"] = _flag_RC_Max_Pitch;
+			Configdata["_flag_RC_Max_Throttle"] = _flag_RC_Max_Throttle;
+			Configdata["_flag_RC_Max__Yall"] = _flag_RC_Max__Yall;
+
+			Configdata["_flag_RC_Middle__Roll"] = _flag_RC_Middle__Roll;
+			Configdata["_flag_RC_Middle_Pitch"] = _flag_RC_Middle_Pitch;
+			Configdata["_flag_RC_Middle__Yall"] = _flag_RC_Middle__Yall;
+
+			Configdata["_flag_RC_Min__Roll"] = _flag_RC_Min__Roll;
+			Configdata["_flag_RC_Min_Pitch "] = _flag_RC_Min_Pitch;
+			Configdata["_flag_RC_Min_Throttle"] = _flag_RC_Min_Throttle;
+			Configdata["_flag_RC_Min__Yall"] = _flag_RC_Min__Yall;
+
+			std::ofstream configIN;
+			configIN.open("./APMconfig.json");
+			configIN.clear();
+			configIN << Configdata.dump(4).c_str();
+			configIN.close();
+
+			std::cout << "[Controller] Config write success\n";
+		}
 	}
+
 	//-------------------------------------------------------------------//
+
 private:
 	inline void PID_Caculate(float inputData, float& outputData, float& last_I_Data, float& last_D_Data)
 	{
