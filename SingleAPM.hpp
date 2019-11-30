@@ -244,17 +244,17 @@ public:
 		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > _flag_RC_Middle__Roll - 10)
 			_uORB_RC__Roll = 0;
 		else
-			_uORB_RC__Roll -= _flag_RC_Middle__Roll;
+			_uORB_RC__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 3;
 
 		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > _flag_RC_Middle_Pitch - 10)
 			_uORB_RC_Pitch = 0;
 		else
-			_uORB_RC_Pitch -= _flag_RC_Middle_Pitch;
+			_uORB_RC_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 3;
 
 		if (_uORB_RC__Yall < _flag_RC_Middle__Yall + 10 && _uORB_RC__Yall > _flag_RC_Middle__Yall - 10)
 			_uORB_RC__Yall = 0;
 		else
-			_uORB_RC__Yall -= _flag_RC_Middle__Yall;
+			_uORB_RC__Yall = (_uORB_RC__Yall - _flag_RC_Middle__Yall) / 3;
 	}
 
 	inline void AttitudeUpdate()
@@ -397,7 +397,7 @@ public:
 		{
 			SensorsCalibration();
 		}
-		else if(CalibrationComfirm == 1)
+		else if (CalibrationComfirm == 1)
 		{
 			std::ifstream config("./APMconfig.json");
 			std::string content((std::istreambuf_iterator<char>(config)),
@@ -426,7 +426,7 @@ public:
 		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
 		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 1 , or input -1 to skip calibration" << " \n";
 		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm = -1)
+		if (CalibrationComfirm == -1)
 		{
 			std::cout << "[ESCStatus] Exiting ESC calibration ........." << " \n";
 			return;
@@ -511,7 +511,7 @@ public:
 		{
 			ControlCalibration();
 		}
-		else if(CalibrationComfirm == 1)
+		else if (CalibrationComfirm == 1)
 		{
 			std::ifstream config("./APMconfig.json");
 			std::string content((std::istreambuf_iterator<char>(config)),

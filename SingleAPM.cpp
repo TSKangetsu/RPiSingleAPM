@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 			std::cout << "[RPiSingleAPM] version 1.0.f Beta , Acess By TSKangetsu\n"
 				<< "	checkout : https://github.com/TSKangetsu/RPiSingleAPM";
 			break;
-		//--------------------------------------------------------------------------------//
+			//--------------------------------------------------------------------------------//
 		case 'c':
 		{
 			test.ESCCalibration();
