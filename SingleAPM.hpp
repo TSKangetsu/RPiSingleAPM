@@ -73,8 +73,8 @@ float _uORB_PID_D_Last_Value__Yall = 0;
 float _uORB_PID_I_Last_Value__Roll = 0;
 float _uORB_PID_I_Last_Value_Pitch = 0;
 float _uORB_PID_I_Last_Value__Yall = 0;
-float _flag_PID_I_Max__Value = 500;
-float _flag_PID_Level_Max = 500;
+float _flag_PID_I_Max__Value = 300;
+float _flag_PID_Level_Max = 300;
 
 class Stablize_Mode
 {
@@ -210,20 +210,47 @@ public:
 		_uORB_MPU9250_G_Y -= _Flag_MPU9250_G_Y_Cali;
 		_uORB_MPU9250_G_Z -= _Flag_MPU9250_G_Z_Cali;
 		//Gryo----------------------------------------------------------------------//
+#ifdef MPU9250_X_header
 		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_X / 65.5) * 0.3);
 		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_Y / 65.5) * 0.3);
 		_uORB_Gryo__Yall = (_uORB_Gryo__Yall * 0.7) + ((_uORB_MPU9250_G_Z / 65.5) * 0.3);
+#endif
+
+#ifdef MPU9250_Y_header
+		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_Y / 65.5) * 0.3);
+		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_X / 65.5) * 0.3);
+		_uORB_Gryo__Yall = (_uORB_Gryo__Yall * 0.7) + ((_uORB_MPU9250_G_Z / 65.5) * 0.3);
+#endif
 		//ACCEL---------------------------------------------------------------------//
+#ifdef MPU9250_X_header
 		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
 		if (abs(_uORB_MPU9250_A_X) < _Tmp_IMU_Accel_Vector)
 			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
 		if (abs(_uORB_MPU9250_A_Y) < _Tmp_IMU_Accel_Vector)
 			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
+#endif
+
+#ifdef MPU9250_Y_header
+		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
+		if (abs(_uORB_MPU9250_A_X) < _Tmp_IMU_Accel_Vector)
+			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
+		if (abs(_uORB_MPU9250_A_Y) < _Tmp_IMU_Accel_Vector)
+			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
+#endif
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
+#ifdef MPU9250_X_header
 		_uORB_Real_Pitch += _uORB_MPU9250_G_Y * 0.0000611;
 		_uORB_Real__Roll += _uORB_MPU9250_G_X * 0.0000611;
 		_uORB_Real_Pitch -= _uORB_Real__Roll * sin(_uORB_MPU9250_G_Z * 0.000001066);
 		_uORB_Real__Roll += _uORB_Real_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
+#endif
+
+#ifdef MPU9250_Y_header
+		_uORB_Real_Pitch += _uORB_MPU9250_G_X * 0.0000611;
+		_uORB_Real__Roll += _uORB_MPU9250_G_Y * 0.0000611;
+		_uORB_Real_Pitch -= _uORB_Real__Roll * sin(_uORB_MPU9250_G_Z * 0.000001066);
+		_uORB_Real__Roll += _uORB_Real_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
+#endif
 		if (!_flag_first_StartUp)
 		{
 			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.95 + _uORB_Accel_Pitch * 0.05;
@@ -244,17 +271,17 @@ public:
 		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > _flag_RC_Middle__Roll - 10)
 			_uORB_RC__Roll = 0;
 		else
-			_uORB_RC__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 3;
+			_uORB_RC__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 4;
 
 		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > _flag_RC_Middle_Pitch - 10)
 			_uORB_RC_Pitch = 0;
 		else
-			_uORB_RC_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 3;
+			_uORB_RC_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 4;
 
 		if (_uORB_RC__Yall < _flag_RC_Middle__Yall + 10 && _uORB_RC__Yall > _flag_RC_Middle__Yall - 10)
 			_uORB_RC__Yall = 0;
 		else
-			_uORB_RC__Yall = (_uORB_RC__Yall - _flag_RC_Middle__Yall) / 3;
+			_uORB_RC__Yall = (_uORB_RC__Yall - _flag_RC_Middle__Yall) / 4;
 	}
 
 	inline void AttitudeUpdate()
@@ -283,10 +310,10 @@ public:
 		if (_uORB_Leveling__Yall < _flag_PID_Level_Max * -1)
 			_uORB_Leveling__Yall = _flag_PID_Level_Max * -1;
 
-		_uORB_B1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
-		_uORB_A1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
-		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
-		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
+		_uORB_B1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_A1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
+		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
 	}
 
 	inline void ESCUpdate()
