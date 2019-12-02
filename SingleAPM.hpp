@@ -233,7 +233,7 @@ public:
 #ifdef MPU9250_Y_header
 		_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
 		if (abs(_uORB_MPU9250_A_X) < _Tmp_IMU_Accel_Vector)
-			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * 57.296;
+			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * -57.296;
 		if (abs(_uORB_MPU9250_A_Y) < _Tmp_IMU_Accel_Vector)
 			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
 #endif
@@ -604,16 +604,13 @@ private:
 		_uORB_RC__Yall = data[7] * 255 + data[8];
 		_uORB_RC__Safe = data[9] * 255 + data[10];
 
-		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && _uORB_RC__Yall < _flag_RC_Min__Yall + 20)
+		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && _uORB_RC__Safe > 1500)
 		{
-			if (_flag_ForceFailed_Safe == false)
-			{
-				_flag_ForceFailed_Safe == true;
-			}
-			else
-			{
-				_flag_ForceFailed_Safe == false;
-			}
+			_flag_ForceFailed_Safe = false;
+		}
+		else if (_uORB_RC__Safe < 1500)
+		{
+			_flag_ForceFailed_Safe = true;
 		}
 	}
 

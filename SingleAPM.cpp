@@ -41,8 +41,8 @@ int main(int argc, char* argv[])
 					test.AttitudeUpdate();
 					test.ESCUpdate();
 					//---------test-----------//
-					std::cout << test._uORB_Real_Pitch << " ";
-					std::cout << test._uORB_Real__Roll << " ";
+					std::cout << test._uORB_Gryo_Pitch << " ";
+					std::cout << test._uORB_Gryo__Roll << " ";
 					std::cout << _uORB_RC__Safe << " ";
 					std::cout << _uORB_B1_Speed << " ";
 					std::cout << _uORB_A1_Speed << " ";
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 						_flag_ForceFailed_Safe = true;
 					}
 					std::cout << "-->>timer : " << timer_end - timer << "___\r";
-					usleep(3990 - (timer_end - timer));
+					delayMicroseconds(3990 - (timer_end - timer));
 				}
 				});
 			cpu_set_t cpuset;
