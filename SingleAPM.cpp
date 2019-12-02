@@ -3,8 +3,6 @@
 int main(int argc, char* argv[])
 {
 	int argvs;
-	long int timer;
-	long int timer_end;
 	Stablize_Mode test;
 	while ((argvs = getopt(argc, argv, "vcrh")) != -1)
 	{
@@ -27,36 +25,37 @@ int main(int argc, char* argv[])
 		{
 			test.ConfigReader();
 			std::thread controllerUORB([&] {
+				long int controller_timer;
+				long int controller_timer_end;
+				unsigned long int controller_loopTime;
 				while (true)
 				{
+					controller_timer = micros();
 					test.ControlParse();
-					usleep(4000);
+					controller_timer_end = micros();
+					controller_loopTime = controller_timer_end - controller_timer;
+					usleep(4000 - controller_loopTime);
 				}
 				});
 			std::thread AutoLevelingMain([&] {
+				long int timer;
+				long int timer_end;
+				long int loopTime;
 				while (true)
 				{
 					timer = micros();
 					test.SensorsParse();
 					test.AttitudeUpdate();
 					test.ESCUpdate();
-					//---------test-----------//
-					std::cout << test._uORB_Gryo_Pitch << " ";
-					std::cout << test._uORB_Gryo__Roll << " ";
-					std::cout << _uORB_RC__Safe << " ";
-					std::cout << _uORB_B1_Speed << " ";
-					std::cout << _uORB_A1_Speed << " ";
-					std::cout << _uORB_A2_Speed << " ";
-					std::cout << _uORB_B2_Speed << " ";
-					//----------test----------//
 					timer_end = micros();
-					if ((timer_end - timer) > 4000)
+					loopTime = timer_end - timer;
+					if (loopTime > 4000)
 					{
 						std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
 						_flag_ForceFailed_Safe = true;
 					}
-					std::cout << "-->>timer : " << timer_end - timer << "___\r";
-					delayMicroseconds(3990 - (timer_end - timer));
+					test.DebugOuput();
+					delayMicroseconds(4000 - loopTime);
 				}
 				});
 			cpu_set_t cpuset;

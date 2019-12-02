@@ -67,14 +67,18 @@ float _uORB_Leveling__Yall;
 float _flag_PID_P_Gain = 1;
 float _flag_PID_I_Gain = 0;
 float _flag_PID_D_Gain = 0.8;
+float _flag_PID_I_Max__Value = 300;
+float _flag_PID_Level_Max = 300;
+//PID Tmp
 float _uORB_PID_D_Last_Value__Roll = 0;
 float _uORB_PID_D_Last_Value_Pitch = 0;
 float _uORB_PID_D_Last_Value__Yall = 0;
 float _uORB_PID_I_Last_Value__Roll = 0;
 float _uORB_PID_I_Last_Value_Pitch = 0;
 float _uORB_PID_I_Last_Value__Yall = 0;
-float _flag_PID_I_Max__Value = 300;
-float _flag_PID_Level_Max = 300;
+float _uORB_PID__Roll_Input = 0;
+float _uORB_PID_Pitch_Input = 0;
+
 
 class Stablize_Mode
 {
@@ -287,7 +291,8 @@ public:
 	inline void AttitudeUpdate()
 	{
 		//Roll PID Mix
-		PID_Caculate(_uORB_Gryo__Roll -= _uORB_Real__Roll * 15 + _uORB_RC__Roll,
+		_uORB_PID__Roll_Input = _uORB_Gryo__Roll - _uORB_Real__Roll * 5 - _uORB_RC__Roll;
+		PID_Caculate(_uORB_PID__Roll_Input,
 			_uORB_Leveling__Roll, _uORB_PID_I_Last_Value__Roll, _uORB_PID_D_Last_Value__Roll);
 		if (_uORB_Leveling__Roll > _flag_PID_Level_Max)
 			_uORB_Leveling__Roll = _flag_PID_Level_Max;
@@ -295,7 +300,8 @@ public:
 			_uORB_Leveling__Roll = _flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		PID_Caculate(_uORB_Gryo_Pitch -= _uORB_Real_Pitch * 15 + _uORB_RC_Pitch,
+		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch - _uORB_Real_Pitch * 5 - _uORB_RC_Pitch;
+		PID_Caculate(_uORB_PID_Pitch_Input,
 			_uORB_Leveling_Pitch, _uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch);
 		if (_uORB_Leveling_Pitch > _flag_PID_Level_Max)
 			_uORB_Leveling_Pitch = _flag_PID_Level_Max;
@@ -371,11 +377,11 @@ public:
 		_flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
 		_flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
 
-		_flag_PID_P_Gain = Configdata["_flag_PID_P_Gain"].get<int>();
-		_flag_PID_I_Gain = Configdata["_flag_PID_I_Gain"].get<int>();
-		_flag_PID_D_Gain = Configdata["_flag_PID_D_Gain"].get<int>();
-		_flag_PID_I_Max__Value = Configdata["_flag_PID_I_Max__Value"].get<int>();
-		_flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<int>();
+		_flag_PID_P_Gain = Configdata["_flag_PID_P_Gain"].get<float>();
+		_flag_PID_I_Gain = Configdata["_flag_PID_I_Gain"].get<float>();
+		_flag_PID_D_Gain = Configdata["_flag_PID_D_Gain"].get<float>();
+		_flag_PID_I_Max__Value = Configdata["_flag_PID_I_Max__Value"].get<float>();
+		_flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
 
 		_Flag_MPU9250_A_X_Cali = Configdata["_Flag_MPU9250_A_X_Cali"].get<int>();
 		_Flag_MPU9250_A_Y_Cali = Configdata["_Flag_MPU9250_A_Y_Cali"].get<int>();
@@ -383,6 +389,14 @@ public:
 		//_Flag_MPU9250_G_Y_Cali = Configdata["_Flag_MPU9250_G_Y_Cali"].get<int>();
 		//_Flag_MPU9250_G_Z_Cali = Configdata["_Flag_MPU9250_G_Z_Cali"].get<int>();
 		std::cout << "[ConfigRead]Config Set Success!\n";
+	}
+
+	inline void DebugOuput()
+	{
+		std::cout
+			<< " Safty_Switch" << _uORB_RC__Safe
+			<< " speed_A1: " << _uORB_A1_Speed << " speed_A2: " << _uORB_A2_Speed << " speed_B2: " << _uORB_B1_Speed << " speed_A2: " << _uORB_B2_Speed
+			<< " LevelPitch: " << _uORB_Leveling_Pitch << " LevelRoll: " << _uORB_Leveling__Roll << "\r";
 	}
 
 	inline void SensorsCalibration()
@@ -660,5 +674,5 @@ private:
 		_Tmp_MPU9250_G_Z = ((int)_Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[14]);
 		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
 #endif
-	}
+}
 };
