@@ -22,6 +22,7 @@ static int RCReader_fd;
 static int PWM_Freq = 400;
 static int PCA9685_PinBase = 65;
 static int PCA9685_Address = 0x40;
+static int Update_Freqeuncy = 250;
 //_uORB_Output_Pin
 int _flag_A1_Pin = 0;
 int _flag_A2_Pin = 1;
@@ -97,6 +98,8 @@ public:
 	bool _flag_first_StartUp = true;
 
 	long _Tmp_IMU_Accel_Vector;
+
+	float _flag_MPU9250_LSB = 131;
 
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
@@ -181,7 +184,7 @@ public:
 			_Tmp_MPU9250_SPI_Config[1] = 0x10;
 			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
 			_Tmp_MPU9250_SPI_Config[0] = 0x1B;
-			_Tmp_MPU9250_SPI_Config[1] = 0x08;
+			_Tmp_MPU9250_SPI_Config[1] = 0x10;
 			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
 			_Tmp_MPU9250_SPI_Config[0] = 0x1A;
 			_Tmp_MPU9250_SPI_Config[1] = 0x03;
@@ -239,9 +242,9 @@ public:
 #endif
 
 #ifdef MPU9250_Y_header
-		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_Y / 32.8) * 0.3);
-		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_X / 32.8) * 0.3);
-		_uORB_Gryo__Yall = (_uORB_Gryo__Yall * 0.7) + ((_uORB_MPU9250_G_Z / 32.8) * 0.3);
+		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_Y / _flag_MPU9250_LSB) * 0.3);
+		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_X / _flag_MPU9250_LSB) * 0.3);
+		_uORB_Gryo__Yall = (_uORB_Gryo__Yall * 0.7) + ((_uORB_MPU9250_G_Z / _flag_MPU9250_LSB) * 0.3);
 #endif
 		//ACCEL---------------------------------------------------------------------//
 #ifdef MPU9250_X_header
@@ -269,15 +272,15 @@ public:
 
 #ifdef MPU9250_Y_header
 
-		_uORB_Real_Pitch += _uORB_MPU9250_G_X / 250 / 32.8;
-		_uORB_Real__Roll += _uORB_MPU9250_G_Y / 250 / 32.8;
-		_uORB_Real_Pitch -= _uORB_Real__Roll * sin((_uORB_MPU9250_G_Z / 250 / 32.8) * (3.14 / 180));
-		_uORB_Real__Roll += _uORB_Real_Pitch * sin((_uORB_MPU9250_G_Z / 250 / 32.8) * (3.14 / 180));
+		_uORB_Real_Pitch += _uORB_MPU9250_G_X / Update_Freqeuncy / _flag_MPU9250_LSB;
+		_uORB_Real__Roll += _uORB_MPU9250_G_Y / Update_Freqeuncy / _flag_MPU9250_LSB;
+		_uORB_Real_Pitch -= _uORB_Real__Roll * sin((_uORB_MPU9250_G_Z / Update_Freqeuncy / _flag_MPU9250_LSB) * (3.14 / 180));
+		_uORB_Real__Roll += _uORB_Real_Pitch * sin((_uORB_MPU9250_G_Z / Update_Freqeuncy / _flag_MPU9250_LSB) * (3.14 / 180));
 #endif
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 1 + _uORB_Accel_Pitch * 0;
-			_uORB_Real__Roll = _uORB_Real__Roll * 1 + _uORB_Accel__Roll * 0;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.996 + _uORB_Accel_Pitch * 0.004;
+			_uORB_Real__Roll = _uORB_Real__Roll * 0.996 + _uORB_Accel__Roll * 0.004;
 		}
 		else
 		{
