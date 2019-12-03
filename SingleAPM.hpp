@@ -79,6 +79,7 @@ float _uORB_PID_I_Last_Value__Yall = 0;
 float _uORB_PID__Roll_Input = 0;
 float _uORB_PID_Pitch_Input = 0;
 
+long int loopTime;
 
 class Stablize_Mode
 {
@@ -145,8 +146,25 @@ public:
 		{
 			wiringPiI2CWriteReg8(MPU9250_fd, 107, 0x00); //reset
 			wiringPiI2CWriteReg8(MPU9250_fd, 28, 0x10);  //Accel
-			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x08);  //Gryo
+			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x10);  //Gryo
 			wiringPiI2CWriteReg8(MPU9250_fd, 26, 0x03);  //config
+
+			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
+			for (int cali_count = 0; cali_count < 2000; cali_count++)
+			{
+				SensorsDataRead();
+				_Flag_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
+				_Flag_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
+				_Flag_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
+				usleep(3);
+			}
+			_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
+			_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
+			_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
+			std::cout << "Gryo_X_Caili :" << _Flag_MPU9250_G_X_Cali << "\n";
+			std::cout << "Gryo_Y_Caili :" << _Flag_MPU9250_G_Y_Cali << "\n";
+			std::cout << "Gryo_Z_Caili :" << _Flag_MPU9250_G_Z_Cali << "\n";
+			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
 		}
 #endif
 #ifdef SPI_MPU9250
@@ -221,9 +239,9 @@ public:
 #endif
 
 #ifdef MPU9250_Y_header
-		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_Y / 65.5) * 0.3);
-		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_X / 65.5) * 0.3);
-		_uORB_Gryo__Yall = (_uORB_Gryo__Yall * 0.7) + ((_uORB_MPU9250_G_Z / 65.5) * 0.3);
+		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_Y / 32.8) * 0.3);
+		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_X / 32.8) * 0.3);
+		_uORB_Gryo__Yall = (_uORB_Gryo__Yall * 0.7) + ((_uORB_MPU9250_G_Z / 32.8) * 0.3);
 #endif
 		//ACCEL---------------------------------------------------------------------//
 #ifdef MPU9250_X_header
@@ -239,7 +257,7 @@ public:
 		if (abs(_uORB_MPU9250_A_X) < _Tmp_IMU_Accel_Vector)
 			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * -57.296;
 		if (abs(_uORB_MPU9250_A_Y) < _Tmp_IMU_Accel_Vector)
-			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * -57.296;
+			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * 57.296;
 #endif
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
 #ifdef MPU9250_X_header
@@ -250,15 +268,16 @@ public:
 #endif
 
 #ifdef MPU9250_Y_header
-		_uORB_Real_Pitch += _uORB_MPU9250_G_X * 0.0000611;
-		_uORB_Real__Roll += _uORB_MPU9250_G_Y * 0.0000611;
-		_uORB_Real_Pitch -= _uORB_Real__Roll * sin(_uORB_MPU9250_G_Z * 0.000001066);
-		_uORB_Real__Roll += _uORB_Real_Pitch * sin(_uORB_MPU9250_G_Z * 0.000001066);
+
+		_uORB_Real_Pitch += _uORB_MPU9250_G_X / 250 / 32.8;
+		_uORB_Real__Roll += _uORB_MPU9250_G_Y / 250 / 32.8;
+		_uORB_Real_Pitch -= _uORB_Real__Roll * sin((_uORB_MPU9250_G_Z / 250 / 32.8) * (3.14 / 180));
+		_uORB_Real__Roll += _uORB_Real_Pitch * sin((_uORB_MPU9250_G_Z / 250 / 32.8) * (3.14 / 180));
 #endif
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.95 + _uORB_Accel_Pitch * 0.05;
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.95 + _uORB_Accel__Roll * 0.05;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 1 + _uORB_Accel_Pitch * 0;
+			_uORB_Real__Roll = _uORB_Real__Roll * 1 + _uORB_Accel__Roll * 0;
 		}
 		else
 		{
@@ -393,10 +412,17 @@ public:
 
 	inline void DebugOuput()
 	{
-		std::cout
-			<< " Safty_Switch" << _uORB_RC__Safe
-			<< " speed_A1: " << _uORB_A1_Speed << " speed_A2: " << _uORB_A2_Speed << " speed_B2: " << _uORB_B1_Speed << " speed_A2: " << _uORB_B2_Speed
-			<< " LevelPitch: " << _uORB_Leveling_Pitch << " LevelRoll: " << _uORB_Leveling__Roll << "\r";
+		if (loopTime > 2000)
+		{
+			std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
+			_flag_ForceFailed_Safe = true;
+		}
+		std::cout << _uORB_Gryo__Roll << " \n";
+		std::cout << _uORB_Gryo_Pitch << " \n";
+		std::cout << _uORB_Real__Roll << " \n";
+		std::cout << _uORB_Accel__Roll<< " \n";
+		std::cout << _uORB_Real_Pitch << " \n";
+		std::cout << _uORB_Accel_Pitch << "__________________ \n";
 	}
 
 	inline void SensorsCalibration()
@@ -674,5 +700,5 @@ private:
 		_Tmp_MPU9250_G_Z = ((int)_Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[14]);
 		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
 #endif
-}
+	}
 };

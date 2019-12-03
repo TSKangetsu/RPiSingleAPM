@@ -25,22 +25,14 @@ int main(int argc, char* argv[])
 		{
 			test.ConfigReader();
 			std::thread controllerUORB([&] {
-				long int controller_timer;
-				long int controller_timer_end;
-				unsigned long int controller_loopTime;
 				while (true)
 				{
-					controller_timer = micros();
 					test.ControlParse();
-					controller_timer_end = micros();
-					controller_loopTime = controller_timer_end - controller_timer;
-					usleep(4000 - controller_loopTime);
 				}
 				});
 			std::thread AutoLevelingMain([&] {
 				long int timer;
 				long int timer_end;
-				long int loopTime;
 				while (true)
 				{
 					timer = micros();
@@ -48,13 +40,8 @@ int main(int argc, char* argv[])
 					test.AttitudeUpdate();
 					test.ESCUpdate();
 					timer_end = micros();
-					loopTime = timer_end - timer;
-					if (loopTime > 4000)
-					{
-						std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
-						_flag_ForceFailed_Safe = true;
-					}
 					test.DebugOuput();
+					loopTime = timer_end - timer;
 					delayMicroseconds(4000 - loopTime);
 				}
 				});
