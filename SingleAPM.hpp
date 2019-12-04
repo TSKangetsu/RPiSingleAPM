@@ -91,7 +91,7 @@ public:
 	int _Tmp_MPU9250_Buffer[14];
 
 #ifdef SPI_MPU9250
-	unsigned char _Tmp_MPU9250_SPI_Config[2];
+	unsigned char _Tmp_MPU9250_SPI_Config[1];
 	unsigned char _Tmp_MPU9250_SPI_Buffer[28];
 #endif
 
@@ -99,7 +99,7 @@ public:
 
 	long _Tmp_IMU_Accel_Vector;
 
-	float _flag_MPU9250_LSB = 131;
+	float _flag_MPU9250_LSB = 131.0;
 
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
@@ -132,7 +132,7 @@ public:
 	{
 		if (wiringPiSetup() < 0)
 		{
-			std::cout << "[Init] wiringPi Error!";
+			std::cout << "[Init] wiringPi Error! \n";
 		}
 		else
 		{
@@ -171,24 +171,18 @@ public:
 		}
 #endif
 #ifdef SPI_MPU9250
-		if (wiringPiSPISetup(1, 1000000) < 0)
+		if (MPU9250_fd = wiringPiSPISetup(1, 1000000) < 0)
 		{
 			std::cout << "[Sensors]  MPU9250 startUP in SPI Mode failed;";
 		}
 		else
 		{
-			_Tmp_MPU9250_SPI_Config[0] = 0x6B;
-			_Tmp_MPU9250_SPI_Config[1] = 0x00;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
-			_Tmp_MPU9250_SPI_Config[0] = 0x1C;
-			_Tmp_MPU9250_SPI_Config[1] = 0x10;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
-			_Tmp_MPU9250_SPI_Config[0] = 0x1B;
-			_Tmp_MPU9250_SPI_Config[1] = 0x10;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
-			_Tmp_MPU9250_SPI_Config[0] = 0x1A;
-			_Tmp_MPU9250_SPI_Config[1] = 0x03;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 0);
+			_Tmp_MPU9250_SPI_Config[0] = 0x00;
+			_Tmp_MPU9250_SPI_Config[1] = 0x6B;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
+			_Tmp_MPU9250_SPI_Config[0] = 0x08;
+			_Tmp_MPU9250_SPI_Config[1] = 0x1B;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
 
 			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
 			for (int cali_count = 0; cali_count < 2000; cali_count++)
@@ -271,7 +265,6 @@ public:
 #endif
 
 #ifdef MPU9250_Y_header
-
 		_uORB_Real_Pitch += _uORB_MPU9250_G_X / Update_Freqeuncy / _flag_MPU9250_LSB;
 		_uORB_Real__Roll += _uORB_MPU9250_G_Y / Update_Freqeuncy / _flag_MPU9250_LSB;
 		_uORB_Real_Pitch -= _uORB_Real__Roll * sin((_uORB_MPU9250_G_Z / Update_Freqeuncy / _flag_MPU9250_LSB) * (3.14 / 180));
@@ -279,8 +272,8 @@ public:
 #endif
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.996 + _uORB_Accel_Pitch * 0.004;
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.996 + _uORB_Accel__Roll * 0.004;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 1 + _uORB_Accel_Pitch * 0;
+			_uORB_Real__Roll = _uORB_Real__Roll * 1 + _uORB_Accel__Roll * 0;
 		}
 		else
 		{
@@ -423,7 +416,7 @@ public:
 		std::cout << _uORB_Gryo__Roll << " \n";
 		std::cout << _uORB_Gryo_Pitch << " \n";
 		std::cout << _uORB_Real__Roll << " \n";
-		std::cout << _uORB_Accel__Roll<< " \n";
+		std::cout << _uORB_Accel__Roll << " \n";
 		std::cout << _uORB_Real_Pitch << " \n";
 		std::cout << _uORB_Accel_Pitch << "__________________ \n";
 	}
@@ -431,8 +424,12 @@ public:
 	inline void SensorsCalibration()
 	{
 		int CalibrationComfirm;
-		std::cout << "[Sensors] Calibration will start , input 1 to start" << "\n";
+		std::cout << "[Sensors] Calibration will start , input 1 to start , input -1 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			return;
+		}
 		std::cout << "[Sensors] Gyro Calibration ......" << "\n";
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
@@ -519,8 +516,12 @@ public:
 	inline void ControlCalibration()
 	{
 		int CalibrationComfirm;
-		std::cout << "[Controller] ControlCalibraion start , input 1 to start \n";
+		std::cout << "[Controller] ControlCalibraion start , input 1 to start , input -1 to skip \n";
 		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			return;
+		}
 		sleep(2);
 		std::cout << "[Controller] ControlCalibraion start ...... \n";
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
@@ -703,5 +704,5 @@ private:
 		_Tmp_MPU9250_G_Z = ((int)_Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[14]);
 		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
 #endif
-	}
+}
 };
