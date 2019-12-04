@@ -22,8 +22,7 @@ int main(int argc, char* argv[])
 		break;
 		//--------------------------------------------------------------------------------//
 		case 'r':
-		{
-			test.ConfigReader();
+		{	
 			std::thread controllerUORB([&] {
 				while (true)
 				{
@@ -42,7 +41,7 @@ int main(int argc, char* argv[])
 					timer_end = micros();
 					test.DebugOuput();
 					loopTime = timer_end - timer;
-					delayMicroseconds(4000 - loopTime);
+					delayMicroseconds(Update_Freq_Time - loopTime);
 				}
 				});
 			cpu_set_t cpuset;

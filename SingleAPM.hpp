@@ -22,7 +22,8 @@ static int RCReader_fd;
 static int PWM_Freq = 400;
 static int PCA9685_PinBase = 65;
 static int PCA9685_Address = 0x40;
-static int Update_Freqeuncy = 250;
+static int Update_Freqeuncy;
+static int Update_Freq_Time;
 //_uORB_Output_Pin
 int _flag_A1_Pin = 0;
 int _flag_A2_Pin = 1;
@@ -91,6 +92,8 @@ public:
 	int _Tmp_MPU9250_Buffer[14];
 
 #ifdef SPI_MPU9250
+	int MPU9250_SPI_Channel = 1;
+	int MPU9250_SPI_Freq = 1000000;
 	unsigned char _Tmp_MPU9250_SPI_Config[1];
 	unsigned char _Tmp_MPU9250_SPI_Buffer[28];
 #endif
@@ -99,7 +102,7 @@ public:
 
 	long _Tmp_IMU_Accel_Vector;
 
-	float _flag_MPU9250_LSB = 131.0;
+	float _flag_MPU9250_LSB = 65.5;
 
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
@@ -130,7 +133,7 @@ public:
 
 	Stablize_Mode()
 	{
-		if (wiringPiSetup() < 0)
+		if (wiringPiSetupSys() < 0)
 		{
 			std::cout << "[Init] wiringPi Error! \n";
 		}
@@ -148,32 +151,16 @@ public:
 		else
 		{
 			wiringPiI2CWriteReg8(MPU9250_fd, 107, 0x00); //reset
-			wiringPiI2CWriteReg8(MPU9250_fd, 28, 0x10);  //Accel
-			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x10);  //Gryo
+			wiringPiI2CWriteReg8(MPU9250_fd, 28, 0x08);  //Accel
+			wiringPiI2CWriteReg8(MPU9250_fd, 27, 0x08);  //Gryo
 			wiringPiI2CWriteReg8(MPU9250_fd, 26, 0x03);  //config
-
-			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
-			for (int cali_count = 0; cali_count < 2000; cali_count++)
-			{
-				SensorsDataRead();
-				_Flag_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
-				_Flag_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
-				_Flag_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
-				usleep(3);
-			}
-			_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
-			_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
-			_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
-			std::cout << "Gryo_X_Caili :" << _Flag_MPU9250_G_X_Cali << "\n";
-			std::cout << "Gryo_Y_Caili :" << _Flag_MPU9250_G_Y_Cali << "\n";
-			std::cout << "Gryo_Z_Caili :" << _Flag_MPU9250_G_Z_Cali << "\n";
-			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
 		}
 #endif
 #ifdef SPI_MPU9250
-		if (MPU9250_fd = wiringPiSPISetup(1, 1000000) < 0)
+		MPU9250_fd = wiringPiSPISetup(MPU9250_SPI_Channel, MPU9250_SPI_Freq);
+		if (MPU9250_fd < 0)
 		{
-			std::cout << "[Sensors]  MPU9250 startUP in SPI Mode failed;";
+			std::cout << "[Sensors]  MPU9250 startUP in SPI Mode failed;\n";
 		}
 		else
 		{
@@ -182,24 +169,8 @@ public:
 			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
 			_Tmp_MPU9250_SPI_Config[0] = 0x08;
 			_Tmp_MPU9250_SPI_Config[1] = 0x1B;
+			_Tmp_MPU9250_SPI_Config[1] = 0x1B;
 			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
-
-			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
-			for (int cali_count = 0; cali_count < 2000; cali_count++)
-			{
-				SensorsDataRead();
-				_Flag_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
-				_Flag_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
-				_Flag_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
-				usleep(3);
-			}
-			_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
-			_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
-			_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
-			std::cout << "Gryo_X_Caili :" << _Flag_MPU9250_G_X_Cali << "\n";
-			std::cout << "Gryo_Y_Caili :" << _Flag_MPU9250_G_Y_Cali << "\n";
-			std::cout << "Gryo_Z_Caili :" << _Flag_MPU9250_G_Z_Cali << "\n";
-			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
 		}
 #endif
 
@@ -215,6 +186,31 @@ public:
 			std::cout << "[PCA9685] pca9685setup failed; \n";
 		}
 
+		//=======Update_Freq=================//
+
+		ConfigReader();
+		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000 ;
+		std::cout << "[Attention]Frequency Time check:" << Update_Freq_Time << "\n";
+
+		//=======run Gryo calibration========//
+		{
+			std::cout << "[StartUPCheck] Gyro Calibration ......" << "\n";
+			for (int cali_count = 0; cali_count < 2000; cali_count++)
+			{
+				SensorsDataRead();
+				_Flag_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
+				_Flag_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
+				_Flag_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
+				usleep(3);
+			}
+			_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
+			_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
+			_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
+			std::cout << "Gryo_X_Caili :" << _Flag_MPU9250_G_X_Cali << "\n";
+			std::cout << "Gryo_Y_Caili :" << _Flag_MPU9250_G_Y_Cali << "\n";
+			std::cout << "Gryo_Z_Caili :" << _Flag_MPU9250_G_Z_Cali << "\n";
+			std::cout << "[StartUPCheck] Gyro Calibration Finsh" << "\n";
+		}
 	}
 
 	inline void SensorsParse()
@@ -272,8 +268,8 @@ public:
 #endif
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 1 + _uORB_Accel_Pitch * 0;
-			_uORB_Real__Roll = _uORB_Real__Roll * 1 + _uORB_Accel__Roll * 0;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.9994 + _uORB_Accel_Pitch * 0.0006;
+			_uORB_Real__Roll = _uORB_Real__Roll * 0.9994 + _uORB_Accel__Roll * 0.0006;
 		}
 		else
 		{
@@ -400,9 +396,8 @@ public:
 
 		_Flag_MPU9250_A_X_Cali = Configdata["_Flag_MPU9250_A_X_Cali"].get<int>();
 		_Flag_MPU9250_A_Y_Cali = Configdata["_Flag_MPU9250_A_Y_Cali"].get<int>();
-		//_Flag_MPU9250_G_X_Cali = Configdata["_Flag_MPU9250_G_X_Cali"].get<int>();
-		//_Flag_MPU9250_G_Y_Cali = Configdata["_Flag_MPU9250_G_Y_Cali"].get<int>();
-		//_Flag_MPU9250_G_Z_Cali = Configdata["_Flag_MPU9250_G_Z_Cali"].get<int>();
+
+		Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
 		std::cout << "[ConfigRead]Config Set Success!\n";
 	}
 
@@ -413,12 +408,6 @@ public:
 			std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
 			_flag_ForceFailed_Safe = true;
 		}
-		std::cout << _uORB_Gryo__Roll << " \n";
-		std::cout << _uORB_Gryo_Pitch << " \n";
-		std::cout << _uORB_Real__Roll << " \n";
-		std::cout << _uORB_Accel__Roll << " \n";
-		std::cout << _uORB_Real_Pitch << " \n";
-		std::cout << _uORB_Accel_Pitch << "__________________ \n";
 	}
 
 	inline void SensorsCalibration()

@@ -23,5 +23,6 @@
   "_Flag_MPU9250_A_Y_Cali": 0,
   "_Flag_MPU9250_G_X_Cali": 0,
   "_Flag_MPU9250_G_Y_Cali": 0,
-  "_Flag_MPU9250_G_Z_Cali": 0
+  "_Flag_MPU9250_G_Z_Cali": 0,
+  "Update_Freqeucy": 200
 }
