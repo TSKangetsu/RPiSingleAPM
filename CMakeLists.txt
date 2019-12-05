@@ -1,6 +1,6 @@
 IF(UNIX)
 	add_definitions(-DMPU9250_Y_header)
-	add_definitions(-DI2C_MPU9250)
+	add_definitions(-DSPI_MPU9250)
 
     cmake_minimum_required(VERSION 3.10)
     set(CMAKE_C_COMPILER "/usr/bin/gcc")

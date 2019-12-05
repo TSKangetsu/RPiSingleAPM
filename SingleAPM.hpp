@@ -55,6 +55,9 @@ int _uORB_RC__Roll = 0;
 int _uORB_RC_Pitch = 0;
 int _uORB_RC_Throttle = 0;
 int _uORB_RC__Yall = 0;
+int _uORB_RC_Out__Roll = 0;
+int _uORB_RC_Out_Pitch = 0;
+int _uORB_RC_Out__Yall = 0;
 
 //MotorOutput_finally
 int _uORB_A1_Speed;
@@ -102,7 +105,7 @@ public:
 
 	long _Tmp_IMU_Accel_Vector;
 
-	float _flag_MPU9250_LSB = 65.5;
+	float _flag_MPU9250_LSB = 131.0;
 
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
@@ -164,13 +167,13 @@ public:
 		}
 		else
 		{
-			_Tmp_MPU9250_SPI_Config[0] = 0x00;
-			_Tmp_MPU9250_SPI_Config[1] = 0x6B;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
-			_Tmp_MPU9250_SPI_Config[0] = 0x08;
-			_Tmp_MPU9250_SPI_Config[1] = 0x1B;
-			_Tmp_MPU9250_SPI_Config[1] = 0x1B;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
+			//_Tmp_MPU9250_SPI_Config[0] = 0x00;
+			//_Tmp_MPU9250_SPI_Config[1] = 0x6B;
+			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
+			//_Tmp_MPU9250_SPI_Config[0] = 0x08;
+			//_Tmp_MPU9250_SPI_Config[1] = 0x1B;
+			//_Tmp_MPU9250_SPI_Config[1] = 0x1B;
+			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
 		}
 #endif
 
@@ -189,7 +192,7 @@ public:
 		//=======Update_Freq=================//
 
 		ConfigReader();
-		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000 ;
+		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000;
 		std::cout << "[Attention]Frequency Time check:" << Update_Freq_Time << "\n";
 
 		//=======run Gryo calibration========//
@@ -268,8 +271,8 @@ public:
 #endif
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.9994 + _uORB_Accel_Pitch * 0.0006;
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.9994 + _uORB_Accel__Roll * 0.0006;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.995 + _uORB_Accel_Pitch * 0.005;
+			_uORB_Real__Roll = _uORB_Real__Roll * 0.995 + _uORB_Accel__Roll * 0.005;
 		}
 		else
 		{
@@ -284,25 +287,25 @@ public:
 		ControlRead();
 
 		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > _flag_RC_Middle__Roll - 10)
-			_uORB_RC__Roll = 0;
+			_uORB_RC_Out__Roll = 0;
 		else
-			_uORB_RC__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 4;
+			_uORB_RC_Out__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 4;
 
 		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > _flag_RC_Middle_Pitch - 10)
-			_uORB_RC_Pitch = 0;
+			_uORB_RC_Out_Pitch = 0;
 		else
-			_uORB_RC_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 4;
+			_uORB_RC_Out_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 4;
 
 		if (_uORB_RC__Yall < _flag_RC_Middle__Yall + 10 && _uORB_RC__Yall > _flag_RC_Middle__Yall - 10)
-			_uORB_RC__Yall = 0;
+			_uORB_RC_Out__Yall = 0;
 		else
-			_uORB_RC__Yall = (_uORB_RC__Yall - _flag_RC_Middle__Yall) / 4;
+			_uORB_RC_Out__Yall = (_uORB_RC__Yall - _flag_RC_Middle__Yall) / 4;
 	}
 
 	inline void AttitudeUpdate()
 	{
 		//Roll PID Mix
-		_uORB_PID__Roll_Input = _uORB_Gryo__Roll - _uORB_Real__Roll * 5 - _uORB_RC__Roll;
+		_uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 5 - _uORB_RC_Out__Roll;
 		PID_Caculate(_uORB_PID__Roll_Input,
 			_uORB_Leveling__Roll, _uORB_PID_I_Last_Value__Roll, _uORB_PID_D_Last_Value__Roll);
 		if (_uORB_Leveling__Roll > _flag_PID_Level_Max)
@@ -311,7 +314,7 @@ public:
 			_uORB_Leveling__Roll = _flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch - _uORB_Real_Pitch * 5 - _uORB_RC_Pitch;
+		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 5 - _uORB_RC_Out_Pitch;
 		PID_Caculate(_uORB_PID_Pitch_Input,
 			_uORB_Leveling_Pitch, _uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch);
 		if (_uORB_Leveling_Pitch > _flag_PID_Level_Max)
@@ -320,25 +323,25 @@ public:
 			_uORB_Leveling_Pitch = _flag_PID_Level_Max * -1;
 
 		//Yall PID Mix
-		PID_Caculate(_uORB_Gryo__Yall + _uORB_RC__Yall,
+		PID_Caculate(_uORB_Gryo__Yall + _uORB_RC_Out__Yall,
 			_uORB_Leveling__Yall, _uORB_PID_I_Last_Value__Yall, _uORB_PID_D_Last_Value__Yall);
 		if (_uORB_Leveling__Yall > _flag_PID_Level_Max)
 			_uORB_Leveling__Yall = _flag_PID_Level_Max;
 		if (_uORB_Leveling__Yall < _flag_PID_Level_Max * -1)
 			_uORB_Leveling__Yall = _flag_PID_Level_Max * -1;
 
-		_uORB_B1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
-		_uORB_A1_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
-		_uORB_A2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
-		_uORB_B2_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
+		_uORB_B1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll + _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_A1_Speed = _uORB_RC_Throttle - _uORB_Leveling__Roll - _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
+		_uORB_A2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll - _uORB_Leveling_Pitch + _uORB_Leveling__Yall;
+		_uORB_B2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch - _uORB_Leveling__Yall;
 	}
 
 	inline void ESCUpdate()
 	{
-		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2250;
-		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2250;
-		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2250;
-		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2250;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2300;
 
 		if (_flag_ForceFailed_Safe)
 		{
@@ -403,6 +406,9 @@ public:
 
 	inline void DebugOuput()
 	{
+		std::cout << _uORB_B1_Speed << " " << _uORB_A1_Speed << " " << _uORB_A2_Speed << " " << _uORB_B2_Speed << " "
+			<< _uORB_Gryo_Pitch << " " << _uORB_Gryo__Roll << " " << _uORB_Real_Pitch << " " << _uORB_Real__Roll <<
+			" " << _uORB_Leveling_Pitch << " " << _uORB_Leveling__Roll << " \n";
 		if (loopTime > 2000)
 		{
 			std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
@@ -693,5 +699,5 @@ private:
 		_Tmp_MPU9250_G_Z = ((int)_Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[14]);
 		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
 #endif
-}
+	}
 };
