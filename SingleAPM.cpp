@@ -27,6 +27,7 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					test.ControlParse();
+					delayMicroseconds(2000);
 				}
 				});
 			std::thread AutoLevelingMain([&] {
