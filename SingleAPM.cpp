@@ -3,7 +3,7 @@
 int main(int argc, char* argv[])
 {
 	int argvs;
-	Stablize_Mode test;
+	RPiSingelAPM APM_Settle;
 	while ((argvs = getopt(argc, argv, "vcrh")) != -1)
 	{
 		switch (argvs)
@@ -15,9 +15,9 @@ int main(int argc, char* argv[])
 			//--------------------------------------------------------------------------------//
 		case 'c':
 		{
-			test.ESCCalibration();
-			test.ControlCalibration();
-			test.SensorsCalibration();
+			APM_Settle.ESCCalibration();
+			APM_Settle.ControlCalibration();
+			APM_Settle.SensorsCalibration();
 		}
 		break;
 		//--------------------------------------------------------------------------------//
@@ -26,8 +26,8 @@ int main(int argc, char* argv[])
 			std::thread controllerUORB([&] {
 				while (true)
 				{
-					test.ControlParse();
-					delayMicroseconds(2000);
+					APM_Settle.ControlParse();
+					delayMicroseconds(3000);
 				}
 				});
 			std::thread AutoLevelingMain([&] {
@@ -36,13 +36,13 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					timer = micros();
-					test.SensorsParse();
-					test.AttitudeUpdate();
-					test.ESCUpdate();
+					APM_Settle.SensorsParse();
+					APM_Settle.AttitudeUpdate();
+					APM_Settle.SaftyChecking();
+					APM_Settle.ESCUpdate();
 					timer_end = micros();
-					test.DebugOuput();
-					loopTime = timer_end - timer;
-					delayMicroseconds(Update_Freq_Time - loopTime);
+					APM_Settle.Attitude_loopTime = timer_end - timer;
+					delayMicroseconds(APM_Settle.Update_Freq_Time - APM_Settle.Attitude_loopTime);
 				}
 				});
 			cpu_set_t cpuset;
