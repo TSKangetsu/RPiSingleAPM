@@ -332,7 +332,7 @@ public:
 	inline void AttitudeUpdate()
 	{
 		//Roll PID Mix
-		_uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 15 - _uORB_RC_Out__Roll;
+		_uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 10 - _uORB_RC_Out__Roll;
 		PID_Caculate(_uORB_PID__Roll_Input, _uORB_Leveling__Roll,
 			_uORB_PID_I_Last_Value__Roll, _uORB_PID_D_Last_Value__Roll,
 			_flag_PID_P__Roll_Gain, _flag_PID_I__Roll_Gain, _flag_PID_D__Roll_Gain, _flag_PID_I__Roll_Max__Value);
@@ -342,7 +342,7 @@ public:
 			_uORB_Leveling__Roll = _flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 15 - _uORB_RC_Out_Pitch;
+		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 10 - _uORB_RC_Out_Pitch;
 		PID_Caculate(_uORB_PID_Pitch_Input, _uORB_Leveling_Pitch,
 			_uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch,
 			_flag_PID_P_Pitch_Gain, _flag_PID_I_Pitch_Gain, _flag_PID_D_Pitch_Gain, _flag_PID_I_Pitch_Max__Value);
@@ -687,11 +687,11 @@ private:
 		_uORB_RC__Yall = data[7] * 255 + data[8];
 		_uORB_RC__Safe = data[9] * 255 + data[10];
 
-		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe < 1800)
+		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe)
 		{
 			_flag_ForceFailed_Safe = false;
 		}
-		else if (0 < _uORB_RC__Safe <= 1400 && _uORB_RC__Safe > 1800)
+		else if (_uORB_RC__Safe < 1400)
 		{
 			_flag_ForceFailed_Safe = true;
 		}
