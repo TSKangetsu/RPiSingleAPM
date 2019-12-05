@@ -400,7 +400,7 @@ public:
 		std::cout << _uORB_B1_Speed << " " << _uORB_A1_Speed << " " << _uORB_A2_Speed << " " << _uORB_B2_Speed << " "
 			<< _uORB_Gryo_Pitch << " " << _uORB_Gryo__Roll << " " << _uORB_Real_Pitch << " " << _uORB_Real__Roll <<
 			" " << _uORB_Leveling_Pitch << " " << _uORB_Leveling__Roll << " \n";
-		if (loopTime > 2000)
+		if (loopTime > Update_Freq_Time)
 		{
 			std::cout << "[WARING!!!!] Frequency Sync error , Over 4ms !!!!! Dangours !!! Gryo Angle error !!!!";
 			_flag_ForceFailed_Safe = true;
