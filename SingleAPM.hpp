@@ -352,7 +352,7 @@ public:
 			_uORB_Leveling_Pitch = _flag_PID_Level_Max * -1;
 
 		//Yall PID Mix
-		PID_Caculate(_uORB_Gryo__Yall + _uORB_RC_Out__Yall, _uORB_Leveling__Yall,
+		PID_Caculate(_uORB_Gryo__Yall - _uORB_RC_Out__Yall, _uORB_Leveling__Yall,
 			_uORB_PID_I_Last_Value__Yall, _uORB_PID_D_Last_Value__Yall,
 			_flag_PID_P__Yall_Gain, _flag_PID_I__Yall_Gain, _flag_PID_D__Yall_Gain, _flag_PID_I__Yall_Max__Value);
 		if (_uORB_Leveling__Yall > _flag_PID_Level_Max)
@@ -620,7 +620,7 @@ private:
 		//P_I_D Mix OUTPUT
 		outputData += last_I_Data;
 	}
-	
+
 	inline void ConfigReader()
 	{
 		std::cout << "[ConfigRead]starting to check out config file ....\n";
