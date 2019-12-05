@@ -24,6 +24,7 @@ static int PCA9685_PinBase = 65;
 static int PCA9685_Address = 0x40;
 static int Update_Freqeuncy;
 static int Update_Freq_Time;
+static int loopTime;
 //_uORB_Output_Pin
 int _flag_A1_Pin = 0;
 int _flag_A2_Pin = 1;
@@ -69,22 +70,33 @@ float _uORB_Leveling_Pitch;
 float _uORB_Leveling__Yall;
 
 //PID Args
-float _flag_PID_P_Gain = 1;
-float _flag_PID_I_Gain = 0;
-float _flag_PID_D_Gain = 0.8;
-float _flag_PID_I_Max__Value = 300;
-float _flag_PID_Level_Max = 300;
+float _flag_PID_P__Roll_Gain;
+float _flag_PID_P_Pitch_Gain;
+float _flag_PID_P__Yall_Gain;
+
+float _flag_PID_I__Roll_Gain;
+float _flag_PID_I_Pitch_Gain;
+float _flag_PID_I__Yall_Gain;
+float _flag_PID_I__Roll_Max__Value;
+float _flag_PID_I_Pitch_Max__Value;
+float _flag_PID_I__Yall_Max__Value;
+
+float _flag_PID_D__Roll_Gain;
+float _flag_PID_D_Pitch_Gain;
+float _flag_PID_D__Yall_Gain;
+
+float _flag_PID_Level_Max;
 //PID Tmp
 float _uORB_PID_D_Last_Value__Roll = 0;
 float _uORB_PID_D_Last_Value_Pitch = 0;
 float _uORB_PID_D_Last_Value__Yall = 0;
+
 float _uORB_PID_I_Last_Value__Roll = 0;
 float _uORB_PID_I_Last_Value_Pitch = 0;
 float _uORB_PID_I_Last_Value__Yall = 0;
+
 float _uORB_PID__Roll_Input = 0;
 float _uORB_PID_Pitch_Input = 0;
-
-long int loopTime;
 
 class Stablize_Mode
 {
@@ -136,6 +148,7 @@ public:
 
 	Stablize_Mode()
 	{
+		//=======Part_Setup=================//
 		if (wiringPiSetupSys() < 0)
 		{
 			std::cout << "[Init] wiringPi Error! \n";
@@ -167,13 +180,12 @@ public:
 		}
 		else
 		{
-			//_Tmp_MPU9250_SPI_Config[0] = 0x00;
-			//_Tmp_MPU9250_SPI_Config[1] = 0x6B;
-			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
-			//_Tmp_MPU9250_SPI_Config[0] = 0x08;
-			//_Tmp_MPU9250_SPI_Config[1] = 0x1B;
-			//_Tmp_MPU9250_SPI_Config[1] = 0x1B;
-			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
+			_Tmp_MPU9250_SPI_Config[0] = 0x00;
+			_Tmp_MPU9250_SPI_Config[1] = 0x6B;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
+			_Tmp_MPU9250_SPI_Config[0] = 0x08;
+			_Tmp_MPU9250_SPI_Config[1] = 0x1B;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
 		}
 #endif
 
@@ -189,9 +201,24 @@ public:
 			std::cout << "[PCA9685] pca9685setup failed; \n";
 		}
 
-		//=======Update_Freq=================//
+		//=======Config_Parse================//
 
 		ConfigReader();
+		std::cout << "[DataComfirm]" << "\n";
+		std::cout << "_flag_PID_P__Roll_Gain:" << _flag_PID_P__Roll_Gain << "\n";
+		std::cout << "_flag_PID_P_Pitch_Gain:" << _flag_PID_P_Pitch_Gain << "\n";
+		std::cout << "_flag_PID_P__Yall_Gain:" << _flag_PID_P__Yall_Gain << "\n";
+		std::cout << "_flag_PID_I__Roll_Gain:" << _flag_PID_I__Roll_Gain << "\n";
+		std::cout << "_flag_PID_I_Pitch_Gain:" << _flag_PID_I_Pitch_Gain << "\n";
+		std::cout << "_flag_PID_I__Yall_Gain:" << _flag_PID_I__Yall_Gain << "\n";
+		std::cout << "_flag_PID_I__Roll_Max__Value:" << _flag_PID_I__Roll_Max__Value << "\n";
+		std::cout << "_flag_PID_I_Pitch_Max__Value:" << _flag_PID_I_Pitch_Max__Value << "\n";
+		std::cout << "_flag_PID_I__Yall_Max__Value:" << _flag_PID_I__Yall_Max__Value << "\n";
+		std::cout << "_flag_PID_D__Roll_Gain:" << _flag_PID_D__Roll_Gain << "\n";
+		std::cout << "_flag_PID_D_Pitch_Gain:" << _flag_PID_D_Pitch_Gain << "\n";
+		std::cout << "_flag_PID_D__Yall_Gain:" << _flag_PID_D__Yall_Gain << "\n";
+		std::cout << "_flag_PID_Level_Max" << _flag_PID_Level_Max << "\n";
+
 		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000;
 		std::cout << "[Attention]Frequency Time check:" << Update_Freq_Time << "\n";
 
@@ -305,26 +332,29 @@ public:
 	inline void AttitudeUpdate()
 	{
 		//Roll PID Mix
-		_uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 5 - _uORB_RC_Out__Roll;
-		PID_Caculate(_uORB_PID__Roll_Input,
-			_uORB_Leveling__Roll, _uORB_PID_I_Last_Value__Roll, _uORB_PID_D_Last_Value__Roll);
+		_uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 15 - _uORB_RC_Out__Roll;
+		PID_Caculate(_uORB_PID__Roll_Input, _uORB_Leveling__Roll,
+			_uORB_PID_I_Last_Value__Roll, _uORB_PID_D_Last_Value__Roll,
+			_flag_PID_P__Roll_Gain, _flag_PID_I__Roll_Gain, _flag_PID_D__Roll_Gain, _flag_PID_I__Roll_Max__Value);
 		if (_uORB_Leveling__Roll > _flag_PID_Level_Max)
 			_uORB_Leveling__Roll = _flag_PID_Level_Max;
 		if (_uORB_Leveling__Roll < _flag_PID_Level_Max * -1)
 			_uORB_Leveling__Roll = _flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 5 - _uORB_RC_Out_Pitch;
-		PID_Caculate(_uORB_PID_Pitch_Input,
-			_uORB_Leveling_Pitch, _uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch);
+		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 15 - _uORB_RC_Out_Pitch;
+		PID_Caculate(_uORB_PID_Pitch_Input, _uORB_Leveling_Pitch,
+			_uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch,
+			_flag_PID_P_Pitch_Gain, _flag_PID_I_Pitch_Gain, _flag_PID_D_Pitch_Gain, _flag_PID_I_Pitch_Max__Value);
 		if (_uORB_Leveling_Pitch > _flag_PID_Level_Max)
 			_uORB_Leveling_Pitch = _flag_PID_Level_Max;
 		if (_uORB_Leveling_Pitch < _flag_PID_Level_Max * -1)
 			_uORB_Leveling_Pitch = _flag_PID_Level_Max * -1;
 
 		//Yall PID Mix
-		PID_Caculate(_uORB_Gryo__Yall + _uORB_RC_Out__Yall,
-			_uORB_Leveling__Yall, _uORB_PID_I_Last_Value__Yall, _uORB_PID_D_Last_Value__Yall);
+		PID_Caculate(_uORB_Gryo__Yall + _uORB_RC_Out__Yall, _uORB_Leveling__Yall,
+			_uORB_PID_I_Last_Value__Yall, _uORB_PID_D_Last_Value__Yall,
+			_flag_PID_P__Yall_Gain, _flag_PID_I__Yall_Gain, _flag_PID_D__Yall_Gain, _flag_PID_I__Yall_Max__Value);
 		if (_uORB_Leveling__Yall > _flag_PID_Level_Max)
 			_uORB_Leveling__Yall = _flag_PID_Level_Max;
 		if (_uORB_Leveling__Yall < _flag_PID_Level_Max * -1)
@@ -338,10 +368,10 @@ public:
 
 	inline void ESCUpdate()
 	{
-		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2300;
-		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2300;
-		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2300;
-		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2280;
+		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2280;
+		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2280;
+		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2280;
 
 		if (_flag_ForceFailed_Safe)
 		{
@@ -364,45 +394,6 @@ public:
 	}
 
 	//-------------------------------------------------------------------//
-
-	inline void ConfigReader()
-	{
-		std::cout << "[ConfigRead]starting to check out config file ....\n";
-		std::ifstream config("./APMconfig.json");
-		std::string content((std::istreambuf_iterator<char>(config)),
-			(std::istreambuf_iterator<char>()));
-		nlohmann::json Configdata = nlohmann::json::parse(content);
-		_flag_RC_Max__Roll = Configdata["_flag_RC_Max__Roll"].get<int>();
-		_flag_RC_Max_Pitch = Configdata["_flag_RC_Max_Pitch"].get<int>();
-		_flag_RC_Max_Throttle = Configdata["_flag_RC_Max_Throttle"].get<int>();
-		_flag_RC_Max__Yall = Configdata["_flag_RC_Max__Yall"].get<int>();
-
-		_flag_RC_Middle__Roll = Configdata["_flag_RC_Middle__Roll"].get<int>();
-		_flag_RC_Middle_Pitch = Configdata["_flag_RC_Middle_Pitch"].get<int>();
-		_flag_RC_Middle__Yall = Configdata["_flag_RC_Middle__Yall"].get<int>();
-
-		_flag_RC_Min__Roll = Configdata["_flag_RC_Min__Roll"].get<int>();
-		_flag_RC_Min_Pitch = Configdata["_flag_RC_Min_Pitch"].get<int>();
-		_flag_RC_Min_Throttle = Configdata["_flag_RC_Min_Throttle"].get<int>();
-		_flag_RC_Min__Yall = Configdata["_flag_RC_Min__Yall"].get<int>();
-
-		_flag_A1_Pin = Configdata["_flag_A1_Pin"].get<int>();
-		_flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
-		_flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
-		_flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
-
-		_flag_PID_P_Gain = Configdata["_flag_PID_P_Gain"].get<float>();
-		_flag_PID_I_Gain = Configdata["_flag_PID_I_Gain"].get<float>();
-		_flag_PID_D_Gain = Configdata["_flag_PID_D_Gain"].get<float>();
-		_flag_PID_I_Max__Value = Configdata["_flag_PID_I_Max__Value"].get<float>();
-		_flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
-
-		_Flag_MPU9250_A_X_Cali = Configdata["_Flag_MPU9250_A_X_Cali"].get<int>();
-		_Flag_MPU9250_A_Y_Cali = Configdata["_Flag_MPU9250_A_Y_Cali"].get<int>();
-
-		Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
-		std::cout << "[ConfigRead]Config Set Success!\n";
-	}
 
 	inline void DebugOuput()
 	{
@@ -594,7 +585,7 @@ public:
 			Configdata["_flag_RC_Middle__Yall"] = _flag_RC_Middle__Yall;
 
 			Configdata["_flag_RC_Min__Roll"] = _flag_RC_Min__Roll;
-			Configdata["_flag_RC_Min_Pitch "] = _flag_RC_Min_Pitch;
+			Configdata["_flag_RC_Min_Pitch"] = _flag_RC_Min_Pitch;
 			Configdata["_flag_RC_Min_Throttle"] = _flag_RC_Min_Throttle;
 			Configdata["_flag_RC_Min__Yall"] = _flag_RC_Min__Yall;
 
@@ -611,21 +602,74 @@ public:
 	//-------------------------------------------------------------------//
 
 private:
-	inline void PID_Caculate(float inputData, float& outputData, float& last_I_Data, float& last_D_Data)
+	inline void PID_Caculate(float inputData, float& outputData,
+		float& last_I_Data, float& last_D_Data,
+		float P_Gain, float I_Gain, float D_Gain, float I_Max)
 	{
 		//P caculate
-		outputData = _flag_PID_P_Gain * inputData;
+		outputData = P_Gain * inputData;
 		//D caculate
-		outputData += _flag_PID_D_Gain * (inputData - last_D_Data);
+		outputData += D_Gain * (inputData - last_D_Data);
 		last_D_Data = inputData;
 		//I caculate
-		last_I_Data += inputData * _flag_PID_I_Gain;
-		if (last_I_Data > _flag_PID_I_Max__Value)
-			last_I_Data = _flag_PID_I_Max__Value;
-		if (last_I_Data < _flag_PID_I_Max__Value * -1)
-			last_I_Data = _flag_PID_I_Max__Value * -1;
+		last_I_Data += inputData * I_Gain;
+		if (last_I_Data > I_Max)
+			last_I_Data = I_Max;
+		if (last_I_Data < I_Max * -1)
+			last_I_Data = I_Max * -1;
 		//P_I_D Mix OUTPUT
 		outputData += last_I_Data;
+	}
+	
+	inline void ConfigReader()
+	{
+		std::cout << "[ConfigRead]starting to check out config file ....\n";
+		std::ifstream config("./APMconfig.json");
+		std::string content((std::istreambuf_iterator<char>(config)),
+			(std::istreambuf_iterator<char>()));
+		nlohmann::json Configdata = nlohmann::json::parse(content);
+		//==========================================================Controller cofig==/
+		_flag_RC_Max__Roll = Configdata["_flag_RC_Max__Roll"].get<int>();
+		_flag_RC_Max_Pitch = Configdata["_flag_RC_Max_Pitch"].get<int>();
+		_flag_RC_Max_Throttle = Configdata["_flag_RC_Max_Throttle"].get<int>();
+		_flag_RC_Max__Yall = Configdata["_flag_RC_Max__Yall"].get<int>();
+
+		_flag_RC_Middle__Roll = Configdata["_flag_RC_Middle__Roll"].get<int>();
+		_flag_RC_Middle_Pitch = Configdata["_flag_RC_Middle_Pitch"].get<int>();
+		_flag_RC_Middle__Yall = Configdata["_flag_RC_Middle__Yall"].get<int>();
+
+		_flag_RC_Min__Roll = Configdata["_flag_RC_Min__Roll"].get<int>();
+		_flag_RC_Min_Pitch = Configdata["_flag_RC_Min_Pitch"].get<int>();
+		_flag_RC_Min_Throttle = Configdata["_flag_RC_Min_Throttle"].get<int>();
+		_flag_RC_Min__Yall = Configdata["_flag_RC_Min__Yall"].get<int>();
+
+		_flag_A1_Pin = Configdata["_flag_A1_Pin"].get<int>();
+		_flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
+		_flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
+		_flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
+		//==================================================================PID cofig==/
+		_flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
+		_flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();
+		_flag_PID_P__Yall_Gain = Configdata["_flag_PID_P__Yall_Gain"].get<float>();
+
+		_flag_PID_I__Roll_Gain = Configdata["_flag_PID_I__Roll_Gain"].get<float>();
+		_flag_PID_I_Pitch_Gain = Configdata["_flag_PID_I_Pitch_Gain"].get<float>();
+		_flag_PID_I__Yall_Gain = Configdata["_flag_PID_I__Yall_Gain"].get<float>();
+		_flag_PID_I__Roll_Max__Value = Configdata["_flag_PID_I__Roll_Max__Value"].get<float>();
+		_flag_PID_I_Pitch_Max__Value = Configdata["_flag_PID_I_Pitch_Max__Value"].get<float>();
+		_flag_PID_I__Yall_Max__Value = Configdata["_flag_PID_I__Yall_Max__Value"].get<float>();
+
+		_flag_PID_D__Roll_Gain = Configdata["_flag_PID_D__Roll_Gain"].get<float>();
+		_flag_PID_D_Pitch_Gain = Configdata["_flag_PID_D_Pitch_Gain"].get<float>();
+		_flag_PID_D__Yall_Gain = Configdata["_flag_PID_D__Yall_Gain"].get<float>();
+
+		_flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
+		//==============================================================Sensors cofig==/
+		_Flag_MPU9250_A_X_Cali = Configdata["_Flag_MPU9250_A_X_Cali"].get<int>();
+		_Flag_MPU9250_A_Y_Cali = Configdata["_Flag_MPU9250_A_Y_Cali"].get<int>();
+		//===============================================================Update cofig==/
+		Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
+		std::cout << "[ConfigRead]Config Set Success!\n";
 	}
 
 	inline void ControlRead()
@@ -643,11 +687,11 @@ private:
 		_uORB_RC__Yall = data[7] * 255 + data[8];
 		_uORB_RC__Safe = data[9] * 255 + data[10];
 
-		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && _uORB_RC__Safe > 1500)
+		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe < 1800)
 		{
 			_flag_ForceFailed_Safe = false;
 		}
-		else if (_uORB_RC__Safe < 1500)
+		else if (0 < _uORB_RC__Safe <= 1400 && _uORB_RC__Safe > 1800)
 		{
 			_flag_ForceFailed_Safe = true;
 		}
