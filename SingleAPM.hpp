@@ -20,6 +20,7 @@ class RPiSingelAPM
 {
 public:
 	bool _flag_ForceFailed_Safe;
+	bool _flag_Error;
 
 	int MPU9250_fd;
 	int PCA9658_fd;
@@ -178,12 +179,12 @@ public:
 			Status_Code[2] = -1;
 		else
 		{
-			_Tmp_MPU9250_SPI_Config[0] = 0x00;
-			_Tmp_MPU9250_SPI_Config[1] = 0x6B;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
-			_Tmp_MPU9250_SPI_Config[0] = 0x08;
-			_Tmp_MPU9250_SPI_Config[1] = 0x1B;
-			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
+			//_Tmp_MPU9250_SPI_Config[0] = 0x00;
+			//_Tmp_MPU9250_SPI_Config[1] = 0x6B;
+			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
+			//_Tmp_MPU9250_SPI_Config[0] = 0x08;
+			//_Tmp_MPU9250_SPI_Config[1] = 0x1B;
+			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
 			Status_Code[2] = 0;
 		}
 #endif
@@ -204,6 +205,9 @@ public:
 		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000;
 		Status_Code[5] = Update_Freq_Time;
 		//=======run Gryo calibration========//
+		_Flag_MPU9250_G_X_Cali = 0;
+		_Flag_MPU9250_G_Y_Cali = 0;
+		_Flag_MPU9250_G_Z_Cali = 0;
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
 			SensorsDataRead();
@@ -318,28 +322,97 @@ public:
 	{
 		//=====================AttitudeUpdate_Time_checkout=========================//
 		if (Attitude_loopTime > Update_Freq_Time)
-			_flag_ForceFailed_Safe = true; Status_Code[10] = -1;
+			_flag_Error = true; Status_Code[10] = -1;
 		//=====================RC_input_checkout====================================//
-		if (!(_uORB_RC__Roll < _flag_RC_Max__Roll && _uORB_RC__Roll > _flag_RC_Min__Roll))
-			_flag_ForceFailed_Safe = true; Status_Code[11] = -1;
-		if (!(_uORB_RC_Pitch < _flag_RC_Max_Pitch && _uORB_RC_Pitch > _flag_RC_Min_Pitch))
-			_flag_ForceFailed_Safe = true; Status_Code[12] = -1;
-		if (!(_uORB_RC_Throttle < _flag_RC_Max_Throttle && _uORB_RC_Throttle > _flag_RC_Min_Throttle))
-			_flag_ForceFailed_Safe = true; Status_Code[13] = -1;
-		if (!(_uORB_RC__Yall < _flag_RC_Max__Yall && _uORB_RC__Yall > _flag_RC_Min__Yall))
-			_flag_ForceFailed_Safe = true; Status_Code[14] = -1;
+		if (!(_uORB_RC__Roll < _flag_RC_Max__Roll + 20 && _uORB_RC__Roll > _flag_RC_Min__Roll - 20))
+		{
+			_flag_Error = true; 
+			Status_Code[11] = -1;
+		}
+		else
+		{
+			Status_Code[11] = 0;
+		}
+			
+		if (!(_uORB_RC_Pitch < _flag_RC_Max_Pitch + 20 && _uORB_RC_Pitch > _flag_RC_Min_Pitch - 20))
+		{
+			_flag_Error = true; 
+			Status_Code[12] = -1;
+		}
+		else
+		{
+			Status_Code[12] = 0;
+		}
+		if (!(_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20 && _uORB_RC_Throttle > _flag_RC_Min_Throttle - 20))
+		{
+			_flag_Error = true; 
+			Status_Code[13] = -1;
+		}
+		else
+		{
+			Status_Code[13] = 0;
+		}
+		if (!(_uORB_RC__Yall < _flag_RC_Max__Yall + 20 && _uORB_RC__Yall > _flag_RC_Min__Yall - 20))
+		{
+			_flag_Error = true; 
+			Status_Code[14] = -1;
+		}
+		else
+		{
+			Status_Code[14] = 0;
+		}
+			
 		//=====================Attitude_checkout====================================//
-		if (_uORB_Real_Pitch > 68.0 && _uORB_Real_Pitch < -68.0)
-			_flag_ForceFailed_Safe = true; Status_Code[15] = -1;
-		if (_uORB_Real__Roll > 68.0 && _uORB_Real__Roll < -68.0)
-			_flag_ForceFailed_Safe = true; Status_Code[16] = -1;
-		if (_uORB_Accel_Pitch > 80.0 && _uORB_Accel_Pitch < -80.0)
-			_flag_ForceFailed_Safe = true; Status_Code[17] = -1;
-		if (_uORB_Accel__Roll > 80.0 && _uORB_Accel__Roll < -80.0)
-			_flag_ForceFailed_Safe = true; Status_Code[18] = -1;
+		if (_uORB_Real_Pitch > 70.0 || _uORB_Real_Pitch < -70.0)
+		{
+			_flag_Error = true; 
+			Status_Code[15] = -1;
+		}
+		else 
+		{
+			Status_Code[15] = 0;
+		}
+		if (_uORB_Real__Roll > 70.0 || _uORB_Real__Roll < -70.0)
+		{
+			_flag_Error = true; 
+			Status_Code[16] = -1;
+		}
+		else
+		{
+			Status_Code[16] = 0;
+		}
+			
+		if (_uORB_Accel_Pitch > 90.0 || _uORB_Accel_Pitch < -90.0)
+		{
+			_flag_Error = true; 
+			Status_Code[17] = -1;
+		}
+		else
+		{
+			Status_Code[17] = 0;
+		}
+		if (_uORB_Accel__Roll > 90.0 || _uORB_Accel__Roll < -90.0)
+		{
+			_flag_Error = true; 
+			Status_Code[18] = -1;
+		}
+		else
+		{
+			Status_Code[18] = 0;
+		}
 		//=====================Status_checkout======================================//
 		if (_flag_ForceFailed_Safe == true)
+		{
 			Status_Code[0] = 0;
+		}
+		else
+		{
+			for (int i = 0; i < 20; i++)
+			{
+				std::cout << Status_Code[i] << " ";
+			}
+			std::cout << "\n";
+		}
 	}
 
 	inline void ESCUpdate()
@@ -653,13 +726,31 @@ private:
 
 		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe)
 		{
-			_flag_ForceFailed_Safe = false;
-			Status_Code[0] = 1;
+			if (_flag_Error == false)
+			{
+				_flag_ForceFailed_Safe = false;
+				Status_Code[0] = 1;
+			}
+			else
+			{
+				_flag_ForceFailed_Safe = true;
+			}
 		}
 		else if (_uORB_RC__Safe < 1400)
 		{
 			_flag_ForceFailed_Safe = true;
+			_flag_Error = false;
 			Status_Code[0] = 0;
+		}
+		else if (_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20)
+		{
+			if (_flag_Error == false)
+			{
+			}
+			else
+			{
+				_flag_ForceFailed_Safe = true;
+			}
 		}
 	}
 
