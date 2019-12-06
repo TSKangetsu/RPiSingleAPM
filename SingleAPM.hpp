@@ -737,13 +737,20 @@ private:
 		}
 		else if (_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20)
 		{
-			if (_flag_Error == false)
-			{
-			}
-			else
+			if (_flag_Error == true)
 			{
 				_flag_ForceFailed_Safe = true;
 			}
+		}
+
+		if (_flag_ForceFailed_Safe == true)
+		{
+			_uORB_PID_D_Last_Value__Roll = 0;
+			_uORB_PID_D_Last_Value_Pitch = 0;
+			_uORB_PID_D_Last_Value__Yall = 0;
+			_uORB_PID_I_Last_Value__Roll = 0;
+			_uORB_PID_I_Last_Value_Pitch = 0;
+			_uORB_PID_I_Last_Value__Yall = 0;
 		}
 	}
 
