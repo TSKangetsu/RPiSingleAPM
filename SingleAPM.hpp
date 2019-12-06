@@ -80,7 +80,7 @@ public:
 	//==========================sensors=======//
 	int MPU9250_SPI_Channel = 1;
 	const int MPU9250_ADDR = 0x68;
-	float _flag_MPU9250_LSB = 131.0;
+	float _flag_MPU9250_LSB = 65.5;
 	int MPU9250_SPI_Freq = 1000000;
 
 	int _Tmp_MPU9250_Buffer[14];
@@ -179,12 +179,22 @@ public:
 			Status_Code[2] = -1;
 		else
 		{
-			//_Tmp_MPU9250_SPI_Config[0] = 0x00;
-			//_Tmp_MPU9250_SPI_Config[1] = 0x6B;
-			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 1);
-			//_Tmp_MPU9250_SPI_Config[0] = 0x08;
-			//_Tmp_MPU9250_SPI_Config[1] = 0x1B;
-			//wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 3);
+			_Tmp_MPU9250_SPI_Config[0] = 0x6b;
+			_Tmp_MPU9250_SPI_Config[1] = 0x00;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 2); //reset
+			sleep(1);
+			_Tmp_MPU9250_SPI_Config[0] = 0x1c;
+			_Tmp_MPU9250_SPI_Config[1] = 0x08;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 2); // Accel
+			sleep(1);
+			_Tmp_MPU9250_SPI_Config[0] = 0x1b;
+			_Tmp_MPU9250_SPI_Config[1] = 0x08;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 2); // Gryo
+			sleep(1);
+			_Tmp_MPU9250_SPI_Config[0] = 0x1a;
+			_Tmp_MPU9250_SPI_Config[1] = 0x03;
+			wiringPiSPIDataRW(1, _Tmp_MPU9250_SPI_Config, 2);//config
+			sleep(1);
 			Status_Code[2] = 0;
 		}
 #endif
@@ -251,8 +261,8 @@ public:
 		_uORB_Real__Roll += _uORB_Real_Pitch * sin((_uORB_MPU9250_G_Z / Update_Freqeuncy / _flag_MPU9250_LSB) * (3.14 / 180));
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.995 + _uORB_Accel_Pitch * 0.005;
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.995 + _uORB_Accel__Roll * 0.005;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.9995 + _uORB_Accel_Pitch * 0.0005;
+			_uORB_Real__Roll = _uORB_Real__Roll * 0.9995 + _uORB_Accel__Roll * 0.0005;
 		}
 		else
 		{
@@ -322,7 +332,10 @@ public:
 	{
 		//=====================AttitudeUpdate_Time_checkout=========================//
 		if (Attitude_loopTime > Update_Freq_Time)
-			_flag_Error = true; Status_Code[10] = -1;
+		{
+			_flag_Error = true; 
+			Status_Code[10] = -1;
+		}
 		//=====================RC_input_checkout====================================//
 		if (!(_uORB_RC__Roll < _flag_RC_Max__Roll + 20 && _uORB_RC__Roll > _flag_RC_Min__Roll - 20))
 		{
@@ -405,7 +418,7 @@ public:
 		{
 			Status_Code[0] = 0;
 		}
-		else
+		else if(_flag_Error == true)
 		{
 			for (int i = 0; i < 20; i++)
 			{
@@ -444,6 +457,15 @@ public:
 
 	//-------------------------------------------------------------------//
 
+	inline void Debug()
+	{
+		std::cout << _uORB_Real_Pitch << " ";
+		std::cout << _uORB_Real__Roll << " ";
+		std::cout << _uORB_Gryo_Pitch << " ";
+		std::cout << _uORB_Gryo__Roll << " ";
+		std::cout << _uORB_Gryo__Yall << " \r";
+	}
+
 	inline void SensorsCalibration()
 	{
 		int CalibrationComfirm;
@@ -453,35 +475,9 @@ public:
 		{
 			return;
 		}
-		std::cout << "[Sensors] Gyro Calibration ......" << "\n";
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			SensorsDataRead();
-			_Flag_MPU9250_G_X_Cali += _uORB_MPU9250_G_X;
-			_Flag_MPU9250_G_Y_Cali += _uORB_MPU9250_G_Y;
-			_Flag_MPU9250_G_Z_Cali += _uORB_MPU9250_G_Z;
-			usleep(3);
-		}
-		_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
-		_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
-		_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
-		std::cout << "Gryo_X_Caili :" << _Flag_MPU9250_G_X_Cali << "\n";
-		std::cout << "Gryo_Y_Caili :" << _Flag_MPU9250_G_Y_Cali << "\n";
-		std::cout << "Gryo_Z_Caili :" << _Flag_MPU9250_G_Z_Cali << "\n";
-
 		std::cout << "[Sensors] Accel Calibration ......" << "\n";
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			SensorsDataRead();
-			_Flag_MPU9250_A_X_Cali += _uORB_MPU9250_A_X;
-			_Flag_MPU9250_A_Y_Cali += _uORB_MPU9250_A_Y;
-			usleep(3);
-		}
-		_Flag_MPU9250_A_X_Cali = _Flag_MPU9250_A_X_Cali / 2000;
-		_Flag_MPU9250_A_Y_Cali = _Flag_MPU9250_A_Y_Cali / 2000;
-		std::cout << "Accel_X_Caili :" << _Flag_MPU9250_A_X_Cali << "\n";
-		std::cout << "Accel_Y_Caili :" << _Flag_MPU9250_A_Y_Cali << "\n";
-		std::cout << "[Sensors] Gyro Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
+
+		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
 		if (CalibrationComfirm == -1)
 		{
@@ -496,9 +492,6 @@ public:
 
 			Configdata["_Flag_MPU9250_A_X_Cali"] = _Flag_MPU9250_A_X_Cali;
 			Configdata["_Flag_MPU9250_A_Y_Cali"] = _Flag_MPU9250_A_Y_Cali;
-			Configdata["_Flag_MPU9250_G_X_Cali"] = _Flag_MPU9250_G_X_Cali;
-			Configdata["_Flag_MPU9250_G_Y_Cali"] = _Flag_MPU9250_G_Y_Cali;
-			Configdata["_Flag_MPU9250_G_Z_Cali"] = _Flag_MPU9250_G_Z_Cali;
 
 			std::ofstream configIN;
 			configIN.open("./APMconfig.json");

@@ -40,6 +40,7 @@ int main(int argc, char* argv[])
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking();
 					APM_Settle.ESCUpdate();
+					APM_Settle.Debug();
 					timer_end = micros();
 					APM_Settle.Attitude_loopTime = timer_end - timer;
 					delayMicroseconds(APM_Settle.Update_Freq_Time - APM_Settle.Attitude_loopTime);
