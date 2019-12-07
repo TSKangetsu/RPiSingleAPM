@@ -88,6 +88,7 @@ public:
 	unsigned char _Tmp_MPU9250_SPI_Buffer[28];
 
 	bool _flag_first_StartUp = true;
+	long _Tmp_IMU_Accel_Calibration[20];
 	long _Tmp_IMU_Accel_Vector;
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
@@ -476,7 +477,60 @@ public:
 			return;
 		}
 		std::cout << "[Sensors] Accel Calibration ......" << "\n";
+		for (int cali_count = 0; cali_count < 200; cali_count++)
+		{
+			SensorsParse();
+			_Tmp_IMU_Accel_Calibration[0] += _uORB_MPU9250_A_X;
+			_Tmp_IMU_Accel_Calibration[1] += _uORB_MPU9250_A_Y;
+			_Tmp_IMU_Accel_Calibration[2] += _uORB_MPU9250_A_Z;
+		}
+		_Tmp_IMU_Accel_Calibration[0] /= 200;
+		_Tmp_IMU_Accel_Calibration[1] /= 200;
+		_Tmp_IMU_Accel_Calibration[2] /= 200;
 
+		for (int cali_count = 0; cali_count < 200; cali_count++)
+		{
+			SensorsParse();
+			_Tmp_IMU_Accel_Calibration[3] += _uORB_MPU9250_A_X;
+			_Tmp_IMU_Accel_Calibration[4] += _uORB_MPU9250_A_Y;
+			_Tmp_IMU_Accel_Calibration[5] += _uORB_MPU9250_A_Z;
+		}
+		_Tmp_IMU_Accel_Calibration[3] /= 200;
+		_Tmp_IMU_Accel_Calibration[4] /= 200;
+		_Tmp_IMU_Accel_Calibration[5] /= 200;		
+
+		for (int cali_count = 0; cali_count < 200; cali_count++)
+		{
+			SensorsParse();
+			_Tmp_IMU_Accel_Calibration[6] += _uORB_MPU9250_A_X;
+			_Tmp_IMU_Accel_Calibration[7] += _uORB_MPU9250_A_Y;
+			_Tmp_IMU_Accel_Calibration[8] += _uORB_MPU9250_A_Z;
+		}
+		_Tmp_IMU_Accel_Calibration[6] /= 200;
+		_Tmp_IMU_Accel_Calibration[7] /= 200;
+		_Tmp_IMU_Accel_Calibration[8] /= 200;		
+
+		for (int cali_count = 0; cali_count < 200; cali_count++)
+		{
+			SensorsParse();
+			_Tmp_IMU_Accel_Calibration[9] += _uORB_MPU9250_A_X;
+			_Tmp_IMU_Accel_Calibration[10] += _uORB_MPU9250_A_Y;
+			_Tmp_IMU_Accel_Calibration[11] += _uORB_MPU9250_A_Z;
+		}
+		_Tmp_IMU_Accel_Calibration[9] /= 200;
+		_Tmp_IMU_Accel_Calibration[10] /= 200;
+		_Tmp_IMU_Accel_Calibration[11] /= 200;		
+
+		for (int cali_count = 0; cali_count < 200; cali_count++)
+		{
+			SensorsParse();
+			_Tmp_IMU_Accel_Calibration[12] += _uORB_MPU9250_A_X;
+			_Tmp_IMU_Accel_Calibration[13] += _uORB_MPU9250_A_Y;
+			_Tmp_IMU_Accel_Calibration[14] += _uORB_MPU9250_A_Z;
+		}
+		_Tmp_IMU_Accel_Calibration[12] /= 200;
+		_Tmp_IMU_Accel_Calibration[13] /= 200;
+		_Tmp_IMU_Accel_Calibration[14] /= 200;
 		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
 		if (CalibrationComfirm == -1)
