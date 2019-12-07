@@ -19,6 +19,8 @@
 class RPiSingelAPM
 {
 public:
+	char* configDir = "/etc/APMconfig.json";
+
 	bool _flag_ForceFailed_Safe;
 	bool _flag_Error;
 
@@ -330,23 +332,23 @@ public:
 		//=====================AttitudeUpdate_Time_checkout=========================//
 		if (Attitude_loopTime > Update_Freq_Time)
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[10] = -1;
 		}
 		//=====================RC_input_checkout====================================//
 		if (!(_uORB_RC__Roll < _flag_RC_Max__Roll + 20 && _uORB_RC__Roll > _flag_RC_Min__Roll - 20))
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[11] = -1;
 		}
 		else
 		{
 			Status_Code[11] = 0;
 		}
-			
+
 		if (!(_uORB_RC_Pitch < _flag_RC_Max_Pitch + 20 && _uORB_RC_Pitch > _flag_RC_Min_Pitch - 20))
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[12] = -1;
 		}
 		else
@@ -355,7 +357,7 @@ public:
 		}
 		if (!(_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20 && _uORB_RC_Throttle > _flag_RC_Min_Throttle - 20))
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[13] = -1;
 		}
 		else
@@ -364,37 +366,37 @@ public:
 		}
 		if (!(_uORB_RC__Yall < _flag_RC_Max__Yall + 20 && _uORB_RC__Yall > _flag_RC_Min__Yall - 20))
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[14] = -1;
 		}
 		else
 		{
 			Status_Code[14] = 0;
 		}
-			
+
 		//=====================Attitude_checkout====================================//
 		if (_uORB_Real_Pitch > 70.0 || _uORB_Real_Pitch < -70.0)
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[15] = -1;
 		}
-		else 
+		else
 		{
 			Status_Code[15] = 0;
 		}
 		if (_uORB_Real__Roll > 70.0 || _uORB_Real__Roll < -70.0)
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[16] = -1;
 		}
 		else
 		{
 			Status_Code[16] = 0;
 		}
-			
+
 		if (_uORB_Accel_Pitch > 90.0 || _uORB_Accel_Pitch < -90.0)
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[17] = -1;
 		}
 		else
@@ -403,7 +405,7 @@ public:
 		}
 		if (_uORB_Accel__Roll > 90.0 || _uORB_Accel__Roll < -90.0)
 		{
-			_flag_Error = true; 
+			_flag_Error = true;
 			Status_Code[18] = -1;
 		}
 		else
@@ -415,7 +417,7 @@ public:
 		{
 			Status_Code[0] = 0;
 		}
-		else if(_flag_Error == true)
+		else if (_flag_Error == true)
 		{
 			for (int i = 0; i < 20; i++)
 			{
@@ -456,6 +458,12 @@ public:
 
 	inline void Debug()
 	{
+		std::cout << _uORB_Accel_Pitch << " ";
+		std::cout << _uORB_Accel__Roll << " ";
+		std::cout << _uORB_Real_Pitch << " ";
+		std::cout << _uORB_Real__Roll << " ";
+		std::cout << _uORB_Leveling_Pitch << " ";
+		std::cout << _uORB_Leveling__Roll << " \n";
 	}
 
 	inline void SensorsCalibration()
@@ -485,7 +493,7 @@ public:
 		}
 		else if (CalibrationComfirm == 1)
 		{
-			std::ifstream config("./APMconfig.json");
+			std::ifstream config(configDir);
 			std::string content((std::istreambuf_iterator<char>(config)),
 				(std::istreambuf_iterator<char>()));
 			nlohmann::json Configdata = nlohmann::json::parse(content);
@@ -494,7 +502,7 @@ public:
 			Configdata["_Flag_MPU9250_A_Y_Cali"] = _Flag_MPU9250_A_Y_Cali;
 
 			std::ofstream configIN;
-			configIN.open("./APMconfig.json");
+			configIN.open(configDir);
 			configIN.clear();
 			configIN << Configdata.dump(4).c_str();
 			configIN.close();
@@ -600,7 +608,7 @@ public:
 		}
 		else if (CalibrationComfirm == 1)
 		{
-			std::ifstream config("./APMconfig.json");
+			std::ifstream config(configDir);
 			std::string content((std::istreambuf_iterator<char>(config)),
 				(std::istreambuf_iterator<char>()));
 			nlohmann::json Configdata = nlohmann::json::parse(content);
@@ -620,7 +628,7 @@ public:
 			Configdata["_flag_RC_Min__Yall"] = _flag_RC_Min__Yall;
 
 			std::ofstream configIN;
-			configIN.open("./APMconfig.json");
+			configIN.open(configDir);
 			configIN.clear();
 			configIN << Configdata.dump(4).c_str();
 			configIN.close();
@@ -654,7 +662,7 @@ private:
 	inline void ConfigReader()
 	{
 		std::cout << "[ConfigRead]starting to check out config file ....\n";
-		std::ifstream config("./APMconfig.json");
+		std::ifstream config(configDir);
 		std::string content((std::istreambuf_iterator<char>(config)),
 			(std::istreambuf_iterator<char>()));
 		nlohmann::json Configdata = nlohmann::json::parse(content);
