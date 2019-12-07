@@ -293,7 +293,7 @@ public:
 	inline void AttitudeUpdate()
 	{
 		//Roll PID Mix
-		_uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 10 - _uORB_RC_Out__Roll;
+		_uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 15 - _uORB_RC_Out__Roll;
 		PID_Caculate(_uORB_PID__Roll_Input, _uORB_Leveling__Roll,
 			_uORB_PID_I_Last_Value__Roll, _uORB_PID_D_Last_Value__Roll,
 			_flag_PID_P__Roll_Gain, _flag_PID_I__Roll_Gain, _flag_PID_D__Roll_Gain, _flag_PID_I__Roll_Max__Value);
@@ -303,7 +303,7 @@ public:
 			_uORB_Leveling__Roll = _flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 10 - _uORB_RC_Out_Pitch;
+		_uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 15 - _uORB_RC_Out_Pitch;
 		PID_Caculate(_uORB_PID_Pitch_Input, _uORB_Leveling_Pitch,
 			_uORB_PID_I_Last_Value_Pitch, _uORB_PID_D_Last_Value_Pitch,
 			_flag_PID_P_Pitch_Gain, _flag_PID_I_Pitch_Gain, _flag_PID_D_Pitch_Gain, _flag_PID_I_Pitch_Max__Value);
@@ -429,10 +429,10 @@ public:
 
 	inline void ESCUpdate()
 	{
-		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2280;
-		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2280;
-		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2280;
-		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2280;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2300;
 
 		if (_flag_ForceFailed_Safe)
 		{
@@ -753,6 +753,7 @@ private:
 
 		if (_flag_ForceFailed_Safe == true)
 		{
+			_flag_first_StartUp = true;
 			_uORB_PID_D_Last_Value__Roll = 0;
 			_uORB_PID_D_Last_Value_Pitch = 0;
 			_uORB_PID_D_Last_Value__Yall = 0;
