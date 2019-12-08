@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					APM_Settle.ControlParse();
-					delayMicroseconds(3000);
+					delayMicroseconds(2000);
 				}
 				});
 			std::thread AutoLevelingMain([&] {

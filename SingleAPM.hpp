@@ -37,9 +37,6 @@ public:
 	int Update_Freq_Time;
 	int Attitude_loopTime;
 
-	const int _flag_Lazy_Throttle = 2300;
-	const int _flag_Lock_Throttle = 2200;
-
 	//========================RC_Controller=================//
 	int data[36];
 	int _uORB_RC__Safe = 0;
@@ -47,17 +44,19 @@ public:
 	int _uORB_RC_Pitch = 0;
 	int _uORB_RC_Throttle = 0;
 	int _uORB_RC__Yall = 0;
+
 	int _uORB_RC_Out__Roll = 0;
 	int _uORB_RC_Out_Pitch = 0;
 	int _uORB_RC_Out__Yall = 0;
-	int _flag_RC_Middle__Roll = 1000;
-	int _flag_RC_Middle_Pitch = 1000;
-	int _flag_RC_Middle__Yall = 1000;
 
 	int _flag_RC_Max__Roll = 1000;
 	int _flag_RC_Max_Pitch = 1000;
 	int _flag_RC_Max_Throttle = 1000;
 	int _flag_RC_Max__Yall = 1000;
+
+	int _flag_RC_Middle__Roll = 1000;
+	int _flag_RC_Middle_Pitch = 1000;
+	int _flag_RC_Middle__Yall = 1000;
 
 	int _flag_RC_Min__Roll = 1000;
 	int _flag_RC_Min_Pitch = 1000;
@@ -66,6 +65,8 @@ public:
 	//========================RC_Controller=================//
 
 	//========================ESCController==========//
+	const int _flag_Lazy_Throttle = 2300;
+	const int _flag_Lock_Throttle = 2200;
 	int _flag_A1_Pin = 0;
 	int _flag_A2_Pin = 1;
 	int _flag_B1_Pin = 2;
@@ -85,31 +86,22 @@ public:
 	float _flag_MPU9250_LSB = 65.5;
 	int MPU9250_SPI_Freq = 1000000;
 
-	int _Tmp_MPU9250_Buffer[14];
-	unsigned char _Tmp_MPU9250_SPI_Config[5];
-	unsigned char _Tmp_MPU9250_SPI_Buffer[28];
-
 	bool _flag_first_StartUp = true;
-	long _Tmp_IMU_Accel_Calibration[20];
-	long _Tmp_IMU_Accel_Vector;
+
 	long _uORB_MPU9250_A_X;
 	long _uORB_MPU9250_A_Y;
 	long _uORB_MPU9250_A_Z;
-	unsigned long _Tmp_MPU9250_A_X;
-	unsigned long _Tmp_MPU9250_A_Y;
-	unsigned long _Tmp_MPU9250_A_Z;
-	long _Flag_MPU9250_A_X_Cali;
-	long _Flag_MPU9250_A_Y_Cali;
 
 	long _uORB_MPU9250_G_X;
 	long _uORB_MPU9250_G_Y;
 	long _uORB_MPU9250_G_Z;
-	unsigned long _Tmp_MPU9250_G_X;
-	unsigned long _Tmp_MPU9250_G_Y;
-	unsigned long _Tmp_MPU9250_G_Z;
-	long _Flag_MPU9250_G_X_Cali;
-	long _Flag_MPU9250_G_Y_Cali;
-	long _Flag_MPU9250_G_Z_Cali;
+
+	long _Flag_MPU9250_G_X_Cali = 0;
+	long _Flag_MPU9250_G_Y_Cali = 0;
+	long _Flag_MPU9250_G_Z_Cali = 0;
+
+	long _Flag_MPU9250_A_X_Cali = 0;
+	long _Flag_MPU9250_A_Y_Cali = 0;
 
 	float _uORB_Accel__Roll;
 	float _uORB_Accel_Pitch;
@@ -137,17 +129,6 @@ public:
 	float _flag_PID_D__Yall_Gain;
 
 	float _flag_PID_Level_Max;
-	//PID Tmp
-	float _uORB_PID_D_Last_Value__Roll = 0;
-	float _uORB_PID_D_Last_Value_Pitch = 0;
-	float _uORB_PID_D_Last_Value__Yall = 0;
-
-	float _uORB_PID_I_Last_Value__Roll = 0;
-	float _uORB_PID_I_Last_Value_Pitch = 0;
-	float _uORB_PID_I_Last_Value__Yall = 0;
-
-	float _uORB_PID__Roll_Input = 0;
-	float _uORB_PID_Pitch_Input = 0;
 	//==========================PID Args==============================================//
 
 	RPiSingelAPM()
@@ -640,6 +621,32 @@ public:
 	//-------------------------------------------------------------------//
 
 private:
+	//==================================Sensors Tmp==============//
+	int _Tmp_MPU9250_Buffer[14];
+	unsigned char _Tmp_MPU9250_SPI_Config[5];
+	unsigned char _Tmp_MPU9250_SPI_Buffer[28];
+
+	unsigned long _Tmp_MPU9250_G_X;
+	unsigned long _Tmp_MPU9250_G_Y;
+	unsigned long _Tmp_MPU9250_G_Z;
+	unsigned long _Tmp_MPU9250_A_X;
+	unsigned long _Tmp_MPU9250_A_Y;
+	unsigned long _Tmp_MPU9250_A_Z;
+
+	long _Tmp_IMU_Accel_Calibration[20];
+	long _Tmp_IMU_Accel_Vector;
+	//======================================PID Tmp==============//
+	float _uORB_PID_D_Last_Value__Roll = 0;
+	float _uORB_PID_D_Last_Value_Pitch = 0;
+	float _uORB_PID_D_Last_Value__Yall = 0;
+
+	float _uORB_PID_I_Last_Value__Roll = 0;
+	float _uORB_PID_I_Last_Value_Pitch = 0;
+	float _uORB_PID_I_Last_Value__Yall = 0;
+
+	float _uORB_PID__Roll_Input = 0;
+	float _uORB_PID_Pitch_Input = 0;
+
 	inline void PID_Caculate(float inputData, float& outputData,
 		float& last_I_Data, float& last_D_Data,
 		float P_Gain, float I_Gain, float D_Gain, float I_Max)
@@ -712,6 +719,7 @@ private:
 
 	inline void ControlRead()
 	{
+#ifdef SBUS_CONVERTER
 		if (serialDataAvail(RCReader_fd) > 0)
 		{
 			for (int i = 0; i <= 34; i++)
@@ -724,6 +732,34 @@ private:
 		_uORB_RC_Throttle = data[5] * 255 + data[6];
 		_uORB_RC__Yall = data[7] * 255 + data[8];
 		_uORB_RC__Safe = data[9] * 255 + data[10];
+#endif
+
+#ifdef IBUS_Serial
+		if (serialDataAvail(RCReader_fd) > 0)
+		{
+			if (serialGetchar(RCReader_fd) == 64)
+			{
+				for (int i = 0; i < 32; i++)
+				{
+					data[i] = serialGetchar(RCReader_fd);
+				}
+
+				if (data[31] == 64)
+				{
+					_uORB_RC__Roll = data[1] * 255 + data[0];
+					_uORB_RC_Pitch = data[3] * 255 + data[2];
+					_uORB_RC_Throttle = data[5] * 255 + data[4];
+					_uORB_RC__Yall = data[7] * 255 + data[6];
+					_uORB_RC__Safe = data[9] * 255 + data[8];
+				}
+				else if (data[31] != 64)
+				{
+					serialFlush(RCReader_fd);
+				}
+			}
+		}
+#endif
+
 
 		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe)
 		{
