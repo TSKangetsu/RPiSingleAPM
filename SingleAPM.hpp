@@ -591,7 +591,7 @@ public:
 			std::cout << "Roll:" << _uORB_RC__Roll << " ";
 			std::cout << "Pitch:" << _uORB_RC_Pitch << " ";
 			std::cout << "Throttle:" << _uORB_RC_Throttle << " ";
-			std::cout << "Yall:" << _uORB_RC___Yaw << " \r";
+			std::cout << "Yaw:" << _uORB_RC___Yaw << " \r";
 
 			if (_uORB_RC__Roll > _flag_RC_Max__Roll&& _uORB_RC__Roll != 0)
 				_flag_RC_Max__Roll = _uORB_RC__Roll;
