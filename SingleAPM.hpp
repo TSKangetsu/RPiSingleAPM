@@ -41,6 +41,7 @@ public:
 	//========================RC_Controller=================//
 	int data[36];
 	int _uORB_RC__Safe = 0;
+	int _uORB_RC__Func = 0;
 	int _uORB_RC__Roll = 0;
 	int _uORB_RC_Pitch = 0;
 	int _uORB_RC_Throttle = 0;
@@ -50,19 +51,19 @@ public:
 	int _uORB_RC_Out_Pitch = 0;
 	int _uORB_RC_Out___Yaw = 0;
 
-	int _flag_RC_Max__Roll = 1000;
-	int _flag_RC_Max_Pitch = 1000;
-	int _flag_RC_Max_Throttle = 1000;
-	int _flag_RC_Max___Yaw = 1000;
+	int _flag_RC_Max__Roll;
+	int _flag_RC_Max_Pitch;
+	int _flag_RC_Max_Throttle;
+	int _flag_RC_Max___Yaw;
 
-	int _flag_RC_Middle__Roll = 1000;
-	int _flag_RC_Middle_Pitch = 1000;
-	int _flag_RC_Middle___Yaw = 1000;
+	int _flag_RC_Middle__Roll;
+	int _flag_RC_Middle_Pitch;
+	int _flag_RC_Middle___Yaw;
 
-	int _flag_RC_Min__Roll = 1000;
-	int _flag_RC_Min_Pitch = 1000;
-	int _flag_RC_Min_Throttle = 1000;
-	int _flag_RC_Min___Yaw = 1000;
+	int _flag_RC_Min__Roll;
+	int _flag_RC_Min_Pitch;
+	int _flag_RC_Min_Throttle;
+	int _flag_RC_Min___Yaw;
 	//========================RC_Controller=================//
 
 	//========================ESCController==========//
@@ -294,7 +295,7 @@ public:
 			_uORB_RC_Out___Yaw = (_uORB_RC___Yaw - _flag_RC_Middle___Yaw) / 4;
 	}
 
-	inline void ControlParse(int _Fix_Roll , int _Fix_Pitch , int _Fix_Throttle , int _Fix_Yaw)
+	inline void ControlParse(int _Fix_Roll, int _Fix_Pitch, int _Fix_Throttle, int _Fix_Yaw)
 	{
 		_uORB_RC__Roll = _Fix_Roll;
 		_uORB_RC_Pitch = _Fix_Pitch;
@@ -362,6 +363,43 @@ public:
 
 	inline void SaftyChecking()
 	{
+		//============================RCStatusCheck===================================//
+		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe)
+		{
+			if (_flag_Error == false)
+			{
+				_flag_ForceFailed_Safe = false;
+				Status_Code[0] = 1;
+			}
+			else
+			{
+				_flag_ForceFailed_Safe = true;
+			}
+		}
+		else if (_uORB_RC__Safe < 1400)
+		{
+			_flag_ForceFailed_Safe = true;
+			_flag_Error = false;
+			Status_Code[0] = 0;
+		}
+		else if (_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20)
+		{
+			if (_flag_Error == true)
+			{
+				_flag_ForceFailed_Safe = true;
+			}
+		}
+
+		if (_flag_ForceFailed_Safe == true)
+		{
+			_flag_first_StartUp = true;
+			_uORB_PID_D_Last_Value__Roll = 0;
+			_uORB_PID_D_Last_Value_Pitch = 0;
+			_uORB_PID_D_Last_Value___Yaw = 0;
+			_uORB_PID_I_Last_Value__Roll = 0;
+			_uORB_PID_I_Last_Value_Pitch = 0;
+			_uORB_PID_I_Last_Value___Yaw = 0;
+		}
 		//=====================AttitudeUpdate_Time_checkout=========================//
 		if (Attitude_loopTime > Update_Freq_Time)
 		{
@@ -369,7 +407,7 @@ public:
 			Status_Code[10] = -1;
 		}
 		//=====================RC_input_checkout====================================//
-		if (!(_uORB_RC__Roll < _flag_RC_Max__Roll + 20 && _uORB_RC__Roll > _flag_RC_Min__Roll - 20))
+		if (!(_uORB_RC__Roll < _flag_RC_Max__Roll + 20 || _uORB_RC__Roll > _flag_RC_Min__Roll - 20))
 		{
 			_flag_Error = true;
 			Status_Code[11] = -1;
@@ -379,7 +417,7 @@ public:
 			Status_Code[11] = 0;
 		}
 
-		if (!(_uORB_RC_Pitch < _flag_RC_Max_Pitch + 20 && _uORB_RC_Pitch > _flag_RC_Min_Pitch - 20))
+		if (!(_uORB_RC_Pitch < _flag_RC_Max_Pitch + 20 || _uORB_RC_Pitch > _flag_RC_Min_Pitch - 20))
 		{
 			_flag_Error = true;
 			Status_Code[12] = -1;
@@ -388,7 +426,7 @@ public:
 		{
 			Status_Code[12] = 0;
 		}
-		if (!(_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20 && _uORB_RC_Throttle > _flag_RC_Min_Throttle - 20))
+		if (!(_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20 || _uORB_RC_Throttle > _flag_RC_Min_Throttle - 20))
 		{
 			_flag_Error = true;
 			Status_Code[13] = -1;
@@ -397,7 +435,7 @@ public:
 		{
 			Status_Code[13] = 0;
 		}
-		if (!(_uORB_RC___Yaw < _flag_RC_Max___Yaw + 20 && _uORB_RC___Yaw > _flag_RC_Min___Yaw - 20))
+		if (!(_uORB_RC___Yaw < _flag_RC_Max___Yaw + 20 || _uORB_RC___Yaw > _flag_RC_Min___Yaw - 20))
 		{
 			_flag_Error = true;
 			Status_Code[14] = -1;
@@ -425,25 +463,6 @@ public:
 		else
 		{
 			Status_Code[16] = 0;
-		}
-
-		if (_uORB_Accel_Pitch > 90.0 || _uORB_Accel_Pitch < -90.0)
-		{
-			_flag_Error = true;
-			Status_Code[17] = -1;
-		}
-		else
-		{
-			Status_Code[17] = 0;
-		}
-		if (_uORB_Accel__Roll > 90.0 || _uORB_Accel__Roll < -90.0)
-		{
-			_flag_Error = true;
-			Status_Code[18] = -1;
-		}
-		else
-		{
-			Status_Code[18] = 0;
 		}
 		//=====================Status_checkout======================================//
 		if (_flag_ForceFailed_Safe == true)
@@ -579,6 +598,11 @@ public:
 
 	inline void ControlCalibration()
 	{
+		int last_roll = 0;
+		int last_pitch = 0;
+		int last_throttle = 0;
+		int last_yaw = 0;
+
 		int CalibrationComfirm;
 		std::cout << "[Controller] ControlCalibraion start , input 1 to start , input -1 to skip \n";
 		std::cin >> CalibrationComfirm;
@@ -594,25 +618,35 @@ public:
 			std::cout << "Roll:" << _uORB_RC__Roll << " ";
 			std::cout << "Pitch:" << _uORB_RC_Pitch << " ";
 			std::cout << "Throttle:" << _uORB_RC_Throttle << " ";
-			std::cout << "Yaw:" << _uORB_RC___Yaw << " \r";
+			std::cout << "Yaw:" << _uORB_RC___Yaw << " ";
+			std::cout << "SafeSwitch:" << _uORB_RC__Safe << " ";
+			std::cout << "FuncSwitch:" << _uORB_RC__Func << " \r";
 
-			if (_uORB_RC__Roll > _flag_RC_Max__Roll&& _uORB_RC__Roll != 0)
+			if (_uORB_RC__Roll > last_roll)
 				_flag_RC_Max__Roll = _uORB_RC__Roll;
-			if (_uORB_RC_Pitch > _flag_RC_Max_Pitch&& _uORB_RC_Pitch != 0)
-				_flag_RC_Max_Pitch = _uORB_RC_Pitch;
-			if (_uORB_RC_Throttle > _flag_RC_Max_Throttle&& _uORB_RC_Throttle != 0)
-				_flag_RC_Max_Throttle = _uORB_RC_Throttle;
-			if (_uORB_RC___Yaw > _flag_RC_Max___Yaw&& _uORB_RC___Yaw != 0)
-				_flag_RC_Max___Yaw = _uORB_RC___Yaw;
+			else if (_uORB_RC__Roll < last_roll)
+				_flag_RC_Min__Roll = _uORB_RC__Roll;;
 
-			if (_uORB_RC__Roll < _flag_RC_Min__Roll && _uORB_RC__Roll != 0)
-				_flag_RC_Min__Roll = _uORB_RC__Roll;
-			if (_uORB_RC_Pitch < _flag_RC_Min_Pitch && _uORB_RC_Pitch != 0)
+			if (_uORB_RC_Pitch > last_pitch)
+				_flag_RC_Max_Pitch = _uORB_RC_Pitch;
+			else if (_uORB_RC_Pitch < last_pitch)
 				_flag_RC_Min_Pitch = _uORB_RC_Pitch;
-			if (_uORB_RC_Throttle < _flag_RC_Min_Throttle && _uORB_RC_Throttle != 0)
+
+			if (_uORB_RC_Throttle > last_throttle)
+				_flag_RC_Max_Throttle = _uORB_RC_Throttle;
+			else if (_uORB_RC_Throttle < last_throttle)
 				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
-			if (_uORB_RC___Yaw < _flag_RC_Min___Yaw && _uORB_RC___Yaw != 0)
+
+			if (_uORB_RC___Yaw > last_yaw)
+				_flag_RC_Max___Yaw = _uORB_RC___Yaw;
+			else if (_uORB_RC___Yaw < last_yaw)
 				_flag_RC_Min___Yaw = _uORB_RC___Yaw;
+
+			last_roll = _uORB_RC__Roll;
+			last_pitch = _uORB_RC_Pitch;
+			last_throttle = _uORB_RC_Throttle;
+			last_yaw = _uORB_RC___Yaw;
+
 			usleep(2000);
 		}
 		std::cout << "\n[Controller] Calibration will finshed"
@@ -814,6 +848,7 @@ private:
 					_uORB_RC_Throttle = data[5] * 255 + data[4];
 					_uORB_RC___Yaw = data[7] * 255 + data[6];
 					_uORB_RC__Safe = data[9] * 255 + data[8];
+					serialFlush(RCReader_fd);
 				}
 				else if (data[31] != 64)
 				{
@@ -822,44 +857,6 @@ private:
 			}
 		}
 #endif
-
-
-		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe)
-		{
-			if (_flag_Error == false)
-			{
-				_flag_ForceFailed_Safe = false;
-				Status_Code[0] = 1;
-			}
-			else
-			{
-				_flag_ForceFailed_Safe = true;
-			}
-		}
-		else if (_uORB_RC__Safe < 1400)
-		{
-			_flag_ForceFailed_Safe = true;
-			_flag_Error = false;
-			Status_Code[0] = 0;
-		}
-		else if (_uORB_RC_Throttle < _flag_RC_Max_Throttle + 20)
-		{
-			if (_flag_Error == true)
-			{
-				_flag_ForceFailed_Safe = true;
-			}
-		}
-
-		if (_flag_ForceFailed_Safe == true)
-		{
-			_flag_first_StartUp = true;
-			_uORB_PID_D_Last_Value__Roll = 0;
-			_uORB_PID_D_Last_Value_Pitch = 0;
-			_uORB_PID_D_Last_Value___Yaw = 0;
-			_uORB_PID_I_Last_Value__Roll = 0;
-			_uORB_PID_I_Last_Value_Pitch = 0;
-			_uORB_PID_I_Last_Value___Yaw = 0;
-		}
 	}
 
 	inline void SensorsDataRead()
