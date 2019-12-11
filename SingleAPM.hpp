@@ -106,8 +106,8 @@ public:
 	long _Flag_MPU9250_G_Y_Cali = 0;
 	long _Flag_MPU9250_G_Z_Cali = 0;
 
-	long _Flag_Accel__Roll_Cali = 0;
-	long _Flag_Accel_Pitch_Cali = 0;
+	long _Flag_Accel__Roll_Cali;
+	long _Flag_Accel_Pitch_Cali;
 
 	float _uORB_Accel__Roll = 0;
 	float _uORB_Accel_Pitch = 0;
@@ -242,15 +242,10 @@ public:
 	inline void SensorsParse()
 	{
 		SensorsDataRead();
-		//Cail----------------------------------------------------------------------//
-		//Acel_cali
-		_uORB_Accel__Roll -= _Flag_Accel__Roll_Cali;
-		_uORB_Accel__Roll -= _Flag_Accel_Pitch_Cali;
-		//Gryo_cail
+		//Gryo----------------------------------------------------------------------//
 		_uORB_MPU9250_G_X -= _Flag_MPU9250_G_X_Cali;
 		_uORB_MPU9250_G_Y -= _Flag_MPU9250_G_Y_Cali;
 		_uORB_MPU9250_G_Z -= _Flag_MPU9250_G_Z_Cali;
-		//Gryo----------------------------------------------------------------------//
 		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((_uORB_MPU9250_G_Y / _flag_MPU9250_LSB) * 0.3);
 		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((_uORB_MPU9250_G_X / _flag_MPU9250_LSB) * 0.3);
 		_uORB_Gryo___Yaw = (_uORB_Gryo___Yaw * 0.7) + ((_uORB_MPU9250_G_Z / _flag_MPU9250_LSB) * 0.3);
@@ -260,16 +255,17 @@ public:
 			_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * -57.296;
 		if (abs(_uORB_MPU9250_A_Y) < _Tmp_IMU_Accel_Vector)
 			_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * 57.296;
+		_uORB_Accel__Roll -= _Flag_Accel__Roll_Cali;
+		_uORB_Accel_Pitch -= _Flag_Accel_Pitch_Cali;
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
-
 		_uORB_Real_Pitch += _uORB_MPU9250_G_X / Update_Freqeuncy / _flag_MPU9250_LSB;
 		_uORB_Real__Roll += _uORB_MPU9250_G_Y / Update_Freqeuncy / _flag_MPU9250_LSB;
 		_uORB_Real_Pitch -= _uORB_Real__Roll * sin((_uORB_MPU9250_G_Z / Update_Freqeuncy / _flag_MPU9250_LSB) * (3.14 / 180));
 		_uORB_Real__Roll += _uORB_Real_Pitch * sin((_uORB_MPU9250_G_Z / Update_Freqeuncy / _flag_MPU9250_LSB) * (3.14 / 180));
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.9995 + _uORB_Accel_Pitch * 0.0005;
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.9995 + _uORB_Accel__Roll * 0.0005;
+			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.999 + _uORB_Accel_Pitch * 0.001;
+			_uORB_Real__Roll = _uORB_Real__Roll * 0.999 + _uORB_Accel__Roll * 0.001;
 		}
 		else
 		{
@@ -515,13 +511,20 @@ public:
 		std::cout << "[Sensors] Accel Calibration ......" << "\n";
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
-			SensorsParse();
+			SensorsDataRead();
+			_Tmp_IMU_Accel_Vector = sqrt((_uORB_MPU9250_A_X * _uORB_MPU9250_A_X) + (_uORB_MPU9250_A_Y * _uORB_MPU9250_A_Y) + (_uORB_MPU9250_A_Z * _uORB_MPU9250_A_Z));
+			if (abs(_uORB_MPU9250_A_X) < _Tmp_IMU_Accel_Vector)
+				_uORB_Accel__Roll = asin((float)_uORB_MPU9250_A_X / _Tmp_IMU_Accel_Vector) * -57.296;
+			if (abs(_uORB_MPU9250_A_Y) < _Tmp_IMU_Accel_Vector)
+				_uORB_Accel_Pitch = asin((float)_uORB_MPU9250_A_Y / _Tmp_IMU_Accel_Vector) * 57.296;
 			_Flag_Accel__Roll_Cali += _uORB_Accel__Roll;
 			_Flag_Accel_Pitch_Cali += _uORB_Accel_Pitch;
 			usleep(3);
 		}
 		_Flag_Accel__Roll_Cali = _Flag_Accel__Roll_Cali / 2000;
 		_Flag_Accel_Pitch_Cali = _Flag_Accel_Pitch_Cali / 2000;
+		std::cout << "AccelPitchCali: " << _Flag_Accel_Pitch_Cali << " \n";
+		std::cout << "AccelRollCali: " << _Flag_Accel__Roll_Cali << " \n";
 		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
 		if (CalibrationComfirm == -1)
@@ -770,8 +773,8 @@ private:
 
 		_flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
 		//==============================================================Sensors cofig==/
-		_Flag_Accel__Roll_Cali = Configdata["_Flag_Accel__Roll_Cali"].get<int>();
-		_Flag_Accel_Pitch_Cali = Configdata["_Flag_Accel_Pitch_Cali"].get<int>();
+		_Flag_Accel__Roll_Cali = Configdata["_Flag_Accel__Roll_Cali"].get<float>();
+		_Flag_Accel_Pitch_Cali = Configdata["_Flag_Accel_Pitch_Cali"].get<float>();
 		//===============================================================Update cofig==/
 		Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
 		std::cout << "[ConfigRead]Config Set Success!\n";
