@@ -51,6 +51,12 @@ public:
 	RPiSingelAPM()
 	{
 		_flag_ForceFailed_Safe = true;
+
+		for (int i = 0; i < 20; i++)
+		{
+			Status_Code[i] = 5;
+		}
+
 		Status_Code[0] = 0;
 		//=======SYS_Setup=================//
 		if (wiringPiSetupSys() < 0)
