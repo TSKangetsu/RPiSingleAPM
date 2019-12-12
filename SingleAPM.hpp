@@ -241,6 +241,7 @@ public:
 		_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
 		_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
 		Status_Code[7] = 0;
+		_flag_StartUP_Protect = true;
 	}
 
 	inline void SensorsParse()
