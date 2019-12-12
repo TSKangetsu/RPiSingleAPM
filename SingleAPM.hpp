@@ -20,99 +20,25 @@ class RPiSingelAPM
 {
 public:
 	char* configDir = "/etc/APMconfig.json";
+	int Status_Code[20];
 
 	bool _flag_ForceFailed_Safe;
-	bool _flag_Error;
-	bool _flag_StartUP_Protect;
-
-	int MPU9250_fd;
-	int MS5611_fd;
-	int PCA9658_fd;
-	int RCReader_fd;
-	int Status_Code[20];
-	const int PWM_Freq = 400;
-
-	const int PCA9685_PinBase = 65;
-	const int PCA9685_Address = 0x40;
+	bool _flag_Device_setupFailed;
 
 	int Update_Freqeuncy;
 	int Update_Freq_Time;
 	int Attitude_loopTime;
 
 	//========================RC_Controller=================//
-	int data[36];
 	int _uORB_RC__Safe = 0;
 	int _uORB_RC__Func = 0;
 	int _uORB_RC__Roll = 0;
 	int _uORB_RC_Pitch = 0;
 	int _uORB_RC_Throttle = 0;
 	int _uORB_RC___Yaw = 0;
-
-	int _uORB_RC_Out__Roll = 0;
-	int _uORB_RC_Out_Pitch = 0;
-	int _uORB_RC_Out___Yaw = 0;
-
-	int _flag_RC_Max__Roll;
-	int _flag_RC_Max_Pitch;
-	int _flag_RC_Max_Throttle;
-	int _flag_RC_Max___Yaw;
-
-	int _flag_RC_Middle__Roll;
-	int _flag_RC_Middle_Pitch;
-	int _flag_RC_Middle___Yaw;
-
-	int _flag_RC_Min__Roll;
-	int _flag_RC_Min_Pitch;
-	int _flag_RC_Min_Throttle;
-	int _flag_RC_Min___Yaw;
-
-	int _flag_RC_Safe_Area;
 	//========================RC_Controller=================//
 
-	//========================ESCController==========//
-	const int _flag_Lazy_Throttle = 2300;
-	const int _flag_Lock_Throttle = 2200;
-	int _flag_A1_Pin = 0;
-	int _flag_A2_Pin = 1;
-	int _flag_B1_Pin = 2;
-	int _flag_B2_Pin = 3;
-	int _uORB_A1_Speed;
-	int _uORB_A2_Speed;
-	int _uORB_B1_Speed;
-	int _uORB_B2_Speed;
-	float _uORB_Leveling__Roll;
-	float _uORB_Leveling_Pitch;
-	float _uORB_Leveling___Yaw;
-#ifdef I2C_MS5611
-	//MS5611
-	float _uORB_Althold_Throttle;
-#endif
-	//========================ESCController==========//
-
-	//==========================sensors=======//
-	//MPU9250
-	int MPU9250_SPI_Channel = 1;
-	const int MPU9250_ADDR = 0x68;
-	float _flag_MPU9250_LSB = 65.5;
-	int MPU9250_SPI_Freq = 1000000;
-
-	bool _flag_first_StartUp = true;
-
-	long _uORB_MPU9250_A_X;
-	long _uORB_MPU9250_A_Y;
-	long _uORB_MPU9250_A_Z;
-
-	long _uORB_MPU9250_G_X;
-	long _uORB_MPU9250_G_Y;
-	long _uORB_MPU9250_G_Z;
-
-	long _Flag_MPU9250_G_X_Cali = 0;
-	long _Flag_MPU9250_G_Y_Cali = 0;
-	long _Flag_MPU9250_G_Z_Cali = 0;
-
-	long _Flag_Accel__Roll_Cali;
-	long _Flag_Accel_Pitch_Cali;
-
+	//==========================sensors=============================//
 	float _uORB_Accel__Roll = 0;
 	float _uORB_Accel_Pitch = 0;
 	float _uORB_Gryo__Roll = 0;
@@ -120,35 +46,7 @@ public:
 	float _uORB_Gryo___Yaw = 0;
 	float _uORB_Real_Pitch = 0;
 	float _uORB_Real__Roll = 0;
-#ifdef I2C_MS5611
-	//MS5611
-	const int MS5611_ADDR = 0x70;
-
-	float _uORB_MS5611_Temp;
-	float _uORB_MS5611_Pressure;
-
-	float _uORB_Barometer_Altitude;
-#endif
-	//==========================sensors=======//
-
-	//==========================PID Args==============================================//
-	float _flag_PID_P__Roll_Gain;
-	float _flag_PID_P_Pitch_Gain;
-	float _flag_PID_P___Yaw_Gain;
-
-	float _flag_PID_I__Roll_Gain;
-	float _flag_PID_I_Pitch_Gain;
-	float _flag_PID_I___Yaw_Gain;
-	float _flag_PID_I__Roll_Max__Value;
-	float _flag_PID_I_Pitch_Max__Value;
-	float _flag_PID_I___Yaw_Max__Value;
-
-	float _flag_PID_D__Roll_Gain;
-	float _flag_PID_D_Pitch_Gain;
-	float _flag_PID_D___Yaw_Gain;
-
-	float _flag_PID_Level_Max;
-	//==========================PID Args==============================================//
+	//==========================sensors============================//
 
 	RPiSingelAPM()
 	{
@@ -197,34 +95,23 @@ public:
 			Status_Code[2] = 0;
 		}
 #endif
-#ifdef I2C_MS5611
-		MS5611_fd = wiringPiI2CSetup(MS5611_fd);
-		if (MS5611_fd < 0)
-			Status_Code[3] = -1;
-		else
-		{
-			wiringPiI2CWrite(MS5611_fd, 0x1E); //reset
-			wiringPiI2CWrite(MS5611_fd, 0xA6); //readPROM
-			_Tmp_MS5611_PROM_Buffer = wiringPiI2CRead(MS5611_fd);
-		}
-#endif 
 
 		//=======RC__Setup=================//
 		RCReader_fd = serialOpen("/dev/ttyS0", 115200);
 		if (RCReader_fd < 0)
-			Status_Code[4] = -1;
+			Status_Code[3] = -1;
 		else
-			Status_Code[4] = 0;
+			Status_Code[3] = 0;
 		//=======PWM_Setup=================//
 		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
 		if (PCA9658_fd < 0)
-			Status_Code[5] = -1;
+			Status_Code[4] = -1;
 		else
-			Status_Code[5] = 0;
+			Status_Code[4] = 0;
 		//=======Config_Parse================//
 		ConfigReader();
 		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000;
-		Status_Code[6] = Update_Freq_Time;
+		Status_Code[5] = Update_Freq_Time;
 		//=======run Gryo calibration========//
 		_Flag_MPU9250_G_X_Cali = 0;
 		_Flag_MPU9250_G_Y_Cali = 0;
@@ -240,8 +127,12 @@ public:
 		_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
 		_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
 		_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
-		Status_Code[7] = 0;
-		_flag_StartUP_Protect = true;
+		Status_Code[6] = 0;
+
+		if (Status_Code[1] == -1 || Status_Code[2] == -1 || Status_Code[3] == -1 || Status_Code[4] == -1)
+			_flag_Device_setupFailed = true;
+		else
+			_flag_Device_setupFailed = false;
 	}
 
 	inline void SensorsParse()
@@ -358,29 +249,25 @@ public:
 		_uORB_B2_Speed = _uORB_RC_Throttle + _uORB_Leveling__Roll + _uORB_Leveling_Pitch - _uORB_Leveling___Yaw;
 	}
 
-#ifdef I2C_MS5611
-	inline void AltHoldMode_Enable()
-	{
-
-	}
-#endif
-
 	inline void SaftyChecking()
 	{
 		//============================RCStatusCheck===================================//
 		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && _flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < _flag_RC_Safe_Area + 50)
 		{
-			if (_flag_Error == false)
+			if (_flag_Device_setupFailed == false)
 			{
-				if (_flag_StartUP_Protect == false)
+				if (_flag_Error == false)
 				{
-					_flag_ForceFailed_Safe = false;
-					Status_Code[0] = 1;
+					if (_flag_StartUP_Protect == false)
+					{
+						_flag_ForceFailed_Safe = false;
+						Status_Code[0] = 1;
+					}
 				}
-			}
-			else
-			{
-				_flag_ForceFailed_Safe = true;
+				else
+				{
+					_flag_ForceFailed_Safe = true;
+				}
 			}
 		}
 		else if (!(_flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < _flag_RC_Safe_Area + 50))
@@ -521,8 +408,6 @@ public:
 				_uORB_B2_Speed);
 		}
 	}
-
-	//-------------------------------------------------------------------//
 
 	inline void Debug()
 	{
@@ -749,17 +634,38 @@ public:
 		}
 	}
 
-	//-------------------------------------------------------------------//
-
 private:
-	//==================================Sensors Tmp==============//
+	//==================================Status==================//
+	bool _flag_Error;
+	bool _flag_StartUP_Protect;
+	bool _flag_first_StartUp = true;
+	//==================================Device==================//
+	int RCReader_fd;
+	//PCA9685
+	int PCA9658_fd;
+	const int PWM_Freq = 400;
+	const int PCA9685_PinBase = 65;
+	const int PCA9685_Address = 0x40;
+	//MPU9250
+	int MPU9250_fd;
+	int MPU9250_SPI_Channel = 1;
+	const int MPU9250_ADDR = 0x68;
+	float _flag_MPU9250_LSB = 65.5;
+	int MPU9250_SPI_Freq = 1000000;
+	//MS5611
+	int MS5611_fd;
+	const int MS5611_ADDR = 0x70;
+	//==================================Sensors==================//
 	int _Tmp_MPU9250_Buffer[14];
 	unsigned char _Tmp_MPU9250_SPI_Config[5];
 	unsigned char _Tmp_MPU9250_SPI_Buffer[28];
 
-#ifdef I2C_MS5611
-	int _Tmp_MS5611_PROM_Buffer;
-#endif
+	long _uORB_MPU9250_A_X;
+	long _uORB_MPU9250_A_Y;
+	long _uORB_MPU9250_A_Z;
+	long _uORB_MPU9250_G_X;
+	long _uORB_MPU9250_G_Y;
+	long _uORB_MPU9250_G_Z;
 
 	unsigned long _Tmp_MPU9250_G_X;
 	unsigned long _Tmp_MPU9250_G_Y;
@@ -768,9 +674,15 @@ private:
 	unsigned long _Tmp_MPU9250_A_Y;
 	unsigned long _Tmp_MPU9250_A_Z;
 
+	long _Flag_MPU9250_G_X_Cali;
+	long _Flag_MPU9250_G_Y_Cali;
+	long _Flag_MPU9250_G_Z_Cali;
+	long _Flag_Accel__Roll_Cali;
+	long _Flag_Accel_Pitch_Cali;
+
 	long _Tmp_IMU_Accel_Calibration[20];
 	long _Tmp_IMU_Accel_Vector;
-	//======================================PID Tmp==============//
+	//======================================PID==================//
 	float _uORB_PID_D_Last_Value__Roll = 0;
 	float _uORB_PID_D_Last_Value_Pitch = 0;
 	float _uORB_PID_D_Last_Value___Yaw = 0;
@@ -781,6 +693,59 @@ private:
 
 	float _uORB_PID__Roll_Input = 0;
 	float _uORB_PID_Pitch_Input = 0;
+
+	float _uORB_Leveling__Roll;
+	float _uORB_Leveling_Pitch;
+	float _uORB_Leveling___Yaw;
+	//Args
+	float _flag_PID_P__Roll_Gain;
+	float _flag_PID_P_Pitch_Gain;
+	float _flag_PID_P___Yaw_Gain;
+
+	float _flag_PID_I__Roll_Gain;
+	float _flag_PID_I_Pitch_Gain;
+	float _flag_PID_I___Yaw_Gain;
+	float _flag_PID_I__Roll_Max__Value;
+	float _flag_PID_I_Pitch_Max__Value;
+	float _flag_PID_I___Yaw_Max__Value;
+
+	float _flag_PID_D__Roll_Gain;
+	float _flag_PID_D_Pitch_Gain;
+	float _flag_PID_D___Yaw_Gain;
+
+	float _flag_PID_Level_Max;
+	//==================================Control==================//
+	int data[36];
+	int _uORB_RC_Out__Roll = 0;
+	int _uORB_RC_Out_Pitch = 0;
+	int _uORB_RC_Out___Yaw = 0;
+
+	int _flag_RC_Max__Roll;
+	int _flag_RC_Max_Pitch;
+	int _flag_RC_Max_Throttle;
+	int _flag_RC_Max___Yaw;
+
+	int _flag_RC_Middle__Roll;
+	int _flag_RC_Middle_Pitch;
+	int _flag_RC_Middle___Yaw;
+
+	int _flag_RC_Min__Roll;
+	int _flag_RC_Min_Pitch;
+	int _flag_RC_Min_Throttle;
+	int _flag_RC_Min___Yaw;
+
+	int _flag_RC_Safe_Area;
+	//==================================ESC======================//
+	int _uORB_A1_Speed;
+	int _uORB_A2_Speed;
+	int _uORB_B1_Speed;
+	int _uORB_B2_Speed;
+	int _flag_A1_Pin = 0;
+	int _flag_A2_Pin = 1;
+	int _flag_B1_Pin = 2;
+	int _flag_B2_Pin = 3;
+	const int _flag_Lazy_Throttle = 2300;
+	const int _flag_Lock_Throttle = 2200;
 
 	inline void PID_Caculate(float inputData, float& outputData,
 		float& last_I_Data, float& last_D_Data,
@@ -953,9 +918,6 @@ private:
 		_uORB_MPU9250_G_Y = (short)_Tmp_MPU9250_G_Y;
 		_Tmp_MPU9250_G_Z = ((int)_Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)_Tmp_MPU9250_SPI_Buffer[14]);
 		_uORB_MPU9250_G_Z = (short)_Tmp_MPU9250_G_Z;
-#endif
-#ifdef I2C_MS5611
-		wiringPiI2CWrite(MS5611_fd, 0x00);
 #endif
 	}
 };

@@ -5,8 +5,8 @@ IF(UNIX)
 	###add_definitions(-DI2C_MPU9250)
 
 	#this defintition is for Recvicer Mode , choose one
-	add_definitions(-DSBUS_CONVERTER)
-	###add_definitions(-DIBUS_Serial)
+	###add_definitions(-DSBUS_CONVERTER)
+	add_definitions(-DIBUS_Serial)
 
 	#this defintiion is for MS5611 Mode , choose one
 	###add_definitions(-DI2C_MS5611)
