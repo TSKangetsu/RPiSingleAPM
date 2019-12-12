@@ -282,17 +282,17 @@ public:
 		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > _flag_RC_Middle__Roll - 10)
 			_uORB_RC_Out__Roll = 0;
 		else
-			_uORB_RC_Out__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 4;
+			_uORB_RC_Out__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 3;
 
 		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > _flag_RC_Middle_Pitch - 10)
 			_uORB_RC_Out_Pitch = 0;
 		else
-			_uORB_RC_Out_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 4;
+			_uORB_RC_Out_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 3;
 
 		if (_uORB_RC___Yaw < _flag_RC_Middle___Yaw + 10 && _uORB_RC___Yaw > _flag_RC_Middle___Yaw - 10)
 			_uORB_RC_Out___Yaw = 0;
 		else
-			_uORB_RC_Out___Yaw = (_uORB_RC___Yaw - _flag_RC_Middle___Yaw) / 4;
+			_uORB_RC_Out___Yaw = (_uORB_RC___Yaw - _flag_RC_Middle___Yaw) / 3;
 	}
 
 	inline void ControlParse(int _Fix_Roll, int _Fix_Pitch, int _Fix_Throttle, int _Fix_Yaw)
@@ -304,17 +304,17 @@ public:
 		if (_uORB_RC__Roll < _flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > _flag_RC_Middle__Roll - 10)
 			_uORB_RC_Out__Roll = 0;
 		else
-			_uORB_RC_Out__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 4;
+			_uORB_RC_Out__Roll = (_uORB_RC__Roll - _flag_RC_Middle__Roll) / 3;
 
 		if (_uORB_RC_Pitch < _flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > _flag_RC_Middle_Pitch - 10)
 			_uORB_RC_Out_Pitch = 0;
 		else
-			_uORB_RC_Out_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 4;
+			_uORB_RC_Out_Pitch = (_uORB_RC_Pitch - _flag_RC_Middle_Pitch) / 3;
 
 		if (_uORB_RC___Yaw < _flag_RC_Middle___Yaw + 10 && _uORB_RC___Yaw > _flag_RC_Middle___Yaw - 10)
 			_uORB_RC_Out___Yaw = 0;
 		else
-			_uORB_RC_Out___Yaw = (_uORB_RC___Yaw - _flag_RC_Middle___Yaw) / 4;
+			_uORB_RC_Out___Yaw = (_uORB_RC___Yaw - _flag_RC_Middle___Yaw) / 3;
 	}
 
 	inline void AttitudeUpdate()
@@ -602,6 +602,7 @@ public:
 		int last_pitch = 0;
 		int last_throttle = 0;
 		int last_yaw = 0;
+		bool IS_first = true;
 
 		int CalibrationComfirm;
 		std::cout << "[Controller] ControlCalibraion start , input 1 to start , input -1 to skip \n";
@@ -621,26 +622,33 @@ public:
 			std::cout << "Yaw:" << _uORB_RC___Yaw << " ";
 			std::cout << "SafeSwitch:" << _uORB_RC__Safe << " ";
 			std::cout << "FuncSwitch:" << _uORB_RC__Func << " \r";
+			if (IS_first)
+			{
+				last_roll = _uORB_RC__Roll;
+				last_pitch = _uORB_RC_Pitch;
+				last_throttle = _uORB_RC_Throttle;
+				last_yaw = _uORB_RC___Yaw;
+				IS_first = false;
+			}
+
+			if (_uORB_RC__Roll < last_roll)
+				_flag_RC_Min__Roll = _uORB_RC__Roll;
+			if (_uORB_RC_Pitch < last_pitch)
+				_flag_RC_Min_Pitch = _uORB_RC_Pitch;
+			if (_uORB_RC_Throttle < last_throttle)
+				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
+			if (_uORB_RC___Yaw < last_yaw)
+				_flag_RC_Min___Yaw = _uORB_RC___Yaw;
+
 
 			if (_uORB_RC__Roll > last_roll)
 				_flag_RC_Max__Roll = _uORB_RC__Roll;
-			else if (_uORB_RC__Roll < last_roll)
-				_flag_RC_Min__Roll = _uORB_RC__Roll;;
-
 			if (_uORB_RC_Pitch > last_pitch)
 				_flag_RC_Max_Pitch = _uORB_RC_Pitch;
-			else if (_uORB_RC_Pitch < last_pitch)
-				_flag_RC_Min_Pitch = _uORB_RC_Pitch;
-
 			if (_uORB_RC_Throttle > last_throttle)
 				_flag_RC_Max_Throttle = _uORB_RC_Throttle;
-			else if (_uORB_RC_Throttle < last_throttle)
-				_flag_RC_Min_Throttle = _uORB_RC_Throttle;
-
-			if (_uORB_RC___Yaw > last_yaw)
+			if (_uORB_RC___Yaw < last_yaw)
 				_flag_RC_Max___Yaw = _uORB_RC___Yaw;
-			else if (_uORB_RC___Yaw < last_yaw)
-				_flag_RC_Min___Yaw = _uORB_RC___Yaw;
 
 			last_roll = _uORB_RC__Roll;
 			last_pitch = _uORB_RC_Pitch;
@@ -908,5 +916,5 @@ private:
 #ifdef I2C_MS5611
 		wiringPiI2CWrite(MS5611_fd, 0x00);
 #endif
-	}
-};
+			}
+		};
