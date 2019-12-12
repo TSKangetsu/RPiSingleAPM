@@ -4,7 +4,7 @@ int main(int argc, char* argv[])
 {
 	int argvs;
 	RPiSingelAPM APM_Settle;
-	while ((argvs = getopt(argc, argv, "vcrh")) != -1)
+	while ((argvs = getopt(argc, argv, "vcerh")) != -1)
 	{
 		switch (argvs)
 		{
@@ -15,9 +15,13 @@ int main(int argc, char* argv[])
 			//--------------------------------------------------------------------------------//
 		case 'c':
 		{
-			APM_Settle.ESCCalibration();
 			APM_Settle.ControlCalibration();
 			APM_Settle.SensorsCalibration();
+		}
+		break;
+		case 'e':
+		{
+			APM_Settle.ESCCalibration();
 		}
 		break;
 		//--------------------------------------------------------------------------------//

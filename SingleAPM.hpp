@@ -497,10 +497,10 @@ public:
 
 	inline void ESCUpdate()
 	{
-		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)300) / (float)1400)) + 2300;
-		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)300) / (float)1400)) + 2300;
-		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)300) / (float)1400)) + 2300;
-		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)300) / (float)1400)) + 2300;
+		_uORB_A1_Speed = (700 * (((float)_uORB_A1_Speed - (float)_flag_RC_Min_Throttle) / (float)(_flag_RC_Max_Throttle - _flag_RC_Min_Throttle))) + 2300;
+		_uORB_A2_Speed = (700 * (((float)_uORB_A2_Speed - (float)_flag_RC_Min_Throttle) / (float)(_flag_RC_Max_Throttle - _flag_RC_Min_Throttle))) + 2300;
+		_uORB_B1_Speed = (700 * (((float)_uORB_B1_Speed - (float)_flag_RC_Min_Throttle) / (float)(_flag_RC_Max_Throttle - _flag_RC_Min_Throttle))) + 2300;
+		_uORB_B2_Speed = (700 * (((float)_uORB_B2_Speed - (float)_flag_RC_Min_Throttle) / (float)(_flag_RC_Max_Throttle - _flag_RC_Min_Throttle))) + 2300;
 
 		if (_flag_ForceFailed_Safe)
 		{
@@ -864,11 +864,19 @@ private:
 				data[i] = serialGetchar(RCReader_fd);
 			}
 		}
-		_uORB_RC__Roll = data[1] * 255 + data[2];
-		_uORB_RC_Pitch = data[3] * 255 + data[4];
-		_uORB_RC_Throttle = data[5] * 255 + data[6];
-		_uORB_RC___Yaw = data[7] * 255 + data[8];
-		_uORB_RC__Safe = data[9] * 255 + data[10];
+		if (data[0] == 15)
+		{
+			_uORB_RC__Roll = data[1] * 255 + data[2];
+			_uORB_RC_Pitch = data[3] * 255 + data[4];
+			_uORB_RC_Throttle = data[5] * 255 + data[6];
+			_uORB_RC___Yaw = data[7] * 255 + data[8];
+			_uORB_RC__Safe = data[9] * 255 + data[10];
+			serialFlush(RCReader_fd);
+		}
+		else if(data[0] != 15)
+		{
+			serialFlush(RCReader_fd);
+		}
 #endif
 
 #ifdef IBUS_Serial
