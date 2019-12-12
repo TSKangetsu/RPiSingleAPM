@@ -397,7 +397,7 @@ public:
 				_flag_ForceFailed_Safe = true;
 			}
 		}
-		
+
 		if (_flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < _flag_RC_Safe_Area + 50)
 		{
 			if (_uORB_RC_Throttle > _flag_RC_Min_Throttle + 20)
@@ -859,23 +859,24 @@ private:
 #ifdef SBUS_CONVERTER
 		if (serialDataAvail(RCReader_fd) > 0)
 		{
-			for (int i = 0; i <= 34; i++)
+			data[0] = serialGetchar(RCReader_fd);
+			if (data[0] == 15)
 			{
-				data[i] = serialGetchar(RCReader_fd);
+				for (int i = 1; i <= 34; i++)
+				{
+					data[i] = serialGetchar(RCReader_fd);
+				}
+				_uORB_RC__Roll = data[1] * 255 + data[2];
+				_uORB_RC_Pitch = data[3] * 255 + data[4];
+				_uORB_RC_Throttle = data[5] * 255 + data[6];
+				_uORB_RC___Yaw = data[7] * 255 + data[8];
+				_uORB_RC__Safe = data[9] * 255 + data[10];
+				serialFlush(RCReader_fd);
 			}
-		}
-		if (data[0] == 15)
-		{
-			_uORB_RC__Roll = data[1] * 255 + data[2];
-			_uORB_RC_Pitch = data[3] * 255 + data[4];
-			_uORB_RC_Throttle = data[5] * 255 + data[6];
-			_uORB_RC___Yaw = data[7] * 255 + data[8];
-			_uORB_RC__Safe = data[9] * 255 + data[10];
-			serialFlush(RCReader_fd);
-		}
-		else if(data[0] != 15)
-		{
-			serialFlush(RCReader_fd);
+			else if (data[0] != 15)
+			{
+				serialFlush(RCReader_fd);
+			}
 		}
 #endif
 
