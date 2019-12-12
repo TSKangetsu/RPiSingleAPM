@@ -23,6 +23,7 @@ public:
 
 	bool _flag_ForceFailed_Safe;
 	bool _flag_Error;
+	bool _flag_StartUP_Protect;
 
 	int MPU9250_fd;
 	int MS5611_fd;
@@ -64,6 +65,8 @@ public:
 	int _flag_RC_Min_Pitch;
 	int _flag_RC_Min_Throttle;
 	int _flag_RC_Min___Yaw;
+
+	int _flag_RC_Safe_Area;
 	//========================RC_Controller=================//
 
 	//========================ESCController==========//
@@ -197,7 +200,7 @@ public:
 #ifdef I2C_MS5611
 		MS5611_fd = wiringPiI2CSetup(MS5611_fd);
 		if (MS5611_fd < 0)
-			Status_Code[7] = -1;
+			Status_Code[3] = -1;
 		else
 		{
 			wiringPiI2CWrite(MS5611_fd, 0x1E); //reset
@@ -209,19 +212,19 @@ public:
 		//=======RC__Setup=================//
 		RCReader_fd = serialOpen("/dev/ttyS0", 115200);
 		if (RCReader_fd < 0)
-			Status_Code[3] = -1;
-		else
-			Status_Code[3] = 0;
-		//=======PWM_Setup=================//
-		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
-		if (PCA9658_fd < 0)
 			Status_Code[4] = -1;
 		else
 			Status_Code[4] = 0;
+		//=======PWM_Setup=================//
+		PCA9658_fd = pca9685Setup(PCA9685_PinBase, PCA9685_Address, PWM_Freq);
+		if (PCA9658_fd < 0)
+			Status_Code[5] = -1;
+		else
+			Status_Code[5] = 0;
 		//=======Config_Parse================//
 		ConfigReader();
 		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000;
-		Status_Code[5] = Update_Freq_Time;
+		Status_Code[6] = Update_Freq_Time;
 		//=======run Gryo calibration========//
 		_Flag_MPU9250_G_X_Cali = 0;
 		_Flag_MPU9250_G_Y_Cali = 0;
@@ -237,7 +240,7 @@ public:
 		_Flag_MPU9250_G_X_Cali = _Flag_MPU9250_G_X_Cali / 2000;
 		_Flag_MPU9250_G_Y_Cali = _Flag_MPU9250_G_Y_Cali / 2000;
 		_Flag_MPU9250_G_Z_Cali = _Flag_MPU9250_G_Z_Cali / 2000;
-		Status_Code[6] = 0;
+		Status_Code[7] = 0;
 	}
 
 	inline void SensorsParse()
@@ -364,20 +367,24 @@ public:
 	inline void SaftyChecking()
 	{
 		//============================RCStatusCheck===================================//
-		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && 1400 < _uORB_RC__Safe)
+		if (_uORB_RC_Throttle < _flag_RC_Min_Throttle + 20 && _flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < _flag_RC_Safe_Area + 50)
 		{
 			if (_flag_Error == false)
 			{
-				_flag_ForceFailed_Safe = false;
-				Status_Code[0] = 1;
+				if (_flag_StartUP_Protect == false)
+				{
+					_flag_ForceFailed_Safe = false;
+					Status_Code[0] = 1;
+				}
 			}
 			else
 			{
 				_flag_ForceFailed_Safe = true;
 			}
 		}
-		else if (_uORB_RC__Safe < 1400)
+		else if (!(_flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < _flag_RC_Safe_Area + 50))
 		{
+			_flag_StartUP_Protect = false;
 			_flag_ForceFailed_Safe = true;
 			_flag_Error = false;
 			Status_Code[0] = 0;
@@ -387,6 +394,14 @@ public:
 			if (_flag_Error == true)
 			{
 				_flag_ForceFailed_Safe = true;
+			}
+		}
+		
+		if (_flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < _flag_RC_Safe_Area + 50)
+		{
+			if (_uORB_RC_Throttle > _flag_RC_Min_Throttle + 20)
+			{
+				_flag_StartUP_Protect = true;
 			}
 		}
 
@@ -510,6 +525,9 @@ public:
 
 	inline void Debug()
 	{
+		std::cout << _uORB_RC__Safe << " ";
+		std::cout << _flag_ForceFailed_Safe << " ";
+		std::cout << _flag_Error << " ";
 		std::cout << _uORB_Accel_Pitch << " ";
 		std::cout << _uORB_Accel__Roll << " ";
 		std::cout << _uORB_Real_Pitch << " ";
@@ -671,6 +689,7 @@ public:
 			_flag_RC_Middle_Pitch = _uORB_RC_Pitch;
 			_flag_RC_Middle__Roll = _uORB_RC__Roll;
 			_flag_RC_Middle___Yaw = _uORB_RC___Yaw;
+			_flag_RC_Safe_Area = _uORB_RC__Safe;
 			usleep(2000);
 		}
 		std::cout << "[Controler] Controller calitbration comfirm:\n"
@@ -686,7 +705,9 @@ public:
 			<< "Min__Roll    = " << _flag_RC_Min__Roll << "\n"
 			<< "Min_Pitch    = " << _flag_RC_Min_Pitch << "\n"
 			<< "Min_Throttle = " << _flag_RC_Min_Throttle << "\n"
-			<< "Min___Yaw    = " << _flag_RC_Min___Yaw << "\n";
+			<< "Min___Yaw    = " << _flag_RC_Min___Yaw << "\n"
+
+			<< "SafeSwitch   = " << _flag_RC_Safe_Area << "\n";
 		std::cout << "<-----------Controller_calibration_over---------------->\n";
 		std::cout << "[Controller] Calibration finshed ,if you want to retry input -1 , to write to configJSON input 1 , input 0 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
@@ -714,6 +735,8 @@ public:
 			Configdata["_flag_RC_Min_Pitch"] = _flag_RC_Min_Pitch;
 			Configdata["_flag_RC_Min_Throttle"] = _flag_RC_Min_Throttle;
 			Configdata["_flag_RC_Min___Yaw"] = _flag_RC_Min___Yaw;
+
+			Configdata["_flag_RC_Safe_Area"] = _flag_RC_Safe_Area;
 
 			std::ofstream configIN;
 			configIN.open(configDir);
@@ -798,6 +821,8 @@ private:
 		_flag_RC_Min_Pitch = Configdata["_flag_RC_Min_Pitch"].get<int>();
 		_flag_RC_Min_Throttle = Configdata["_flag_RC_Min_Throttle"].get<int>();
 		_flag_RC_Min___Yaw = Configdata["_flag_RC_Min___Yaw"].get<int>();
+
+		_flag_RC_Safe_Area = Configdata["_flag_RC_Safe_Area"].get<int>();
 
 		_flag_A1_Pin = Configdata["_flag_A1_Pin"].get<int>();
 		_flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
