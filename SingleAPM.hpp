@@ -29,7 +29,6 @@ class RPiSingelAPM
 {
 public:
 	char* configDir = "/etc/APMconfig.json";
-	int Status_Code[20];
 
 	bool _flag_ForceFailed_Safe;
 	bool _flag_Device_setupFailed;
@@ -56,34 +55,36 @@ public:
 	RPiSingelAPM()
 	{
 		_flag_ForceFailed_Safe = true;
-
-		Status_Code[0] = 0;
 		//=======SYS_Setup=================//
 		if (wiringPiSetupSys() < 0)
-			Status_Code[1] = -1;
+		{
+
+		}
 		else
 		{
-			Status_Code[1] = 0;
 			piHiPri(99);
 		}
 		//=======MPU9259_Setup============//
 #ifdef I2C_MPU9250
 		DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
 		if (DF.MPU9250_fd < 0)
-			Status_Code[2] = -1;
+		{
+
+		}
 		else
 		{
 			wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
 			wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
 			wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
 			wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
-			Status_Code[2] = 0;
 		}
 #endif
 #ifdef SPI_MPU9250
 		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
 		if (DF.MPU9250_fd < 0)
-			Status_Code[2] = -1;
+		{
+
+		}
 		else
 		{
 			SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
@@ -98,26 +99,32 @@ public:
 			SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
 			SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
 			wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
-			Status_Code[2] = 0;
 		}
 #endif
 
 		//=======RC__Setup=================//
 		DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
 		if (DF.RCReader_fd < 0)
-			Status_Code[3] = -1;
+		{
+
+		}
 		else
-			Status_Code[3] = 0;
+		{
+
+		}
 		//=======PWM_Setup=================//
 		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 		if (DF.PCA9658_fd < 0)
-			Status_Code[4] = -1;
+		{
+
+		}
 		else
-			Status_Code[4] = 0;
+		{
+
+		}
 		//=======Config_Parse================//
 		ConfigReader();
 		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000;
-		Status_Code[5] = Update_Freq_Time;
 		//=======run Gryo calibration========//
 		SF._Flag_MPU9250_G_X_Cali = 0;
 		SF._Flag_MPU9250_G_Y_Cali = 0;
@@ -133,12 +140,6 @@ public:
 		SF._Flag_MPU9250_G_X_Cali = SF._Flag_MPU9250_G_X_Cali / 2000;
 		SF._Flag_MPU9250_G_Y_Cali = SF._Flag_MPU9250_G_Y_Cali / 2000;
 		SF._Flag_MPU9250_G_Z_Cali = SF._Flag_MPU9250_G_Z_Cali / 2000;
-		Status_Code[6] = 0;
-
-		if (Status_Code[1] == -1 || Status_Code[2] == -1 || Status_Code[3] == -1 || Status_Code[4] == -1)
-			_flag_Device_setupFailed = true;
-		else
-			_flag_Device_setupFailed = false;
 	}
 
 	inline void SensorsParse()
