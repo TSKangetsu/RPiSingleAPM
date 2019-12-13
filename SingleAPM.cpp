@@ -3,6 +3,7 @@
 int main(int argc, char* argv[])
 {
 	int argvs;
+	APMSafeStatus statusOut;
 	RPiSingelAPM APM_Settle;
 	while ((argvs = getopt(argc, argv, "vcerh")) != -1)
 	{
@@ -26,27 +27,19 @@ int main(int argc, char* argv[])
 		break;
 		//--------------------------------------------------------------------------------//
 		case 'r':
-		{	
-			std::thread controllerUORB([&] {
-				while (true)
-				{
-					APM_Settle.ControlParse();
-					delayMicroseconds(2000);
-				}
-				});
+		{
 			std::thread AutoLevelingMain([&] {
-				long int timer;
-				long int timer_end;
 				while (true)
 				{
-					timer = micros();
+					APM_Settle.UpdateTimer_Start = micros();
 					APM_Settle.SensorsParse();
+					APM_Settle.ControlParse();
 					APM_Settle.AttitudeUpdate();
-					//APM_Settle.SaftyChecking();
+					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
-					APM_Settle.Debug();
-					timer_end = micros();
-					APM_Settle.Attitude_loopTime = timer_end - timer;
+					APM_Settle.UpdateTimer_End = micros();
+					APM_Settle.Attitude_loopTime = APM_Settle.UpdateTimer_End - APM_Settle.UpdateTimer_Start;
+					std::cout << APM_Settle.Attitude_loopTime << " \n";
 					delayMicroseconds(APM_Settle.Update_Freq_Time - APM_Settle.Attitude_loopTime);
 				}
 				});

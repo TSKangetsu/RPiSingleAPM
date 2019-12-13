@@ -2,10 +2,10 @@ IF(UNIX)
 ###########################code Definetion##################
 	#this defintitions is for mpu9250 mode , choose one
 	add_definitions(-DSPI_MPU9250)
-	add_definitions(-DI2C_MPU9250)
+	###add_definitions(-DI2C_MPU9250)
 
 	#this defintition is for Recvicer Mode , choose one
-	add_definitions(-DSBUS_CONVERTER)
+	###add_definitions(-DSBUS_CONVERTER)
 	add_definitions(-DIBUS_Serial)
 
 	#this defintiion is for MS5611 Mode , choose one

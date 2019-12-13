@@ -16,7 +16,7 @@
 
 #include "_thirdparty/pca9685.h"
 
-struct SafeStatus
+struct APMSafeStatus
 {
 	bool ForceFailedSafe;
 	bool SafyError;
@@ -28,32 +28,16 @@ struct SafeStatus
 class RPiSingelAPM
 {
 public:
-	char* configDir = "/etc/APMconfig.json";
-
-	bool _flag_ForceFailed_Safe;
-	bool _flag_Device_setupFailed;
-
-	int Update_Freqeuncy;
 	int Update_Freq_Time;
+	long int UpdateTimer_Start;
+	long int UpdateTimer_End;
 	int Attitude_loopTime;
-
-	int _uORB_RC__Safe = 0;
-	int _uORB_RC__Func = 0;
-	int _uORB_RC__Roll = 0;
-	int _uORB_RC_Pitch = 0;
-	int _uORB_RC_Throttle = 0;
-	int _uORB_RC___Yaw = 0;
-
-	float _uORB_Accel__Roll = 0;
-	float _uORB_Accel_Pitch = 0;
-	float _uORB_Gryo__Roll = 0;
-	float _uORB_Gryo_Pitch = 0;
-	float _uORB_Gryo___Yaw = 0;
-	float _uORB_Real_Pitch = 0;
-	float _uORB_Real__Roll = 0;
 
 	RPiSingelAPM()
 	{
+		Clocking = 0;
+		Lose_Clocking = 0;
+		_flag_first_StartUp = true;
 		_flag_ForceFailed_Safe = true;
 		//=======SYS_Setup=================//
 		if (wiringPiSetupSys() < 0)
@@ -149,31 +133,31 @@ public:
 		SF._uORB_MPU9250_G_X -= SF._Flag_MPU9250_G_X_Cali;
 		SF._uORB_MPU9250_G_Y -= SF._Flag_MPU9250_G_Y_Cali;
 		SF._uORB_MPU9250_G_Z -= SF._Flag_MPU9250_G_Z_Cali;
-		_uORB_Gryo__Roll = (_uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
-		_uORB_Gryo_Pitch = (_uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
-		_uORB_Gryo___Yaw = (_uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
+		SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
+		SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
+		SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
 		//ACCEL---------------------------------------------------------------------//
 		SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
 		if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
-			_uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
+			SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
 		if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
-			_uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
-		_uORB_Accel__Roll -= SF._Flag_Accel__Roll_Cali;
-		_uORB_Accel_Pitch -= SF._Flag_Accel_Pitch_Cali;
+			SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
+		SF._uORB_Accel__Roll -= SF._Flag_Accel__Roll_Cali;
+		SF._uORB_Accel_Pitch -= SF._Flag_Accel_Pitch_Cali;
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
-		_uORB_Real_Pitch += SF._uORB_MPU9250_G_X / Update_Freqeuncy / DF._flag_MPU9250_LSB;
-		_uORB_Real__Roll += SF._uORB_MPU9250_G_Y / Update_Freqeuncy / DF._flag_MPU9250_LSB;
-		_uORB_Real_Pitch -= _uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Z / Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
-		_uORB_Real__Roll += _uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Z / Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+		SF._uORB_Real_Pitch += SF._uORB_MPU9250_G_X / Update_Freqeuncy / DF._flag_MPU9250_LSB;
+		SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Y / Update_Freqeuncy / DF._flag_MPU9250_LSB;
+		SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Z / Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+		SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Z / Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 		if (!_flag_first_StartUp)
 		{
-			_uORB_Real_Pitch = _uORB_Real_Pitch * 0.999 + _uORB_Accel_Pitch * 0.001;
-			_uORB_Real__Roll = _uORB_Real__Roll * 0.999 + _uORB_Accel__Roll * 0.001;
+			SF._uORB_Real_Pitch = SF._uORB_Real_Pitch * 0.999 + SF._uORB_Accel_Pitch * 0.001;
+			SF._uORB_Real__Roll = SF._uORB_Real__Roll * 0.999 + SF._uORB_Accel__Roll * 0.001;
 		}
 		else
 		{
-			_uORB_Real_Pitch = _uORB_Accel_Pitch;
-			_uORB_Real__Roll = _uORB_Accel__Roll;
+			SF._uORB_Real_Pitch = SF._uORB_Accel_Pitch;
+			SF._uORB_Real__Roll = SF._uORB_Accel__Roll;
 			_flag_first_StartUp = false;
 		}
 	}
@@ -181,48 +165,52 @@ public:
 	inline void ControlParse()
 	{
 		ControlRead();
-		if (_uORB_RC__Roll < RF._flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > RF._flag_RC_Middle__Roll - 10)
+		if (RF._uORB_RC__Roll < RF._flag_RC_Middle__Roll + 10 && RF._uORB_RC__Roll > RF._flag_RC_Middle__Roll - 10)
 			RF._uORB_RC_Out__Roll = 0;
 		else
-			RF._uORB_RC_Out__Roll = (_uORB_RC__Roll - RF._flag_RC_Middle__Roll) / 3;
+			RF._uORB_RC_Out__Roll = (RF._uORB_RC__Roll - RF._flag_RC_Middle__Roll) / 3;
 
-		if (_uORB_RC_Pitch < RF._flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > RF._flag_RC_Middle_Pitch - 10)
+		if (RF._uORB_RC_Pitch < RF._flag_RC_Middle_Pitch + 10 && RF._uORB_RC_Pitch > RF._flag_RC_Middle_Pitch - 10)
 			RF._uORB_RC_Out_Pitch = 0;
 		else
-			RF._uORB_RC_Out_Pitch = (_uORB_RC_Pitch - RF._flag_RC_Middle_Pitch) / 3;
+			RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Pitch - RF._flag_RC_Middle_Pitch) / 3;
 
-		if (_uORB_RC___Yaw < RF._flag_RC_Middle___Yaw + 10 && _uORB_RC___Yaw > RF._flag_RC_Middle___Yaw - 10)
+		if (RF._uORB_RC___Yaw < RF._flag_RC_Middle___Yaw + 10 && RF._uORB_RC___Yaw > RF._flag_RC_Middle___Yaw - 10)
 			RF._uORB_RC_Out___Yaw = 0;
 		else
-			RF._uORB_RC_Out___Yaw = (_uORB_RC___Yaw - RF._flag_RC_Middle___Yaw) / 3;
+			RF._uORB_RC_Out___Yaw = (RF._uORB_RC___Yaw - RF._flag_RC_Middle___Yaw) / 3;
 	}
 
-	inline void ControlParse(int _Fix_Roll, int _Fix_Pitch, int _Fix_Throttle, int _Fix_Yaw)
+	inline void ControlParse(int _Fix_Roll, int _Fix_Pitch, int _Fix_Throttle, int _Fix_Yaw, bool MixControl)
 	{
-		_uORB_RC__Roll = _Fix_Roll;
-		_uORB_RC_Pitch = _Fix_Pitch;
-		_uORB_RC_Throttle = _Fix_Throttle;
-		_uORB_RC___Yaw = _Fix_Yaw;
-		if (_uORB_RC__Roll < RF._flag_RC_Middle__Roll + 10 && _uORB_RC__Roll > RF._flag_RC_Middle__Roll - 10)
+		RF._uORB_RC_Out__Roll += _Fix_Roll;
+		RF._uORB_RC_Out_Pitch += _Fix_Pitch;
+		RF._uORB_RC_Out_Throttle += _Fix_Throttle;
+		RF._uORB_RC_Out___Yaw += _Fix_Yaw;
+		if (MixControl)
+		{
+			ControlRead();
+		}
+		if (RF._uORB_RC__Roll < RF._flag_RC_Middle__Roll + 10 && RF._uORB_RC__Roll > RF._flag_RC_Middle__Roll - 10)
 			RF._uORB_RC_Out__Roll = 0;
 		else
-			RF._uORB_RC_Out__Roll = (_uORB_RC__Roll - RF._flag_RC_Middle__Roll) / 3;
+			RF._uORB_RC_Out__Roll = (RF._uORB_RC__Roll - RF._flag_RC_Middle__Roll) / 3;
 
-		if (_uORB_RC_Pitch < RF._flag_RC_Middle_Pitch + 10 && _uORB_RC_Pitch > RF._flag_RC_Middle_Pitch - 10)
+		if (RF._uORB_RC_Pitch < RF._flag_RC_Middle_Pitch + 10 && RF._uORB_RC_Pitch > RF._flag_RC_Middle_Pitch - 10)
 			RF._uORB_RC_Out_Pitch = 0;
 		else
-			RF._uORB_RC_Out_Pitch = (_uORB_RC_Pitch - RF._flag_RC_Middle_Pitch) / 3;
+			RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Pitch - RF._flag_RC_Middle_Pitch) / 3;
 
-		if (_uORB_RC___Yaw < RF._flag_RC_Middle___Yaw + 10 && _uORB_RC___Yaw > RF._flag_RC_Middle___Yaw - 10)
+		if (RF._uORB_RC___Yaw < RF._flag_RC_Middle___Yaw + 10 && RF._uORB_RC___Yaw > RF._flag_RC_Middle___Yaw - 10)
 			RF._uORB_RC_Out___Yaw = 0;
 		else
-			RF._uORB_RC_Out___Yaw = (_uORB_RC___Yaw - RF._flag_RC_Middle___Yaw) / 3;
+			RF._uORB_RC_Out___Yaw = (RF._uORB_RC___Yaw - RF._flag_RC_Middle___Yaw) / 3;
 	}
 
 	inline void AttitudeUpdate()
 	{
 		//Roll PID Mix
-		PF._uORB_PID__Roll_Input = _uORB_Gryo__Roll + _uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
+		PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
 		PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
 			PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
 			PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
@@ -232,7 +220,7 @@ public:
 			PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		PF._uORB_PID_Pitch_Input = _uORB_Gryo_Pitch + _uORB_Real_Pitch * 15 - RF._uORB_RC_Out_Pitch;
+		PF._uORB_PID_Pitch_Input = SF._uORB_Gryo_Pitch + SF._uORB_Real_Pitch * 15 - RF._uORB_RC_Out_Pitch;
 		PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
 			PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
 			PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
@@ -242,7 +230,7 @@ public:
 			PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
 
 		//Yaw PID Mix
-		PID_Caculate(_uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
+		PID_Caculate(SF._uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
 			PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
 			PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
 		if (PF._uORB_Leveling___Yaw > PF._flag_PID_Level_Max)
@@ -250,15 +238,15 @@ public:
 		if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 
-		EF._uORB_B1_Speed = _uORB_RC_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._uORB_A1_Speed = _uORB_RC_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-		EF._uORB_A2_Speed = _uORB_RC_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._uORB_B2_Speed = _uORB_RC_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		EF._uORB_B1_Speed = RF._uORB_RC_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+		EF._uORB_A1_Speed = RF._uORB_RC_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		EF._uORB_A2_Speed = RF._uORB_RC_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+		EF._uORB_B2_Speed = RF._uORB_RC_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
 	}
 
-	inline bool SaftyChecking(SafeStatus& status)
+	inline bool SaftyChecking(APMSafeStatus& status)
 	{
-		if (_uORB_RC_Throttle < RF._flag_RC_Min_Throttle + 20 && RF._flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
+		if (RF._uORB_RC_Throttle < RF._flag_RC_Min_Throttle + 20 && RF._flag_RC_Safe_Area - 50 < RF._uORB_RC__Safe && RF._uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
 		{
 			if (_flag_Device_setupFailed == false)
 			{
@@ -275,23 +263,24 @@ public:
 				}
 			}
 		}
-		else if (!(RF._flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < RF._flag_RC_Safe_Area + 50))
+		else if (!(RF._flag_RC_Safe_Area - 50 < RF._uORB_RC__Safe && RF._uORB_RC__Safe < RF._flag_RC_Safe_Area + 50))
 		{
 			_flag_StartUP_Protect = false;
 			_flag_ForceFailed_Safe = true;
 			_flag_Error = false;
 		}
-		else if (_uORB_RC_Throttle < RF._flag_RC_Max_Throttle + 20)
+		else if (RF._uORB_RC_Throttle < RF._flag_RC_Max_Throttle + 20)
 		{
 			if (_flag_Error == true)
 			{
 				_flag_ForceFailed_Safe = true;
 			}
 		}
-		if (RF._flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
+		if (RF._flag_RC_Safe_Area - 50 < RF._uORB_RC__Safe && RF._uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
 		{
-			if (_uORB_RC_Throttle > RF._flag_RC_Min_Throttle + 20)
+			if (RF._uORB_RC_Throttle > RF._flag_RC_Min_Throttle + 20)
 			{
+
 				_flag_StartUP_Protect = true;
 			}
 		}
@@ -308,13 +297,32 @@ public:
 
 		if (Attitude_loopTime > Update_Freq_Time)
 		{
+			std::cout << "core error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
 			_flag_Error = true;
+			status.Is_SyncTimeOut = true;
 		}
-		if (_uORB_Real_Pitch > 70.0 || _uORB_Real_Pitch < -70.0 || _uORB_Real__Roll > 70.0 || _uORB_Real__Roll < -70.0)
+		if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 		{
 			_flag_Error = true;
+			status.Is_AngelOutLimit = true;
 		}
 
+		Clocking += Update_Freq_Time / 1000;
+		if (_flag_RC_Disconnected == true)
+		{
+			Lose_Clocking += 1;
+			if (Lose_Clocking == 500)
+			{
+				_flag_Error = true;
+				status.Is_RCDisconnect = true;
+				Lose_Clocking = 0;
+			}
+		}
+		else if (_flag_RC_Disconnected == false)
+		{
+			Lose_Clocking = 0;
+			status.Is_RCDisconnect = false;
+		}
 		status.ForceFailedSafe = _flag_ForceFailed_Safe;
 		status.SafyError = _flag_Error;
 	}
@@ -346,19 +354,6 @@ public:
 		}
 	}
 
-	inline void Debug()
-	{
-		std::cout << _uORB_RC__Safe << " ";
-		std::cout << _flag_ForceFailed_Safe << " ";
-		std::cout << _flag_Error << " ";
-		std::cout << _uORB_Accel_Pitch << " ";
-		std::cout << _uORB_Accel__Roll << " ";
-		std::cout << _uORB_Real_Pitch << " ";
-		std::cout << _uORB_Real__Roll << " ";
-		std::cout << PF._uORB_Leveling_Pitch << " ";
-		std::cout << PF._uORB_Leveling__Roll << " \n";
-	}
-
 	inline void SensorsCalibration()
 	{
 		int CalibrationComfirm;
@@ -374,11 +369,11 @@ public:
 			SensorsDataRead();
 			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
 			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
-				_uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
+				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
 			if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
-				_uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
-			SF._Flag_Accel__Roll_Cali += _uORB_Accel__Roll;
-			SF._Flag_Accel_Pitch_Cali += _uORB_Accel_Pitch;
+				SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
+			SF._Flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
+			SF._Flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
 			usleep(3);
 		}
 		SF._Flag_Accel__Roll_Cali = SF._Flag_Accel__Roll_Cali / 2000;
@@ -451,48 +446,47 @@ public:
 		for (int cali_count = 0; cali_count < 4000; cali_count++)
 		{
 			ControlRead();
-			std::cout << "Roll:" << _uORB_RC__Roll << " ";
-			std::cout << "Pitch:" << _uORB_RC_Pitch << " ";
-			std::cout << "Throttle:" << _uORB_RC_Throttle << " ";
-			std::cout << "Yaw:" << _uORB_RC___Yaw << " ";
-			std::cout << "SafeSwitch:" << _uORB_RC__Safe << " ";
-			std::cout << "FuncSwitch:" << _uORB_RC__Func << " \r";
+			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
+			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
+			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
+			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
+			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
+			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
 			if (IS_first)
 			{
-				if (_uORB_RC__Roll != 0)
+				if (RF._uORB_RC__Roll != 0)
 				{
-					RF._flag_RC_Min__Roll = _uORB_RC__Roll;
-					RF._flag_RC_Min_Pitch = _uORB_RC__Roll;
-					RF._flag_RC_Min_Throttle = _uORB_RC__Roll;
-					RF._flag_RC_Min___Yaw = _uORB_RC__Roll;
+					RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
+					RF._flag_RC_Min_Pitch = RF._uORB_RC__Roll;
+					RF._flag_RC_Min_Throttle = RF._uORB_RC__Roll;
+					RF._flag_RC_Min___Yaw = RF._uORB_RC__Roll;
 
-					RF._flag_RC_Max__Roll = _uORB_RC__Roll;
-					RF._flag_RC_Max_Pitch = _uORB_RC__Roll;
-					RF._flag_RC_Max_Throttle = _uORB_RC__Roll;
-					RF._flag_RC_Max___Yaw = _uORB_RC__Roll;
+					RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
+					RF._flag_RC_Max_Pitch = RF._uORB_RC__Roll;
+					RF._flag_RC_Max_Throttle = RF._uORB_RC__Roll;
+					RF._flag_RC_Max___Yaw = RF._uORB_RC__Roll;
 
 					IS_first = false;
 				}
 			}
 
-			if (_uORB_RC__Roll > RF._flag_RC_Max__Roll&& _uORB_RC__Roll != 0)
-				RF._flag_RC_Max__Roll = _uORB_RC__Roll;
-			if (_uORB_RC_Pitch > RF._flag_RC_Max_Pitch&& _uORB_RC_Pitch != 0)
-				RF._flag_RC_Max_Pitch = _uORB_RC_Pitch;
-			if (_uORB_RC_Throttle > RF._flag_RC_Max_Throttle&& _uORB_RC_Throttle != 0)
-				RF._flag_RC_Max_Throttle = _uORB_RC_Throttle;
-			if (_uORB_RC___Yaw > RF._flag_RC_Max___Yaw&& _uORB_RC___Yaw != 0)
-				RF._flag_RC_Max___Yaw = _uORB_RC___Yaw;
+			if (RF._uORB_RC__Roll > RF._flag_RC_Max__Roll&& RF._uORB_RC__Roll != 0)
+				RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
+			if (RF._uORB_RC_Pitch > RF._flag_RC_Max_Pitch&& RF._uORB_RC_Pitch != 0)
+				RF._flag_RC_Max_Pitch = RF._uORB_RC_Pitch;
+			if (RF._uORB_RC_Throttle > RF._flag_RC_Max_Throttle&& RF._uORB_RC_Throttle != 0)
+				RF._flag_RC_Max_Throttle = RF._uORB_RC_Throttle;
+			if (RF._uORB_RC___Yaw > RF._flag_RC_Max___Yaw&& RF._uORB_RC___Yaw != 0)
+				RF._flag_RC_Max___Yaw = RF._uORB_RC___Yaw;
 
-
-			if (_uORB_RC__Roll < RF._flag_RC_Min__Roll && _uORB_RC__Roll != 0)
-				RF._flag_RC_Min__Roll = _uORB_RC__Roll;
-			if (_uORB_RC_Pitch < RF._flag_RC_Min_Pitch && _uORB_RC_Pitch != 0)
-				RF._flag_RC_Min_Pitch = _uORB_RC_Pitch;
-			if (_uORB_RC_Throttle < RF._flag_RC_Min_Throttle && _uORB_RC_Throttle != 0)
-				RF._flag_RC_Min_Throttle = _uORB_RC_Throttle;
-			if (_uORB_RC___Yaw < RF._flag_RC_Min___Yaw && _uORB_RC___Yaw != 0)
-				RF._flag_RC_Min___Yaw = _uORB_RC___Yaw;
+			if (RF._uORB_RC__Roll < RF._flag_RC_Min__Roll && RF._uORB_RC__Roll != 0)
+				RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
+			if (RF._uORB_RC_Pitch < RF._flag_RC_Min_Pitch && RF._uORB_RC_Pitch != 0)
+				RF._flag_RC_Min_Pitch = RF._uORB_RC_Pitch;
+			if (RF._uORB_RC_Throttle < RF._flag_RC_Min_Throttle && RF._uORB_RC_Throttle != 0)
+				RF._flag_RC_Min_Throttle = RF._uORB_RC_Throttle;
+			if (RF._uORB_RC___Yaw < RF._flag_RC_Min___Yaw && RF._uORB_RC___Yaw != 0)
+				RF._flag_RC_Min___Yaw = RF._uORB_RC___Yaw;
 
 			usleep(2000);
 		}
@@ -502,17 +496,17 @@ public:
 		for (int cali_count = 0; cali_count < 1000; cali_count++)
 		{
 			ControlRead();
-			std::cout << "Roll:" << _uORB_RC__Roll << " ";
-			std::cout << "Pitch:" << _uORB_RC_Pitch << " ";
-			std::cout << "Throttle:" << _uORB_RC_Throttle << " ";
-			std::cout << "Yaw:" << _uORB_RC___Yaw << " ";
-			std::cout << "SafeSwitch:" << _uORB_RC__Safe << " ";
-			std::cout << "FuncSwitch:" << _uORB_RC__Func << " \r";
+			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
+			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
+			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
+			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
+			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
+			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
 
-			RF._flag_RC_Middle_Pitch = _uORB_RC_Pitch;
-			RF._flag_RC_Middle__Roll = _uORB_RC__Roll;
-			RF._flag_RC_Middle___Yaw = _uORB_RC___Yaw;
-			RF._flag_RC_Safe_Area = _uORB_RC__Safe;
+			RF._flag_RC_Middle_Pitch = RF._uORB_RC_Pitch;
+			RF._flag_RC_Middle__Roll = RF._uORB_RC__Roll;
+			RF._flag_RC_Middle___Yaw = RF._uORB_RC___Yaw;
+			RF._flag_RC_Safe_Area = RF._uORB_RC__Safe;
 			usleep(2000);
 		}
 		std::cout << "[Controler] Controller calitbration comfirm:\n"
@@ -572,9 +566,16 @@ public:
 	}
 
 private:
+	int Update_Freqeuncy;
+	long int Clocking;
+	long int Lose_Clocking;
 	bool _flag_Error;
 	bool _flag_StartUP_Protect;
-	bool _flag_first_StartUp = true;
+	bool _flag_first_StartUp;
+	bool _flag_RC_Disconnected;
+	bool _flag_ForceFailed_Safe;
+	bool _flag_Device_setupFailed;
+	char* configDir = "/etc/APMconfig.json";;
 
 	struct DeviceINFO
 	{
@@ -604,6 +605,14 @@ private:
 		long _uORB_MPU9250_G_X;
 		long _uORB_MPU9250_G_Y;
 		long _uORB_MPU9250_G_Z;
+
+		float _uORB_Accel__Roll = 0;
+		float _uORB_Accel_Pitch = 0;
+		float _uORB_Gryo__Roll = 0;
+		float _uORB_Gryo_Pitch = 0;
+		float _uORB_Gryo___Yaw = 0;
+		float _uORB_Real_Pitch = 0;
+		float _uORB_Real__Roll = 0;
 
 		unsigned long _Tmp_MPU9250_G_X;
 		unsigned long _Tmp_MPU9250_G_Y;
@@ -660,8 +669,16 @@ private:
 	struct RCINFO
 	{
 		int _Tmp_RC_Data[36];
+		int _uORB_RC__Safe = 0;
+		int _uORB_RC__Func = 0;
+		int _uORB_RC__Roll = 0;
+		int _uORB_RC_Pitch = 0;
+		int _uORB_RC_Throttle = 0;
+		int _uORB_RC___Yaw = 0;
+
 		int _uORB_RC_Out__Roll = 0;
 		int _uORB_RC_Out_Pitch = 0;
+		int _uORB_RC_Out_Throttle = 0;
 		int _uORB_RC_Out___Yaw = 0;
 
 		int _flag_RC_Max__Roll;
@@ -779,15 +796,16 @@ private:
 				{
 					RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
 				}
-				_uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[2];
-				_uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[4];
-				_uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[6];
-				_uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[8];
-				_uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[10];
+				RF._uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[2];
+				RF._uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[4];
+				RF._uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[6];
+				RF._uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[8];
+				RF._uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[10];
 				serialFlush(DF.RCReader_fd);
 			}
 			else if (RF._Tmp_RC_Data[0] != 15)
 			{
+				_flag_RC_Disconnected = true;
 				serialFlush(DF.RCReader_fd);
 			}
 		}
@@ -800,23 +818,31 @@ private:
 			{
 				for (int i = 0; i < 32; i++)
 				{
-					RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
+					if (serialDataAvail(DF.RCReader_fd) > 0)
+					{
+						RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
+					}
 				}
-
 				if (RF._Tmp_RC_Data[31] == 64)
 				{
-					_uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[0];
-					_uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[2];
-					_uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[4];
-					_uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[6];
-					_uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[8];
+					RF._uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[0];
+					RF._uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[2];
+					RF._uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[4];
+					RF._uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[6];
+					RF._uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[8];
 					serialFlush(DF.RCReader_fd);
+					_flag_RC_Disconnected = false;
 				}
 				else if (RF._Tmp_RC_Data[31] != 64)
 				{
+					_flag_RC_Disconnected = true;
 					serialFlush(DF.RCReader_fd);
 				}
 			}
+		}
+		else
+		{
+			_flag_RC_Disconnected = true;
 		}
 #endif
 	}
