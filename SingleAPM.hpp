@@ -16,6 +16,15 @@
 
 #include "_thirdparty/pca9685.h"
 
+struct SafeStatus
+{
+	bool ForceFailedSafe;
+	bool SafyError;
+	bool Is_SyncTimeOut;
+	bool Is_RCDisconnect;
+	bool Is_AngelOutLimit;
+};
+
 class RPiSingelAPM
 {
 public:
@@ -47,11 +56,6 @@ public:
 	RPiSingelAPM()
 	{
 		_flag_ForceFailed_Safe = true;
-
-		for (int i = 0; i < 20; i++)
-		{
-			Status_Code[i] = 5;
-		}
 
 		Status_Code[0] = 0;
 		//=======SYS_Setup=================//
@@ -251,9 +255,8 @@ public:
 		EF._uORB_B2_Speed = _uORB_RC_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
 	}
 
-	inline bool SaftyChecking(int* status)
+	inline bool SaftyChecking(SafeStatus& status)
 	{
-		//============================RCStatusCheck===================================//
 		if (_uORB_RC_Throttle < RF._flag_RC_Min_Throttle + 20 && RF._flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
 		{
 			if (_flag_Device_setupFailed == false)
@@ -263,7 +266,6 @@ public:
 					if (_flag_StartUP_Protect == false)
 					{
 						_flag_ForceFailed_Safe = false;
-						Status_Code[0] = 1;
 					}
 				}
 				else
@@ -277,7 +279,6 @@ public:
 			_flag_StartUP_Protect = false;
 			_flag_ForceFailed_Safe = true;
 			_flag_Error = false;
-			Status_Code[0] = 0;
 		}
 		else if (_uORB_RC_Throttle < RF._flag_RC_Max_Throttle + 20)
 		{
@@ -286,7 +287,6 @@ public:
 				_flag_ForceFailed_Safe = true;
 			}
 		}
-
 		if (RF._flag_RC_Safe_Area - 50 < _uORB_RC__Safe && _uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
 		{
 			if (_uORB_RC_Throttle > RF._flag_RC_Min_Throttle + 20)
@@ -294,7 +294,6 @@ public:
 				_flag_StartUP_Protect = true;
 			}
 		}
-
 		if (_flag_ForceFailed_Safe == true)
 		{
 			_flag_first_StartUp = true;
@@ -305,45 +304,18 @@ public:
 			PF._uORB_PID_I_Last_Value_Pitch = 0;
 			PF._uORB_PID_I_Last_Value___Yaw = 0;
 		}
-		//=====================AttitudeUpdate_Time_checkout=========================//
+
 		if (Attitude_loopTime > Update_Freq_Time)
 		{
 			_flag_Error = true;
-			Status_Code[10] = -1;
+		}
+		if (_uORB_Real_Pitch > 70.0 || _uORB_Real_Pitch < -70.0 || _uORB_Real__Roll > 70.0 || _uORB_Real__Roll < -70.0)
+		{
+			_flag_Error = true;
 		}
 
-		//=====================Attitude_checkout====================================//
-		if (_uORB_Real_Pitch > 70.0 || _uORB_Real_Pitch < -70.0)
-		{
-			_flag_Error = true;
-			Status_Code[15] = -1;
-		}
-		else
-		{
-			Status_Code[15] = 0;
-		}
-		if (_uORB_Real__Roll > 70.0 || _uORB_Real__Roll < -70.0)
-		{
-			_flag_Error = true;
-			Status_Code[16] = -1;
-		}
-		else
-		{
-			Status_Code[16] = 0;
-		}
-		//=====================Status_checkout======================================//
-		if (_flag_ForceFailed_Safe == true)
-		{
-			Status_Code[0] = 0;
-		}
-		else if (_flag_Error == true)
-		{
-			for (int i = 0; i < 20; i++)
-			{
-				std::cout << Status_Code[i] << " ";
-			}
-			std::cout << "\n";
-		}
+		status.ForceFailedSafe = _flag_ForceFailed_Safe;
+		status.SafyError = _flag_Error;
 	}
 
 	inline void ESCUpdate()
@@ -686,7 +658,7 @@ private:
 
 	struct RCINFO
 	{
-		int data[36];
+		int _Tmp_RC_Data[36];
 		int _uORB_RC_Out__Roll = 0;
 		int _uORB_RC_Out_Pitch = 0;
 		int _uORB_RC_Out___Yaw = 0;
@@ -799,21 +771,21 @@ private:
 #ifdef SBUS_CONVERTER
 		if (serialDataAvail(DF.RCReader_fd) > 0)
 		{
-			RF.data[0] = serialGetchar(DF.RCReader_fd);
-			if (RF.data[0] == 15)
+			RF._Tmp_RC_Data[0] = serialGetchar(DF.RCReader_fd);
+			if (RF._Tmp_RC_Data[0] == 15)
 			{
 				for (int i = 1; i <= 34; i++)
 				{
-					RF.data[i] = serialGetchar(DF.RCReader_fd);
+					RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
 				}
-				_uORB_RC__Roll = RF.data[1] * 255 + RF.data[2];
-				_uORB_RC_Pitch = RF.data[3] * 255 + RF.data[4];
-				_uORB_RC_Throttle = RF.data[5] * 255 + RF.data[6];
-				_uORB_RC___Yaw = RF.data[7] * 255 + RF.data[8];
-				_uORB_RC__Safe = RF.data[9] * 255 + RF.data[10];
+				_uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[2];
+				_uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[4];
+				_uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[6];
+				_uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[8];
+				_uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[10];
 				serialFlush(DF.RCReader_fd);
 			}
-			else if (RF.data[0] != 15)
+			else if (RF._Tmp_RC_Data[0] != 15)
 			{
 				serialFlush(DF.RCReader_fd);
 			}
@@ -827,19 +799,19 @@ private:
 			{
 				for (int i = 0; i < 32; i++)
 				{
-					RF.data[i] = serialGetchar(DF.RCReader_fd);
+					RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
 				}
 
-				if (RF.data[31] == 64)
+				if (RF._Tmp_RC_Data[31] == 64)
 				{
-					_uORB_RC__Roll = RF.data[1] * 255 + RF.data[0];
-					_uORB_RC_Pitch = RF.data[3] * 255 + RF.data[2];
-					_uORB_RC_Throttle = RF.data[5] * 255 + RF.data[4];
-					_uORB_RC___Yaw = RF.data[7] * 255 + RF.data[6];
-					_uORB_RC__Safe = RF.data[9] * 255 + RF.data[8];
+					_uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[0];
+					_uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[2];
+					_uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[4];
+					_uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[6];
+					_uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[8];
 					serialFlush(DF.RCReader_fd);
 				}
-				else if (RF.data[31] != 64)
+				else if (RF._Tmp_RC_Data[31] != 64)
 				{
 					serialFlush(DF.RCReader_fd);
 				}
