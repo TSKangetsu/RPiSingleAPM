@@ -794,7 +794,10 @@ private:
 			{
 				for (int i = 1; i <= 34; i++)
 				{
-					RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
+					if (serialDataAvail(DF.RCReader_fd) > 0)
+					{
+						RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
+					}
 				}
 				RF._uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[2];
 				RF._uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[4];
@@ -802,12 +805,17 @@ private:
 				RF._uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[8];
 				RF._uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[10];
 				serialFlush(DF.RCReader_fd);
+				_flag_RC_Disconnected = false;
 			}
 			else if (RF._Tmp_RC_Data[0] != 15)
 			{
 				_flag_RC_Disconnected = true;
 				serialFlush(DF.RCReader_fd);
 			}
+		}
+		else
+		{
+			_flag_RC_Disconnected = true;
 		}
 #endif
 
