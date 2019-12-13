@@ -40,6 +40,12 @@ int main(int argc, char* argv[])
 					APM_Settle.UpdateTimer_End = micros();
 					APM_Settle.Attitude_loopTime = APM_Settle.UpdateTimer_End - APM_Settle.UpdateTimer_Start;
 					std::cout << APM_Settle.Attitude_loopTime << " \n";
+					if (APM_Settle.Attitude_loopTime > APM_Settle.Update_Freq_Time)
+					{
+						APM_Settle.Attitude_loopTime *= -1;
+						std::cout << "core error \n";
+						std::cin >> argvs;
+					}
 					delayMicroseconds(APM_Settle.Update_Freq_Time - APM_Settle.Attitude_loopTime);
 				}
 				});

@@ -297,7 +297,6 @@ public:
 
 		if (Attitude_loopTime > Update_Freq_Time)
 		{
-			std::cout << "core error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
 			_flag_Error = true;
 			status.Is_SyncTimeOut = true;
 		}
@@ -307,7 +306,6 @@ public:
 			status.Is_AngelOutLimit = true;
 		}
 
-		Clocking += Update_Freq_Time / 1000;
 		if (_flag_RC_Disconnected == true)
 		{
 			Lose_Clocking += 1;
