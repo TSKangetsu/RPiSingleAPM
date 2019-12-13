@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 					timer = micros();
 					APM_Settle.SensorsParse();
 					APM_Settle.AttitudeUpdate();
-					APM_Settle.SaftyChecking();
+					//APM_Settle.SaftyChecking();
 					APM_Settle.ESCUpdate();
 					APM_Settle.Debug();
 					timer_end = micros();
