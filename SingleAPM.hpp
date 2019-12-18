@@ -6,7 +6,7 @@
 #endif
 
 #ifdef SBUS_Serial
-#include "_thirdparty/RPiSbus.h"
+#include "_thirdparty/Sbus/src/RPiSbus.h"
 #endif
 
 #include <nlohmann/json.hpp>
@@ -843,7 +843,7 @@ private:
 #endif
 
 #ifdef SBUS_Serial
-		if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0) != -1)
+		if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0 , 1) != -1)
 		{
 			RF._uORB_RC__Roll = RF._Tmp_RC_Data[0];
 			RF._uORB_RC_Pitch = RF._Tmp_RC_Data[1];
