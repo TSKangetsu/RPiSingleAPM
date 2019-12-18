@@ -4,7 +4,6 @@ int main(int argc, char* argv[])
 {
 	int argvs;
 	APMSafeStatus statusOut;
-	RPiSingelAPM APM_Settle;
 	while ((argvs = getopt(argc, argv, "vcerh")) != -1)
 	{
 		switch (argvs)
@@ -16,39 +15,30 @@ int main(int argc, char* argv[])
 			//--------------------------------------------------------------------------------//
 		case 'c':
 		{
-			APM_Settle.ControlCalibration();
-			APM_Settle.SensorsCalibration();
+			RPiAPMCalibration APMCali;
+			APMCali.ControlCalibration();
+			APMCali.SensorsCalibration();
 		}
 		break;
 		case 'e':
 		{
-			APM_Settle.ESCCalibration();
+			RPiAPMCalibration APMCali;
+			APMCali.ESCCalibration();
 		}
 		break;
 		//--------------------------------------------------------------------------------//
 		case 'r':
 		{
+			RPiSingleAPM APM_Settle;
 			std::thread AutoLevelingMain([&] {
 				while (true)
 				{
-					APM_Settle.UpdateTimer_Start = micros();
 					APM_Settle.SensorsParse();
 					APM_Settle.ControlParse();
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
-					std::cout << statusOut.ForceFailedSafe << " \n";
-					std::cout << statusOut.Is_RCDisconnect << " \n";
-					std::cout << statusOut.Is_SyncTimeOut << " \n";
-					std::cout << statusOut.Is_AngelOutLimit << " \n";
-					APM_Settle.UpdateTimer_End = micros();
-					APM_Settle.Attitude_loopTime = APM_Settle.UpdateTimer_End - APM_Settle.UpdateTimer_Start;
-					if (APM_Settle.Attitude_loopTime > APM_Settle.Update_Freq_Time)
-					{
-						APM_Settle.Attitude_loopTime *= -1;
-						std::cout << "core error \n";
-					}
-					delayMicroseconds(APM_Settle.Update_Freq_Time - APM_Settle.Attitude_loopTime);
+					APM_Settle.ClockingTimer();
 				}
 				});
 			cpu_set_t cpuset;

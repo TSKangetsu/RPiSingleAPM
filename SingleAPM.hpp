@@ -22,6 +22,7 @@
 
 struct APMSafeStatus
 {
+	int SyncTime;
 	bool ForceFailedSafe;
 	bool SafyError;
 	bool Is_SyncTimeOut;
@@ -29,17 +30,12 @@ struct APMSafeStatus
 	bool Is_AngelOutLimit;
 };
 
-class RPiSingelAPM
+class RPiSingleAPM
 {
 public:
-	int Update_Freq_Time;
-	long int UpdateTimer_Start;
-	long int UpdateTimer_End;
-	int Attitude_loopTime;
-	RPiSingelAPM()
+	RPiSingleAPM()
 	{
-		Clocking = 0;
-		Lose_Clocking = 0;
+		RC_Lose_Clocking = 0;
 		_flag_first_StartUp = true;
 		_flag_ForceFailed_Safe = true;
 		//=======SYS_Setup=================//
@@ -150,6 +146,7 @@ public:
 
 	inline void SensorsParse()
 	{
+		Update_TimerStart = micros();
 		SensorsDataRead();
 		//Gryo----------------------------------------------------------------------//
 		SF._uORB_MPU9250_G_X -= SF._Flag_MPU9250_G_X_Cali;
@@ -317,7 +314,7 @@ public:
 			PF._uORB_PID_I_Last_Value___Yaw = 0;
 		}
 
-		if (Attitude_loopTime > Update_Freq_Time)
+		if (Update_loopTime > Update_Freq_Time)
 		{
 			_flag_Error = true;
 			status.Is_SyncTimeOut = true;
@@ -330,21 +327,22 @@ public:
 
 		if (_flag_RC_Disconnected == true)
 		{
-			Lose_Clocking += 1;
-			if (Lose_Clocking == 350)
+			RC_Lose_Clocking += 1;
+			if (RC_Lose_Clocking == 350)
 			{
 				_flag_Error = true;
 				status.Is_RCDisconnect = true;
-				Lose_Clocking = 0;
+				RC_Lose_Clocking = 0;
 			}
 		}
 		else if (_flag_RC_Disconnected == false)
 		{
-			Lose_Clocking = 0;
+			RC_Lose_Clocking = 0;
 			status.Is_RCDisconnect = false;
 		}
 		status.ForceFailedSafe = _flag_ForceFailed_Safe;
 		status.SafyError = _flag_Error;
+		status.SyncTime = Update_loopTime;
 	}
 
 	inline void ESCUpdate()
@@ -374,228 +372,32 @@ public:
 		}
 	}
 
-	inline void SensorsCalibration()
+	inline void ClockingTimer()
 	{
-		int CalibrationComfirm;
-		std::cout << "[Sensors] Calibration will start , input 1 to start , input -1 to skip" << "\n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			return;
-		}
-		std::cout << "[Sensors] Accel Calibration ......" << "\n";
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			SensorsDataRead();
-			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
-			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
-				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
-			if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
-				SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
-			SF._Flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
-			SF._Flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
-			usleep(3);
-		}
-		SF._Flag_Accel__Roll_Cali = SF._Flag_Accel__Roll_Cali / 2000;
-		SF._Flag_Accel_Pitch_Cali = SF._Flag_Accel_Pitch_Cali / 2000;
-		std::cout << "AccelPitchCali: " << SF._Flag_Accel_Pitch_Cali << " \n";
-		std::cout << "AccelRollCali: " << SF._Flag_Accel__Roll_Cali << " \n";
-		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			SensorsCalibration();
-		}
-		else if (CalibrationComfirm == 1)
-		{
-			std::ifstream config(configDir);
-			std::string content((std::istreambuf_iterator<char>(config)),
-				(std::istreambuf_iterator<char>()));
-			nlohmann::json Configdata = nlohmann::json::parse(content);
-
-			Configdata["_Flag_Accel__Roll_Cali"] = SF._Flag_Accel__Roll_Cali;
-			Configdata["_Flag_Accel_Pitch_Cali"] = SF._Flag_Accel_Pitch_Cali;
-
-			std::ofstream configIN;
-			configIN.open(configDir);
-			configIN.clear();
-			configIN << Configdata.dump(4).c_str();
-			configIN.close();
-
-			std::cout << "[Sensors] Config write success\n";
-		}
+		Update_TimerEnd = micros();
+		Update_loopTime = Update_TimerEnd - Update_TimerStart;
+		if (Update_loopTime < 0)
+			Update_loopTime *= -1;
+		delayMicroseconds(Update_Freq_Time - Update_loopTime);
 	}
 
-	inline void ESCCalibration()
-	{
-		int CalibrationComfirm;
-		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
-		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 1 , or input -1 to skip calibration" << " \n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			std::cout << "[ESCStatus] Exiting ESC calibration ........." << " \n";
-			return;
-		}
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 3000);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 3000);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 3000);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 3000);
-		std::cout << "[ESCStatus] ESC calibration will finsh , input 1 to stop " << " \n";
-		std::cin >> CalibrationComfirm;
-		std::cout << "[ESCStatus] ESC calibration Finsh....." << " \n";
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 2200);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 2200);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 2200);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 2200);
-		sleep(3);
-		std::cout << "[ESCStatus] ESC calibration over" << " \n";
-	}
 
-	inline void ControlCalibration()
-	{
-		bool IS_first = true;
-		int CalibrationComfirm;
-		std::cout << "[Controller] ControlCalibraion start , input 1 to start , input -1 to skip \n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			return;
-		}
-		std::cout << "[Controller] ControlCalibraion start ...... \n";
-		for (int cali_count = 0; cali_count < 4000; cali_count++)
-		{
-			ControlRead();
-			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
-			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
-			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
-			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
-			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
-			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
-			if (IS_first)
-			{
-				if (RF._uORB_RC__Roll != 0)
-				{
-					RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
-					RF._flag_RC_Min_Pitch = RF._uORB_RC__Roll;
-					RF._flag_RC_Min_Throttle = RF._uORB_RC__Roll;
-					RF._flag_RC_Min___Yaw = RF._uORB_RC__Roll;
+protected:
+	long int RC_Lose_Clocking;
 
-					RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
-					RF._flag_RC_Max_Pitch = RF._uORB_RC__Roll;
-					RF._flag_RC_Max_Throttle = RF._uORB_RC__Roll;
-					RF._flag_RC_Max___Yaw = RF._uORB_RC__Roll;
-
-					IS_first = false;
-				}
-			}
-
-			if (RF._uORB_RC__Roll > RF._flag_RC_Max__Roll&& RF._uORB_RC__Roll != 0)
-				RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
-			if (RF._uORB_RC_Pitch > RF._flag_RC_Max_Pitch&& RF._uORB_RC_Pitch != 0)
-				RF._flag_RC_Max_Pitch = RF._uORB_RC_Pitch;
-			if (RF._uORB_RC_Throttle > RF._flag_RC_Max_Throttle&& RF._uORB_RC_Throttle != 0)
-				RF._flag_RC_Max_Throttle = RF._uORB_RC_Throttle;
-			if (RF._uORB_RC___Yaw > RF._flag_RC_Max___Yaw&& RF._uORB_RC___Yaw != 0)
-				RF._flag_RC_Max___Yaw = RF._uORB_RC___Yaw;
-
-			if (RF._uORB_RC__Roll < RF._flag_RC_Min__Roll && RF._uORB_RC__Roll != 0)
-				RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
-			if (RF._uORB_RC_Pitch < RF._flag_RC_Min_Pitch && RF._uORB_RC_Pitch != 0)
-				RF._flag_RC_Min_Pitch = RF._uORB_RC_Pitch;
-			if (RF._uORB_RC_Throttle < RF._flag_RC_Min_Throttle && RF._uORB_RC_Throttle != 0)
-				RF._flag_RC_Min_Throttle = RF._uORB_RC_Throttle;
-			if (RF._uORB_RC___Yaw < RF._flag_RC_Min___Yaw && RF._uORB_RC___Yaw != 0)
-				RF._flag_RC_Min___Yaw = RF._uORB_RC___Yaw;
-
-			usleep(2000);
-		}
-		std::cout << "\n[Controller] Calibration will finshed"
-			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
-		std::cin >> CalibrationComfirm;
-		for (int cali_count = 0; cali_count < 1000; cali_count++)
-		{
-			ControlRead();
-			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
-			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
-			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
-			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
-			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
-			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
-
-			RF._flag_RC_Middle_Pitch = RF._uORB_RC_Pitch;
-			RF._flag_RC_Middle__Roll = RF._uORB_RC__Roll;
-			RF._flag_RC_Middle___Yaw = RF._uORB_RC___Yaw;
-			RF._flag_RC_Safe_Area = RF._uORB_RC__Safe;
-			usleep(2000);
-		}
-		std::cout << "[Controler] Controller calitbration comfirm:\n"
-			<< "Max__Roll    = " << RF._flag_RC_Max__Roll << "\n"
-			<< "Max_Pitch    = " << RF._flag_RC_Max_Pitch << "\n"
-			<< "Max_Throttle = " << RF._flag_RC_Max_Throttle << "\n"
-			<< "Max___Yaw    = " << RF._flag_RC_Max___Yaw << "\n\n"
-
-			<< "Middle__Roll = " << RF._flag_RC_Middle__Roll << "\n"
-			<< "Middle_Pitch = " << RF._flag_RC_Middle_Pitch << "\n"
-			<< "Middle___Yaw = " << RF._flag_RC_Middle___Yaw << "\n\n"
-
-			<< "Min__Roll    = " << RF._flag_RC_Min__Roll << "\n"
-			<< "Min_Pitch    = " << RF._flag_RC_Min_Pitch << "\n"
-			<< "Min_Throttle = " << RF._flag_RC_Min_Throttle << "\n"
-			<< "Min___Yaw    = " << RF._flag_RC_Min___Yaw << "\n"
-
-			<< "SafeSwitch   = " << RF._flag_RC_Safe_Area << "\n";
-		std::cout << "<-----------Controller_calibration_over---------------->\n";
-		std::cout << "[Controller] Calibration finshed ,if you want to retry input -1 , to write to configJSON input 1 , input 0 to skip" << "\n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			ControlCalibration();
-		}
-		else if (CalibrationComfirm == 1)
-		{
-			std::ifstream config(configDir);
-			std::string content((std::istreambuf_iterator<char>(config)),
-				(std::istreambuf_iterator<char>()));
-			nlohmann::json Configdata = nlohmann::json::parse(content);
-
-			Configdata["_flag_RC_Max__Roll"] = RF._flag_RC_Max__Roll;
-			Configdata["_flag_RC_Max_Pitch"] = RF._flag_RC_Max_Pitch;
-			Configdata["_flag_RC_Max_Throttle"] = RF._flag_RC_Max_Throttle;
-			Configdata["_flag_RC_Max___Yaw"] = RF._flag_RC_Max___Yaw;
-
-			Configdata["_flag_RC_Middle__Roll"] = RF._flag_RC_Middle__Roll;
-			Configdata["_flag_RC_Middle_Pitch"] = RF._flag_RC_Middle_Pitch;
-			Configdata["_flag_RC_Middle___Yaw"] = RF._flag_RC_Middle___Yaw;
-
-			Configdata["_flag_RC_Min__Roll"] = RF._flag_RC_Min__Roll;
-			Configdata["_flag_RC_Min_Pitch"] = RF._flag_RC_Min_Pitch;
-			Configdata["_flag_RC_Min_Throttle"] = RF._flag_RC_Min_Throttle;
-			Configdata["_flag_RC_Min___Yaw"] = RF._flag_RC_Min___Yaw;
-
-			Configdata["_flag_RC_Safe_Area"] = RF._flag_RC_Safe_Area;
-
-			std::ofstream configIN;
-			configIN.open(configDir);
-			configIN.clear();
-			configIN << Configdata.dump(4).c_str();
-			configIN.close();
-
-			std::cout << "[Controller] Config write success\n";
-		}
-	}
-
-private:
 	int Update_Freqeuncy;
-	long int Clocking;
-	long int Lose_Clocking;
+	int Update_Freq_Time;
+	long int Update_TimerStart;
+	long int Update_TimerEnd;
+	int Update_loopTime;
+
 	bool _flag_Error;
 	bool _flag_StartUP_Protect;
 	bool _flag_first_StartUp;
 	bool _flag_RC_Disconnected;
 	bool _flag_ForceFailed_Safe;
 	bool _flag_Device_setupFailed;
-	char* configDir = "/etc/APMconfig.json";;
+	char configDir[20] = "/etc/APMconfig.json";
 #ifdef SBUS_Serial
 	Sbus* SbusInit;
 #endif
@@ -946,5 +748,220 @@ private:
 		SF._Tmp_MPU9250_G_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[14]);
 		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
 #endif
+	}
+};
+
+class RPiAPMCalibration:RPiSingleAPM 
+{
+public:
+	inline void SensorsCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[Sensors] Calibration will start , input 1 to start , input -1 to skip" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			return;
+		}
+		std::cout << "[Sensors] Accel Calibration ......" << "\n";
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			SensorsDataRead();
+			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
+			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
+				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
+			if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
+				SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
+			SF._Flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
+			SF._Flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
+			usleep(3);
+		}
+		SF._Flag_Accel__Roll_Cali = (float)SF._Flag_Accel__Roll_Cali / 2000;
+		SF._Flag_Accel_Pitch_Cali = (float)SF._Flag_Accel_Pitch_Cali / 2000;
+		std::cout << "AccelPitchCali: " << SF._Flag_Accel_Pitch_Cali << " \n";
+		std::cout << "AccelRollCali: " << SF._Flag_Accel__Roll_Cali << " \n";
+		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			SensorsCalibration();
+		}
+		else if (CalibrationComfirm == 1)
+		{
+			std::ifstream config(configDir);
+			std::string content((std::istreambuf_iterator<char>(config)),
+				(std::istreambuf_iterator<char>()));
+			nlohmann::json Configdata = nlohmann::json::parse(content);
+
+			Configdata["_Flag_Accel__Roll_Cali"] = SF._Flag_Accel__Roll_Cali;
+			Configdata["_Flag_Accel_Pitch_Cali"] = SF._Flag_Accel_Pitch_Cali;
+
+			std::ofstream configIN;
+			configIN.open(configDir);
+			configIN.clear();
+			configIN << Configdata.dump(4).c_str();
+			configIN.close();
+
+			std::cout << "[Sensors] Config write success\n";
+		}
+	}
+
+	inline void ESCCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
+		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 1 , or input -1 to skip calibration" << " \n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			std::cout << "[ESCStatus] Exiting ESC calibration ........." << " \n";
+			return;
+		}
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 3000);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 3000);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 3000);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 3000);
+		std::cout << "[ESCStatus] ESC calibration will finsh , input 1 to stop " << " \n";
+		std::cin >> CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration Finsh....." << " \n";
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 2200);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 2200);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 2200);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 2200);
+		sleep(3);
+		std::cout << "[ESCStatus] ESC calibration over" << " \n";
+	}
+
+	inline void ControlCalibration()
+	{
+		bool IS_first = true;
+		int CalibrationComfirm;
+		std::cout << "[Controller] ControlCalibraion start , input 1 to start , input -1 to skip \n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			return;
+		}
+		std::cout << "[Controller] ControlCalibraion start ...... \n";
+		for (int cali_count = 0; cali_count < 4000; cali_count++)
+		{
+			ControlRead();
+			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
+			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
+			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
+			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
+			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
+			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
+			if (IS_first)
+			{
+				if (RF._uORB_RC__Roll != 0)
+				{
+					RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
+					RF._flag_RC_Min_Pitch = RF._uORB_RC__Roll;
+					RF._flag_RC_Min_Throttle = RF._uORB_RC__Roll;
+					RF._flag_RC_Min___Yaw = RF._uORB_RC__Roll;
+
+					RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
+					RF._flag_RC_Max_Pitch = RF._uORB_RC__Roll;
+					RF._flag_RC_Max_Throttle = RF._uORB_RC__Roll;
+					RF._flag_RC_Max___Yaw = RF._uORB_RC__Roll;
+
+					IS_first = false;
+				}
+			}
+
+			if (RF._uORB_RC__Roll > RF._flag_RC_Max__Roll&& RF._uORB_RC__Roll != 0)
+				RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
+			if (RF._uORB_RC_Pitch > RF._flag_RC_Max_Pitch&& RF._uORB_RC_Pitch != 0)
+				RF._flag_RC_Max_Pitch = RF._uORB_RC_Pitch;
+			if (RF._uORB_RC_Throttle > RF._flag_RC_Max_Throttle&& RF._uORB_RC_Throttle != 0)
+				RF._flag_RC_Max_Throttle = RF._uORB_RC_Throttle;
+			if (RF._uORB_RC___Yaw > RF._flag_RC_Max___Yaw&& RF._uORB_RC___Yaw != 0)
+				RF._flag_RC_Max___Yaw = RF._uORB_RC___Yaw;
+
+			if (RF._uORB_RC__Roll < RF._flag_RC_Min__Roll && RF._uORB_RC__Roll != 0)
+				RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
+			if (RF._uORB_RC_Pitch < RF._flag_RC_Min_Pitch && RF._uORB_RC_Pitch != 0)
+				RF._flag_RC_Min_Pitch = RF._uORB_RC_Pitch;
+			if (RF._uORB_RC_Throttle < RF._flag_RC_Min_Throttle && RF._uORB_RC_Throttle != 0)
+				RF._flag_RC_Min_Throttle = RF._uORB_RC_Throttle;
+			if (RF._uORB_RC___Yaw < RF._flag_RC_Min___Yaw && RF._uORB_RC___Yaw != 0)
+				RF._flag_RC_Min___Yaw = RF._uORB_RC___Yaw;
+
+			usleep(2000);
+		}
+		std::cout << "\n[Controller] Calibration will finshed"
+			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
+		std::cin >> CalibrationComfirm;
+		for (int cali_count = 0; cali_count < 1000; cali_count++)
+		{
+			ControlRead();
+			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
+			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
+			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
+			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
+			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
+			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
+
+			RF._flag_RC_Middle_Pitch = RF._uORB_RC_Pitch;
+			RF._flag_RC_Middle__Roll = RF._uORB_RC__Roll;
+			RF._flag_RC_Middle___Yaw = RF._uORB_RC___Yaw;
+			RF._flag_RC_Safe_Area = RF._uORB_RC__Safe;
+			usleep(2000);
+		}
+		std::cout << "[Controler] Controller calitbration comfirm:\n"
+			<< "Max__Roll    = " << RF._flag_RC_Max__Roll << "\n"
+			<< "Max_Pitch    = " << RF._flag_RC_Max_Pitch << "\n"
+			<< "Max_Throttle = " << RF._flag_RC_Max_Throttle << "\n"
+			<< "Max___Yaw    = " << RF._flag_RC_Max___Yaw << "\n\n"
+
+			<< "Middle__Roll = " << RF._flag_RC_Middle__Roll << "\n"
+			<< "Middle_Pitch = " << RF._flag_RC_Middle_Pitch << "\n"
+			<< "Middle___Yaw = " << RF._flag_RC_Middle___Yaw << "\n\n"
+
+			<< "Min__Roll    = " << RF._flag_RC_Min__Roll << "\n"
+			<< "Min_Pitch    = " << RF._flag_RC_Min_Pitch << "\n"
+			<< "Min_Throttle = " << RF._flag_RC_Min_Throttle << "\n"
+			<< "Min___Yaw    = " << RF._flag_RC_Min___Yaw << "\n"
+
+			<< "SafeSwitch   = " << RF._flag_RC_Safe_Area << "\n";
+		std::cout << "<-----------Controller_calibration_over---------------->\n";
+		std::cout << "[Controller] Calibration finshed ,if you want to retry input -1 , to write to configJSON input 1 , input 0 to skip" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			ControlCalibration();
+		}
+		else if (CalibrationComfirm == 1)
+		{
+			std::ifstream config(configDir);
+			std::string content((std::istreambuf_iterator<char>(config)),
+				(std::istreambuf_iterator<char>()));
+			nlohmann::json Configdata = nlohmann::json::parse(content);
+
+			Configdata["_flag_RC_Max__Roll"] = RF._flag_RC_Max__Roll;
+			Configdata["_flag_RC_Max_Pitch"] = RF._flag_RC_Max_Pitch;
+			Configdata["_flag_RC_Max_Throttle"] = RF._flag_RC_Max_Throttle;
+			Configdata["_flag_RC_Max___Yaw"] = RF._flag_RC_Max___Yaw;
+
+			Configdata["_flag_RC_Middle__Roll"] = RF._flag_RC_Middle__Roll;
+			Configdata["_flag_RC_Middle_Pitch"] = RF._flag_RC_Middle_Pitch;
+			Configdata["_flag_RC_Middle___Yaw"] = RF._flag_RC_Middle___Yaw;
+
+			Configdata["_flag_RC_Min__Roll"] = RF._flag_RC_Min__Roll;
+			Configdata["_flag_RC_Min_Pitch"] = RF._flag_RC_Min_Pitch;
+			Configdata["_flag_RC_Min_Throttle"] = RF._flag_RC_Min_Throttle;
+			Configdata["_flag_RC_Min___Yaw"] = RF._flag_RC_Min___Yaw;
+
+			Configdata["_flag_RC_Safe_Area"] = RF._flag_RC_Safe_Area;
+
+			std::ofstream configIN;
+			configIN.open(configDir);
+			configIN.clear();
+			configIN << Configdata.dump(4).c_str();
+			configIN.close();
+
+			std::cout << "[Controller] Config write success\n";
+		}
 	}
 };
