@@ -5,6 +5,10 @@
 #include <wiringPiSPI.h>
 #endif
 
+#ifdef SBUS_Serial
+#include "_thirdparty/RPiSbus.h"
+#endif
+
 #include <nlohmann/json.hpp>
 
 #include <math.h>
@@ -32,7 +36,6 @@ public:
 	long int UpdateTimer_Start;
 	long int UpdateTimer_End;
 	int Attitude_loopTime;
-
 	RPiSingelAPM()
 	{
 		Clocking = 0;
@@ -87,6 +90,7 @@ public:
 #endif
 
 		//=======RC__Setup=================//
+#ifdef IBUS_Serial
 		DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
 		if (DF.RCReader_fd < 0)
 		{
@@ -96,6 +100,24 @@ public:
 		{
 
 		}
+#endif
+
+#ifdef SBUS_CONVERTER
+		DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
+		if (DF.RCReader_fd < 0)
+		{
+
+		}
+		else
+		{
+
+		}
+#endif
+
+#ifdef SBUS_Serial
+		SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
+#endif
+
 		//=======PWM_Setup=================//
 		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 		if (DF.PCA9658_fd < 0)
@@ -309,7 +331,7 @@ public:
 		if (_flag_RC_Disconnected == true)
 		{
 			Lose_Clocking += 1;
-			if (Lose_Clocking == 500)
+			if (Lose_Clocking == 350)
 			{
 				_flag_Error = true;
 				status.Is_RCDisconnect = true;
@@ -574,6 +596,9 @@ private:
 	bool _flag_ForceFailed_Safe;
 	bool _flag_Device_setupFailed;
 	char* configDir = "/etc/APMconfig.json";;
+#ifdef SBUS_Serial
+	Sbus* SbusInit;
+#endif
 
 	struct DeviceINFO
 	{
@@ -817,6 +842,22 @@ private:
 		}
 #endif
 
+#ifdef SBUS_Serial
+		if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0) != -1)
+		{
+			RF._uORB_RC__Roll = RF._Tmp_RC_Data[0];
+			RF._uORB_RC_Pitch = RF._Tmp_RC_Data[1];
+			RF._uORB_RC_Throttle = RF._Tmp_RC_Data[2];
+			RF._uORB_RC___Yaw = RF._Tmp_RC_Data[3];
+			_flag_RC_Disconnected = false;
+		}
+		else
+		{
+			_flag_RC_Disconnected = true;
+		}
+#endif
+
+
 #ifdef IBUS_Serial
 		if (serialDataAvail(DF.RCReader_fd) > 0)
 		{
@@ -844,14 +885,19 @@ private:
 					_flag_RC_Disconnected = true;
 					serialFlush(DF.RCReader_fd);
 				}
+
+				for (int i = 0; i < 32; i++)
+				{
+					RF._Tmp_RC_Data[i] = 0;
+				}
 			}
 		}
 		else
 		{
 			_flag_RC_Disconnected = true;
-		}
-#endif
 	}
+#endif
+}
 
 	inline void SensorsDataRead()
 	{
