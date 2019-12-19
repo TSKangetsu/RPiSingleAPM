@@ -1,24 +1,30 @@
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 #include <wiringSerial.h>
-#ifdef SPI_MPU9250
 #include <wiringPiSPI.h>
-#endif
-
-#ifdef SBUS_Serial
-#include "_thirdparty/Sbus/src/RPiSbus.h"
-#endif
-
 #include <nlohmann/json.hpp>
-
 #include <math.h>
 #include <thread>
 #include <string>
 #include <fstream>
 #include <unistd.h>
 #include <iostream>
-
 #include "_thirdparty/pca9685.h"
+#include "_thirdparty/Sbus/src/RPiSbus.h"
+
+
+enum APMS_MPU9250Type
+{
+	MPU_Is_I2C,
+	MPU_Is_SPI,
+};
+
+enum APMS_RCType
+{
+	RC_Is_IBUS,
+	RC_Is_SBUSCONVERTER,
+	RC_IS_SBUS
+};
 
 struct APMSafeStatus
 {
@@ -30,123 +36,119 @@ struct APMSafeStatus
 	bool Is_AngelOutLimit;
 };
 
+struct APMSettinngs
+{
+	APMS_MPU9250Type MPU9250_Type;
+	APMS_RCType RC_Type;
+
+	float _flag_PID_P__Roll_Gain;
+	float _flag_PID_P_Pitch_Gain;
+	float _flag_PID_P___Yaw_Gain;
+	float _flag_PID_I__Roll_Gain;
+	float _flag_PID_I_Pitch_Gain;
+	float _flag_PID_I___Yaw_Gain;
+	float _flag_PID_I__Roll_Max__Value;
+	float _flag_PID_I_Pitch_Max__Value;
+	float _flag_PID_I___Yaw_Max__Value;
+	float _flag_PID_D__Roll_Gain;
+	float _flag_PID_D_Pitch_Gain;
+	float _flag_PID_D___Yaw_Gain;
+	float _flag_PID_Level_Max;
+
+	long _Flag_MPU9250_G_X_Cali;
+	long _Flag_MPU9250_G_Y_Cali;
+	long _Flag_MPU9250_G_Z_Cali;
+	long _Flag_Accel__Roll_Cali;
+	long _Flag_Accel_Pitch_Cali;
+
+	int _flag_A1_Pin = 0;
+	int _flag_A2_Pin = 1;
+	int _flag_B1_Pin = 2;
+	int _flag_B2_Pin = 3;
+
+};
+
 class RPiSingleAPM
 {
 public:
-	RPiSingleAPM()
+	RPiSingleAPM(APMSettinngs APMInit)
 	{
-		RC_Lose_Clocking = 0;
-		_flag_first_StartUp = true;
-		_flag_ForceFailed_Safe = true;
-		//=======SYS_Setup=================//
-		if (wiringPiSetupSys() < 0)
+		AF.RC_Lose_Clocking = 0;
+		AF._flag_first_StartUp = true;
+		AF._flag_ForceFailed_Safe = true;
+
+		APMInitl = APMInit;
+
+		wiringPiSetupSys();
+		piHiPri(99);
+
+		if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
 		{
+			DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
+			if (DF.MPU9250_fd < 0)
+			{
 
+			}
+			else
+			{
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
+			}
 		}
-		else
+		else if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
 		{
-			piHiPri(99);
+			DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
+			if (DF.MPU9250_fd < 0)
+			{
+
+			}
+			else
+			{
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x00;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //reset
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1c;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1b;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
+			}
 		}
-		//=======MPU9259_Setup============//
-#ifdef I2C_MPU9250
-		DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
-		if (DF.MPU9250_fd < 0)
+
+		if (APMInitl.RC_Type == APMS_RCType::RC_Is_IBUS)
 		{
+			DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
+			if (DF.RCReader_fd < 0)
+			{
 
+			}
+			else
+			{
+				delete SbusInit;
+			}
 		}
-		else
+		else if (APMInitl.RC_Type == APMS_RCType::RC_IS_SBUS)
 		{
-			wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
-			wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
-			wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
-			wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
+			SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 		}
-#endif
-#ifdef SPI_MPU9250
-		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
-		if (DF.MPU9250_fd < 0)
-		{
 
-		}
-		else
-		{
-			SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
-			SF._Tmp_MPU9250_SPI_Config[1] = 0x00;
-			wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //reset
-			SF._Tmp_MPU9250_SPI_Config[0] = 0x1c;
-			SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-			wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
-			SF._Tmp_MPU9250_SPI_Config[0] = 0x1b;
-			SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-			wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
-			SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
-			SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
-			wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
-		}
-#endif
-
-		//=======RC__Setup=================//
-#ifdef IBUS_Serial
-		DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
-		if (DF.RCReader_fd < 0)
-		{
-
-		}
-		else
-		{
-
-		}
-#endif
-
-#ifdef SBUS_CONVERTER
-		DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
-		if (DF.RCReader_fd < 0)
-		{
-
-		}
-		else
-		{
-
-		}
-#endif
-
-#ifdef SBUS_Serial
-		SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
-#endif
-
-		//=======PWM_Setup=================//
 		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
-		if (DF.PCA9658_fd < 0)
-		{
 
-		}
-		else
-		{
-
-		}
-		//=======Config_Parse================//
 		ConfigReader();
-		Update_Freq_Time = (float)1 / Update_Freqeuncy * 1000000;
-		//=======run Gryo calibration========//
-		SF._Flag_MPU9250_G_X_Cali = 0;
-		SF._Flag_MPU9250_G_Y_Cali = 0;
-		SF._Flag_MPU9250_G_Z_Cali = 0;
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			SensorsDataRead();
-			SF._Flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
-			SF._Flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
-			SF._Flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
-			usleep(3);
-		}
-		SF._Flag_MPU9250_G_X_Cali = SF._Flag_MPU9250_G_X_Cali / 2000;
-		SF._Flag_MPU9250_G_Y_Cali = SF._Flag_MPU9250_G_Y_Cali / 2000;
-		SF._Flag_MPU9250_G_Z_Cali = SF._Flag_MPU9250_G_Z_Cali / 2000;
+		AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
+
+		GryoCali();
 	}
 
 	inline void SensorsParse()
 	{
-		Update_TimerStart = micros();
+		AF.Update_TimerStart = micros();
 		SensorsDataRead();
 		//Gryo----------------------------------------------------------------------//
 		SF._uORB_MPU9250_G_X -= SF._Flag_MPU9250_G_X_Cali;
@@ -164,11 +166,11 @@ public:
 		SF._uORB_Accel__Roll -= SF._Flag_Accel__Roll_Cali;
 		SF._uORB_Accel_Pitch -= SF._Flag_Accel_Pitch_Cali;
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
-		SF._uORB_Real_Pitch += SF._uORB_MPU9250_G_X / Update_Freqeuncy / DF._flag_MPU9250_LSB;
-		SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Y / Update_Freqeuncy / DF._flag_MPU9250_LSB;
-		SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Z / Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
-		SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Z / Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
-		if (!_flag_first_StartUp)
+		SF._uORB_Real_Pitch += SF._uORB_MPU9250_G_X / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
+		SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Y / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
+		SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+		SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+		if (!AF._flag_first_StartUp)
 		{
 			SF._uORB_Real_Pitch = SF._uORB_Real_Pitch * 0.999 + SF._uORB_Accel_Pitch * 0.001;
 			SF._uORB_Real__Roll = SF._uORB_Real__Roll * 0.999 + SF._uORB_Accel__Roll * 0.001;
@@ -177,7 +179,7 @@ public:
 		{
 			SF._uORB_Real_Pitch = SF._uORB_Accel_Pitch;
 			SF._uORB_Real__Roll = SF._uORB_Accel__Roll;
-			_flag_first_StartUp = false;
+			AF._flag_first_StartUp = false;
 		}
 	}
 
@@ -267,32 +269,32 @@ public:
 	{
 		if (RF._uORB_RC_Throttle < RF._flag_RC_Min_Throttle + 20 && RF._flag_RC_Safe_Area - 50 < RF._uORB_RC__Safe && RF._uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
 		{
-			if (_flag_Device_setupFailed == false)
+			if (AF._flag_Device_setupFailed == false)
 			{
-				if (_flag_Error == false)
+				if (AF._flag_Error == false)
 				{
-					if (_flag_StartUP_Protect == false)
+					if (AF._flag_StartUP_Protect == false)
 					{
-						_flag_ForceFailed_Safe = false;
+						AF._flag_ForceFailed_Safe = false;
 					}
 				}
 				else
 				{
-					_flag_ForceFailed_Safe = true;
+					AF._flag_ForceFailed_Safe = true;
 				}
 			}
 		}
 		else if (!(RF._flag_RC_Safe_Area - 50 < RF._uORB_RC__Safe && RF._uORB_RC__Safe < RF._flag_RC_Safe_Area + 50))
 		{
-			_flag_StartUP_Protect = false;
-			_flag_ForceFailed_Safe = true;
-			_flag_Error = false;
+			AF._flag_StartUP_Protect = false;
+			AF._flag_ForceFailed_Safe = true;
+			AF._flag_Error = false;
 		}
 		else if (RF._uORB_RC_Throttle < RF._flag_RC_Max_Throttle + 20)
 		{
-			if (_flag_Error == true)
+			if (AF._flag_Error == true)
 			{
-				_flag_ForceFailed_Safe = true;
+				AF._flag_ForceFailed_Safe = true;
 			}
 		}
 		if (RF._flag_RC_Safe_Area - 50 < RF._uORB_RC__Safe && RF._uORB_RC__Safe < RF._flag_RC_Safe_Area + 50)
@@ -300,12 +302,12 @@ public:
 			if (RF._uORB_RC_Throttle > RF._flag_RC_Min_Throttle + 20)
 			{
 
-				_flag_StartUP_Protect = true;
+				AF._flag_StartUP_Protect = true;
 			}
 		}
-		if (_flag_ForceFailed_Safe == true)
+		if (AF._flag_ForceFailed_Safe == true)
 		{
-			_flag_first_StartUp = true;
+			AF._flag_first_StartUp = true;
 			PF._uORB_PID_D_Last_Value__Roll = 0;
 			PF._uORB_PID_D_Last_Value_Pitch = 0;
 			PF._uORB_PID_D_Last_Value___Yaw = 0;
@@ -314,35 +316,35 @@ public:
 			PF._uORB_PID_I_Last_Value___Yaw = 0;
 		}
 
-		if (Update_loopTime > Update_Freq_Time)
+		if (AF.Update_loopTime > AF.Update_Freq_Time)
 		{
-			_flag_Error = true;
+			AF._flag_Error = true;
 			status.Is_SyncTimeOut = true;
 		}
 		if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 		{
-			_flag_Error = true;
+			AF._flag_Error = true;
 			status.Is_AngelOutLimit = true;
 		}
 
-		if (_flag_RC_Disconnected == true)
+		if (AF._flag_RC_Disconnected == true)
 		{
-			RC_Lose_Clocking += 1;
-			if (RC_Lose_Clocking == 350)
+			AF.RC_Lose_Clocking += 1;
+			if (AF.RC_Lose_Clocking == 350)
 			{
-				_flag_Error = true;
+				AF._flag_Error = true;
 				status.Is_RCDisconnect = true;
-				RC_Lose_Clocking = 0;
+				AF.RC_Lose_Clocking = 0;
 			}
 		}
-		else if (_flag_RC_Disconnected == false)
+		else if (AF._flag_RC_Disconnected == false)
 		{
-			RC_Lose_Clocking = 0;
+			AF.RC_Lose_Clocking = 0;
 			status.Is_RCDisconnect = false;
 		}
-		status.ForceFailedSafe = _flag_ForceFailed_Safe;
-		status.SafyError = _flag_Error;
-		status.SyncTime = Update_loopTime;
+		status.ForceFailedSafe = AF._flag_ForceFailed_Safe;
+		status.SafyError = AF._flag_Error;
+		status.SyncTime = AF.Update_loopTime;
 	}
 
 	inline void ESCUpdate()
@@ -352,14 +354,14 @@ public:
 		EF._uORB_B1_Speed = (700 * (((float)EF._uORB_B1_Speed - (float)RF._flag_RC_Min_Throttle) / (float)(RF._flag_RC_Max_Throttle - RF._flag_RC_Min_Throttle))) + 2300;
 		EF._uORB_B2_Speed = (700 * (((float)EF._uORB_B2_Speed - (float)RF._flag_RC_Min_Throttle) / (float)(RF._flag_RC_Max_Throttle - RF._flag_RC_Min_Throttle))) + 2300;
 
-		if (_flag_ForceFailed_Safe)
+		if (AF._flag_ForceFailed_Safe)
 		{
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._flag_Lock_Throttle);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._flag_Lock_Throttle);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._flag_Lock_Throttle);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._flag_Lock_Throttle);
 		}
-		if (!_flag_ForceFailed_Safe)
+		if (!AF._flag_ForceFailed_Safe)
 		{
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0,
 				EF._uORB_A1_Speed);
@@ -374,33 +376,38 @@ public:
 
 	inline void ClockingTimer()
 	{
-		Update_TimerEnd = micros();
-		Update_loopTime = Update_TimerEnd - Update_TimerStart;
-		if (Update_loopTime < 0)
-			Update_loopTime *= -1;
-		delayMicroseconds(Update_Freq_Time - Update_loopTime);
+		AF.Update_TimerEnd = micros();
+		AF.Update_loopTime = AF.Update_TimerEnd - AF.Update_TimerStart;
+		if (AF.Update_loopTime < 0)
+			AF.Update_loopTime *= -1;
+		delayMicroseconds(AF.Update_Freq_Time - AF.Update_loopTime);
 	}
 
 
 protected:
-	long int RC_Lose_Clocking;
+	APMSettinngs APMInitl;
 
-	int Update_Freqeuncy;
-	int Update_Freq_Time;
-	long int Update_TimerStart;
-	long int Update_TimerEnd;
-	int Update_loopTime;
-
-	bool _flag_Error;
-	bool _flag_StartUP_Protect;
-	bool _flag_first_StartUp;
-	bool _flag_RC_Disconnected;
-	bool _flag_ForceFailed_Safe;
-	bool _flag_Device_setupFailed;
-	char configDir[20] = "/etc/APMconfig.json";
 #ifdef SBUS_Serial
 	Sbus* SbusInit;
 #endif
+
+	struct SafyINFO
+	{
+		long int RC_Lose_Clocking;
+
+		int Update_Freqeuncy;
+		int Update_Freq_Time;
+		long int Update_TimerStart;
+		long int Update_TimerEnd;
+		int Update_loopTime;
+
+		bool _flag_Error;
+		bool _flag_StartUP_Protect;
+		bool _flag_first_StartUp;
+		bool _flag_RC_Disconnected;
+		bool _flag_ForceFailed_Safe;
+		bool _flag_Device_setupFailed;
+	}AF;
 
 	struct DeviceINFO
 	{
@@ -416,6 +423,7 @@ protected:
 		int MPU9250_SPI_Freq = 1000000;
 		int MS5611_fd;
 		const int MS5611_ADDR = 0x70;
+		char configDir[20] = "/etc/APMconfig.json";
 	}DF;
 
 	struct SensorsINFO
@@ -559,7 +567,7 @@ protected:
 	inline void ConfigReader()
 	{
 		std::cout << "[ConfigRead]starting to check out config file ....\n";
-		std::ifstream config(configDir);
+		std::ifstream config(DF.configDir);
 		std::string content((std::istreambuf_iterator<char>(config)),
 			(std::istreambuf_iterator<char>()));
 		nlohmann::json Configdata = nlohmann::json::parse(content);
@@ -605,153 +613,140 @@ protected:
 		SF._Flag_Accel__Roll_Cali = Configdata["_Flag_Accel__Roll_Cali"].get<float>();
 		SF._Flag_Accel_Pitch_Cali = Configdata["_Flag_Accel_Pitch_Cali"].get<float>();
 		//===============================================================Update cofig==/
-		Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
+		AF.Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
 		std::cout << "[ConfigRead]Config Set Success!\n";
 	}
 
 	inline void ControlRead()
 	{
-#ifdef SBUS_CONVERTER
-		if (serialDataAvail(DF.RCReader_fd) > 0)
+		if (APMInitl.RC_Type == APMS_RCType::RC_IS_SBUS)
 		{
-			RF._Tmp_RC_Data[0] = serialGetchar(DF.RCReader_fd);
-			if (RF._Tmp_RC_Data[0] == 15)
+			if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 			{
-				for (int i = 1; i <= 34; i++)
+				RF._uORB_RC__Roll = RF._Tmp_RC_Data[0];
+				RF._uORB_RC_Pitch = RF._Tmp_RC_Data[1];
+				RF._uORB_RC_Throttle = RF._Tmp_RC_Data[2];
+				RF._uORB_RC___Yaw = RF._Tmp_RC_Data[3];
+				AF._flag_RC_Disconnected = false;
+			}
+			else
+			{
+				AF._flag_RC_Disconnected = true;
+			}
+		}
+		else if (APMInitl.RC_Type == APMS_RCType::RC_Is_IBUS)
+		{
+			if (serialDataAvail(DF.RCReader_fd) > 0)
+			{
+				if (serialGetchar(DF.RCReader_fd) == 64)
 				{
-					if (serialDataAvail(DF.RCReader_fd) > 0)
+					for (int i = 0; i < 32; i++)
 					{
-						RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
+						if (serialDataAvail(DF.RCReader_fd) > 0)
+						{
+							RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
+						}
+					}
+					if (RF._Tmp_RC_Data[31] == 64)
+					{
+						RF._uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[0];
+						RF._uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[2];
+						RF._uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[4];
+						RF._uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[6];
+						RF._uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[8];
+						serialFlush(DF.RCReader_fd);
+						AF._flag_RC_Disconnected = false;
+					}
+					else if (RF._Tmp_RC_Data[31] != 64)
+					{
+						AF._flag_RC_Disconnected = true;
+						serialFlush(DF.RCReader_fd);
+					}
+
+					for (int i = 0; i < 32; i++)
+					{
+						RF._Tmp_RC_Data[i] = 0;
 					}
 				}
-				RF._uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[2];
-				RF._uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[4];
-				RF._uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[6];
-				RF._uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[8];
-				RF._uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[10];
-				serialFlush(DF.RCReader_fd);
-				_flag_RC_Disconnected = false;
 			}
-			else if (RF._Tmp_RC_Data[0] != 15)
+			else
 			{
-				_flag_RC_Disconnected = true;
-				serialFlush(DF.RCReader_fd);
+				AF._flag_RC_Disconnected = true;
 			}
 		}
-		else
-		{
-			_flag_RC_Disconnected = true;
-		}
-#endif
-
-#ifdef SBUS_Serial
-		if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0 , 1) != -1)
-		{
-			RF._uORB_RC__Roll = RF._Tmp_RC_Data[0];
-			RF._uORB_RC_Pitch = RF._Tmp_RC_Data[1];
-			RF._uORB_RC_Throttle = RF._Tmp_RC_Data[2];
-			RF._uORB_RC___Yaw = RF._Tmp_RC_Data[3];
-			_flag_RC_Disconnected = false;
-		}
-		else
-		{
-			_flag_RC_Disconnected = true;
-		}
-#endif
-
-
-#ifdef IBUS_Serial
-		if (serialDataAvail(DF.RCReader_fd) > 0)
-		{
-			if (serialGetchar(DF.RCReader_fd) == 64)
-			{
-				for (int i = 0; i < 32; i++)
-				{
-					if (serialDataAvail(DF.RCReader_fd) > 0)
-					{
-						RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
-					}
-				}
-				if (RF._Tmp_RC_Data[31] == 64)
-				{
-					RF._uORB_RC__Roll = RF._Tmp_RC_Data[1] * 255 + RF._Tmp_RC_Data[0];
-					RF._uORB_RC_Pitch = RF._Tmp_RC_Data[3] * 255 + RF._Tmp_RC_Data[2];
-					RF._uORB_RC_Throttle = RF._Tmp_RC_Data[5] * 255 + RF._Tmp_RC_Data[4];
-					RF._uORB_RC___Yaw = RF._Tmp_RC_Data[7] * 255 + RF._Tmp_RC_Data[6];
-					RF._uORB_RC__Safe = RF._Tmp_RC_Data[9] * 255 + RF._Tmp_RC_Data[8];
-					serialFlush(DF.RCReader_fd);
-					_flag_RC_Disconnected = false;
-				}
-				else if (RF._Tmp_RC_Data[31] != 64)
-				{
-					_flag_RC_Disconnected = true;
-					serialFlush(DF.RCReader_fd);
-				}
-
-				for (int i = 0; i < 32; i++)
-				{
-					RF._Tmp_RC_Data[i] = 0;
-				}
-			}
-		}
-		else
-		{
-			_flag_RC_Disconnected = true;
 	}
-#endif
-}
 
 	inline void SensorsDataRead()
 	{
-#ifdef I2C_MPU9250
-		SF._Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3B);
-		SF._Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3C);
-		SF._Tmp_MPU9250_A_X = (SF._Tmp_MPU9250_Buffer[0] << 8 | SF._Tmp_MPU9250_Buffer[1]);
-		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
-		SF._Tmp_MPU9250_Buffer[2] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3D);
-		SF._Tmp_MPU9250_Buffer[3] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3E);
-		SF._Tmp_MPU9250_A_Y = (SF._Tmp_MPU9250_Buffer[2] << 8 | SF._Tmp_MPU9250_Buffer[3]);
-		SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
-		SF._Tmp_MPU9250_Buffer[4] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3F);
-		SF._Tmp_MPU9250_Buffer[5] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x40);
-		SF._Tmp_MPU9250_A_Z = (SF._Tmp_MPU9250_Buffer[4] << 8 | SF._Tmp_MPU9250_Buffer[5]);
-		SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
+		if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
+		{
+			SF._Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3B);
+			SF._Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3C);
+			SF._Tmp_MPU9250_A_X = (SF._Tmp_MPU9250_Buffer[0] << 8 | SF._Tmp_MPU9250_Buffer[1]);
+			SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
+			SF._Tmp_MPU9250_Buffer[2] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3D);
+			SF._Tmp_MPU9250_Buffer[3] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3E);
+			SF._Tmp_MPU9250_A_Y = (SF._Tmp_MPU9250_Buffer[2] << 8 | SF._Tmp_MPU9250_Buffer[3]);
+			SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
+			SF._Tmp_MPU9250_Buffer[4] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3F);
+			SF._Tmp_MPU9250_Buffer[5] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x40);
+			SF._Tmp_MPU9250_A_Z = (SF._Tmp_MPU9250_Buffer[4] << 8 | SF._Tmp_MPU9250_Buffer[5]);
+			SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
 
-		SF._Tmp_MPU9250_Buffer[6] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x43);
-		SF._Tmp_MPU9250_Buffer[7] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x44);
-		SF._Tmp_MPU9250_G_X = (SF._Tmp_MPU9250_Buffer[6] << 8 | SF._Tmp_MPU9250_Buffer[7]);
-		SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
-		SF._Tmp_MPU9250_Buffer[8] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x45);
-		SF._Tmp_MPU9250_Buffer[9] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x46);
-		SF._Tmp_MPU9250_G_Y = (SF._Tmp_MPU9250_Buffer[8] << 8 | SF._Tmp_MPU9250_Buffer[9]);
-		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
-		SF._Tmp_MPU9250_Buffer[10] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x47);
-		SF._Tmp_MPU9250_Buffer[11] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x48);
-		SF._Tmp_MPU9250_G_Z = (SF._Tmp_MPU9250_Buffer[10] << 8 | SF._Tmp_MPU9250_Buffer[11]);
-		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
-#endif
-#ifdef SPI_MPU9250
-		//==================================Device==================//
-		SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
-		wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Buffer, 20);
-		SF._Tmp_MPU9250_A_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[1] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[2]);
-		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
-		SF._Tmp_MPU9250_A_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[3] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[4]);
-		SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
-		SF._Tmp_MPU9250_A_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[5] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[6]);
-		SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
+			SF._Tmp_MPU9250_Buffer[6] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x43);
+			SF._Tmp_MPU9250_Buffer[7] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x44);
+			SF._Tmp_MPU9250_G_X = (SF._Tmp_MPU9250_Buffer[6] << 8 | SF._Tmp_MPU9250_Buffer[7]);
+			SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
+			SF._Tmp_MPU9250_Buffer[8] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x45);
+			SF._Tmp_MPU9250_Buffer[9] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x46);
+			SF._Tmp_MPU9250_G_Y = (SF._Tmp_MPU9250_Buffer[8] << 8 | SF._Tmp_MPU9250_Buffer[9]);
+			SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
+			SF._Tmp_MPU9250_Buffer[10] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x47);
+			SF._Tmp_MPU9250_Buffer[11] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x48);
+			SF._Tmp_MPU9250_G_Z = (SF._Tmp_MPU9250_Buffer[10] << 8 | SF._Tmp_MPU9250_Buffer[11]);
+			SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
+		}
+		else if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
+		{
+			SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
+			wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Buffer, 20);
+			SF._Tmp_MPU9250_A_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[1] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[2]);
+			SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
+			SF._Tmp_MPU9250_A_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[3] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[4]);
+			SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
+			SF._Tmp_MPU9250_A_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[5] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[6]);
+			SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
 
-		SF._Tmp_MPU9250_G_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[9] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[10]);
-		SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
-		SF._Tmp_MPU9250_G_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[11] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[12]);
-		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
-		SF._Tmp_MPU9250_G_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[14]);
-		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
-#endif
+			SF._Tmp_MPU9250_G_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[9] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[10]);
+			SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
+			SF._Tmp_MPU9250_G_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[11] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[12]);
+			SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
+			SF._Tmp_MPU9250_G_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[14]);
+			SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
+		}
+	}
+
+	inline void GryoCali()
+	{
+		SF._Flag_MPU9250_G_X_Cali = 0;
+		SF._Flag_MPU9250_G_Y_Cali = 0;
+		SF._Flag_MPU9250_G_Z_Cali = 0;
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			SensorsDataRead();
+			SF._Flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
+			SF._Flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
+			SF._Flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
+			usleep(3);
+		}
+		SF._Flag_MPU9250_G_X_Cali = SF._Flag_MPU9250_G_X_Cali / 2000;
+		SF._Flag_MPU9250_G_Y_Cali = SF._Flag_MPU9250_G_Y_Cali / 2000;
+		SF._Flag_MPU9250_G_Z_Cali = SF._Flag_MPU9250_G_Z_Cali / 2000;
+
 	}
 };
 
-class RPiAPMCalibration:RPiSingleAPM 
+class RPiAPMCalibration :RPiSingleAPM
 {
 public:
 	inline void SensorsCalibration()
@@ -788,7 +783,7 @@ public:
 		}
 		else if (CalibrationComfirm == 1)
 		{
-			std::ifstream config(configDir);
+			std::ifstream config(DF.configDir);
 			std::string content((std::istreambuf_iterator<char>(config)),
 				(std::istreambuf_iterator<char>()));
 			nlohmann::json Configdata = nlohmann::json::parse(content);
@@ -797,7 +792,7 @@ public:
 			Configdata["_Flag_Accel_Pitch_Cali"] = SF._Flag_Accel_Pitch_Cali;
 
 			std::ofstream configIN;
-			configIN.open(configDir);
+			configIN.open(DF.configDir);
 			configIN.clear();
 			configIN << Configdata.dump(4).c_str();
 			configIN.close();
@@ -934,7 +929,7 @@ public:
 		}
 		else if (CalibrationComfirm == 1)
 		{
-			std::ifstream config(configDir);
+			std::ifstream config(DF.configDir);
 			std::string content((std::istreambuf_iterator<char>(config)),
 				(std::istreambuf_iterator<char>()));
 			nlohmann::json Configdata = nlohmann::json::parse(content);
@@ -956,7 +951,7 @@ public:
 			Configdata["_flag_RC_Safe_Area"] = RF._flag_RC_Safe_Area;
 
 			std::ofstream configIN;
-			configIN.open(configDir);
+			configIN.open(DF.configDir);
 			configIN.clear();
 			configIN << Configdata.dump(4).c_str();
 			configIN.close();

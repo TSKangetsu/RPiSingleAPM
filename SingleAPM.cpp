@@ -4,7 +4,10 @@ int main(int argc, char* argv[])
 {
 	int argvs;
 	APMSafeStatus statusOut;
-	while ((argvs = getopt(argc, argv, "vcerh")) != -1)
+	APMSettinngs setting;
+	setting.MPU9250_Type = APMS_MPU9250Type::MPU_Is_SPI;
+	setting.RC_Type = APMS_RCType::RC_IS_SBUS;
+	while ((argvs = getopt(argc, argv, "vrh")) != -1)
 	{
 		switch (argvs)
 		{
@@ -12,24 +15,9 @@ int main(int argc, char* argv[])
 			std::cout << "[RPiSingleAPM] version 1.0.f Beta , Acess By TSKangetsu\n"
 				<< "	checkout : https://github.com/TSKangetsu/RPiSingleAPM";
 			break;
-			//--------------------------------------------------------------------------------//
-		case 'c':
-		{
-			RPiAPMCalibration APMCali;
-			APMCali.ControlCalibration();
-			APMCali.SensorsCalibration();
-		}
-		break;
-		case 'e':
-		{
-			RPiAPMCalibration APMCali;
-			APMCali.ESCCalibration();
-		}
-		break;
-		//--------------------------------------------------------------------------------//
 		case 'r':
 		{
-			RPiSingleAPM APM_Settle;
+			RPiSingleAPM APM_Settle(setting);
 			std::thread AutoLevelingMain([&] {
 				while (true)
 				{
