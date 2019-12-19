@@ -73,14 +73,14 @@ class RPiSingleAPM
 public:
 	RPiSingleAPM(APMSettinngs APMInit)
 	{
+		APMInitl = APMInit;
 		AF.RC_Lose_Clocking = 0;
 		AF._flag_first_StartUp = true;
 		AF._flag_ForceFailed_Safe = true;
 
-		APMInitl = APMInit;
-
 		wiringPiSetupSys();
 		piHiPri(99);
+		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
 		if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
 		{
@@ -138,11 +138,7 @@ public:
 			SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 		}
 
-		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
-
 		ConfigReader();
-		AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
-
 		GryoCali();
 	}
 
@@ -614,6 +610,7 @@ protected:
 		SF._Flag_Accel_Pitch_Cali = Configdata["_Flag_Accel_Pitch_Cali"].get<float>();
 		//===============================================================Update cofig==/
 		AF.Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
+		AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
 		std::cout << "[ConfigRead]Config Set Success!\n";
 	}
 
