@@ -2,7 +2,6 @@
 #include <wiringPiI2C.h>
 #include <wiringSerial.h>
 #include <wiringPiSPI.h>
-#include <nlohmann/json.hpp>
 #include <math.h>
 #include <thread>
 #include <string>
@@ -12,6 +11,9 @@
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Sbus/src/RPiSbus.h"
 
+#ifdef USINGJSON
+#include <nlohmann/json.hpp>
+#endif
 
 enum APMS_MPU9250Type
 {
@@ -65,7 +67,6 @@ struct APMSettinngs
 	int _flag_A2_Pin = 1;
 	int _flag_B1_Pin = 2;
 	int _flag_B2_Pin = 3;
-
 };
 
 class RPiSingleAPM
@@ -73,16 +74,17 @@ class RPiSingleAPM
 public:
 	RPiSingleAPM(APMSettinngs APMInit)
 	{
-		APMInitl = APMInit;
 		AF.RC_Lose_Clocking = 0;
 		AF._flag_first_StartUp = true;
+		APMInit;
 		AF._flag_ForceFailed_Safe = true;
+		ConfigReader(APMInit);
 
 		wiringPiSetupSys();
 		piHiPri(99);
 		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
-		if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
+		if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
 		{
 			DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
 			if (DF.MPU9250_fd < 0)
@@ -97,7 +99,7 @@ public:
 				wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
 			}
 		}
-		else if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
+		else if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
 		{
 			DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
 			if (DF.MPU9250_fd < 0)
@@ -121,7 +123,7 @@ public:
 			}
 		}
 
-		if (APMInitl.RC_Type == APMS_RCType::RC_Is_IBUS)
+		if (APMInit.RC_Type == APMS_RCType::RC_Is_IBUS)
 		{
 			DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
 			if (DF.RCReader_fd < 0)
@@ -133,12 +135,11 @@ public:
 				delete SbusInit;
 			}
 		}
-		else if (APMInitl.RC_Type == APMS_RCType::RC_IS_SBUS)
+		else if (APMInit.RC_Type == APMS_RCType::RC_IS_SBUS)
 		{
 			SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 		}
 
-		ConfigReader();
 		GryoCali();
 	}
 
@@ -381,11 +382,7 @@ public:
 
 
 protected:
-	APMSettinngs APMInitl;
-
-#ifdef SBUS_Serial
 	Sbus* SbusInit;
-#endif
 
 	struct SafyINFO
 	{
@@ -424,6 +421,7 @@ protected:
 
 	struct SensorsINFO
 	{
+		int MPU9250_Type;
 		int _Tmp_MPU9250_Buffer[14];
 		unsigned char _Tmp_MPU9250_SPI_Config[5];
 		unsigned char _Tmp_MPU9250_SPI_Buffer[28];
@@ -497,6 +495,7 @@ protected:
 
 	struct RCINFO
 	{
+		int RC_Type;
 		int _Tmp_RC_Data[36];
 		int _uORB_RC__Safe = 0;
 		int _uORB_RC__Func = 0;
@@ -560,8 +559,12 @@ protected:
 		outputData += last_I_Data;
 	}
 
-	inline void ConfigReader()
+	inline void ConfigReader(APMSettinngs APMInit)
 	{
+		SF.MPU9250_Type = APMInit.MPU9250_Type;
+		RF.RC_Type = APMInit.RC_Type;
+		
+#ifdef USINGJSON
 		std::cout << "[ConfigRead]starting to check out config file ....\n";
 		std::ifstream config(DF.configDir);
 		std::string content((std::istreambuf_iterator<char>(config)),
@@ -612,11 +615,36 @@ protected:
 		AF.Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
 		AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
 		std::cout << "[ConfigRead]Config Set Success!\n";
+#else
+		PF._flag_PID_P__Roll_Gain;
+		PF._flag_PID_P_Pitch_Gain;
+		PF._flag_PID_P___Yaw_Gain;
+
+		PF._flag_PID_I__Roll_Gain;
+		PF._flag_PID_I_Pitch_Gain;
+		PF._flag_PID_I___Yaw_Gain;
+
+		PF._flag_PID_I__Roll_Max__Value;
+		PF._flag_PID_I_Pitch_Max__Value;
+		PF._flag_PID_I___Yaw_Max__Value;
+
+		PF._flag_PID_D__Roll_Gain;
+		PF._flag_PID_D_Pitch_Gain;
+		PF._flag_PID_D___Yaw_Gain;
+		PF._flag_PID_Level_Max;
+
+		SF._Flag_MPU9250_G_X_Cali;
+		SF._Flag_MPU9250_G_Y_Cali;
+		SF._Flag_MPU9250_G_Z_Cali;
+		SF._Flag_Accel__Roll_Cali;
+		SF._Flag_Accel_Pitch_Cali;
+
+#endif
 	}
 
 	inline void ControlRead()
 	{
-		if (APMInitl.RC_Type == APMS_RCType::RC_IS_SBUS)
+		if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
 		{
 			if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 			{
@@ -631,7 +659,7 @@ protected:
 				AF._flag_RC_Disconnected = true;
 			}
 		}
-		else if (APMInitl.RC_Type == APMS_RCType::RC_Is_IBUS)
+		else if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
 		{
 			if (serialDataAvail(DF.RCReader_fd) > 0)
 			{
@@ -675,7 +703,7 @@ protected:
 
 	inline void SensorsDataRead()
 	{
-		if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
+		if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
 		{
 			SF._Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3B);
 			SF._Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3C);
@@ -703,7 +731,7 @@ protected:
 			SF._Tmp_MPU9250_G_Z = (SF._Tmp_MPU9250_Buffer[10] << 8 | SF._Tmp_MPU9250_Buffer[11]);
 			SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
 		}
-		else if (APMInitl.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
+		else if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
 		{
 			SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
 			wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Buffer, 20);
@@ -743,6 +771,7 @@ protected:
 	}
 };
 
+#ifdef USINGJSON
 class RPiAPMCalibration :RPiSingleAPM
 {
 public:
@@ -957,3 +986,5 @@ public:
 		}
 	}
 };
+#endif
+
