@@ -32,6 +32,7 @@ struct APMSafeStatus
 	int SyncTime;
 	bool ForceFailedSafe;
 	bool SafyError;
+
 	bool Is_SyncTimeOut;
 	bool Is_RCDisconnect;
 	bool Is_AngelOutLimit;
@@ -128,10 +129,6 @@ public:
 			{
 
 			}
-			else
-			{
-				delete SbusInit;
-			}
 		}
 		else if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
 		{
@@ -178,28 +175,29 @@ public:
 		}
 	}
 
-	inline void ControlParse()
+	inline void ControlParse(int* ChannelOut)
 	{
 		ControlRead();
 		if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
-			RF._uORB_RC_Channel_PWM[0] = 0;
+			RF._uORB_RC_Out__Roll = 0;
 		else
 			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 3;
 		//
 		if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
-			RF._uORB_RC_Channel_PWM[1] = 0;
+			RF._uORB_RC_Out_Pitch = 0;
 		else
-			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 3;
+			RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 3;
 		//
 		RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
 		//
 		if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
-			RF._uORB_RC_Channel_PWM[3] = 0;
+			RF._uORB_RC_Out___Yaw = 0;
 		else
-			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 3;
+			RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 3;
 		//
 		RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
 		//
+		std::copy(std::begin(RF._uORB_RC_Channel_PWM), std::end(RF._uORB_RC_Channel_PWM), ChannelOut);
 	}
 
 	inline void AttitudeUpdate()
@@ -241,8 +239,8 @@ public:
 
 	inline bool SaftyChecking(APMSafeStatus& status)
 	{
-		if (RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 20 
-			&& RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM 
+		if (RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 20
+			&& RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM
 			&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 		{
 			if (AF._flag_Device_setupFailed == false)
@@ -260,7 +258,7 @@ public:
 				}
 			}
 		}
-		else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM 
+		else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM
 			&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
 		{
 			AF._flag_StartUP_Protect = false;
@@ -274,7 +272,7 @@ public:
 				AF._flag_ForceFailed_Safe = true;
 			}
 		}
-		if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM 
+		if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM
 			&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 		{
 			if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
@@ -299,7 +297,7 @@ public:
 			AF._flag_Error = true;
 			status.Is_SyncTimeOut = true;
 		}
-		if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 
+		if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0
 			|| SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 		{
 			AF._flag_Error = true;
@@ -309,7 +307,7 @@ public:
 		if (AF._flag_RC_Disconnected == true)
 		{
 			AF.RC_Lose_Clocking += 1;
-			if (AF.RC_Lose_Clocking == 350)
+			if (AF.RC_Lose_Clocking == 200)
 			{
 				AF._flag_Error = true;
 				status.Is_RCDisconnect = true;
@@ -321,6 +319,7 @@ public:
 			AF.RC_Lose_Clocking = 0;
 			status.Is_RCDisconnect = false;
 		}
+
 		status.ForceFailedSafe = AF._flag_ForceFailed_Safe;
 		status.SafyError = AF._flag_Error;
 		status.SyncTime = AF.Update_loopTime;
@@ -373,7 +372,7 @@ protected:
 		int Update_Freq_Time;
 		long int Update_TimerStart;
 		long int Update_TimerEnd;
-		int Update_loopTime;
+		unsigned int Update_loopTime;
 
 		bool _flag_Error;
 		bool _flag_StartUP_Protect;
@@ -638,7 +637,7 @@ protected:
 					{
 						for (size_t i = 0; i < 16; i++)
 						{
-							RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i * 2 + 1] + RF._Tmp_RC_Data[i * 2];
+							RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i * 2 + 1] * 255 + RF._Tmp_RC_Data[i * 2];
 						}
 						serialFlush(DF.RCReader_fd);
 						AF._flag_RC_Disconnected = false;
@@ -649,10 +648,7 @@ protected:
 						serialFlush(DF.RCReader_fd);
 					}
 
-					for (int i = 0; i < 32; i++)
-					{
-						RF._Tmp_RC_Data[i] = 0;
-					}
+					RF._Tmp_RC_Data[31] = 0;
 				}
 			}
 			else

@@ -3,6 +3,7 @@
 int main(int argc, char* argv[])
 {
 	int argvs;
+	int APMChannelOut[16];
 	APMSafeStatus statusOut;
 	APMSettinngs setting;
 	while ((argvs = getopt(argc, argv, "vrh")) != -1)
@@ -20,11 +21,18 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					APM_Settle.SensorsParse();
-					APM_Settle.ControlParse();
+					APM_Settle.ControlParse(APMChannelOut);
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
 					APM_Settle.ClockingTimer();
+					for (size_t i = 0; i < 16; i++)
+					{
+						std::cout << APMChannelOut[i] << " ";
+					}
+					std::cout << statusOut.ForceFailedSafe << " ";
+					std::cout << statusOut.Is_RCDisconnect << " zzx";
+					std::cout << "\n";
 				}
 				});
 			cpu_set_t cpuset;
