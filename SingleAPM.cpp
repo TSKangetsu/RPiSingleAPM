@@ -5,8 +5,6 @@ int main(int argc, char* argv[])
 	int argvs;
 	APMSafeStatus statusOut;
 	APMSettinngs setting;
-	setting.MPU9250_Type = APMS_MPU9250Type::MPU_Is_SPI;
-	setting.RC_Type = APMS_RCType::RC_IS_SBUS;
 	while ((argvs = getopt(argc, argv, "vrh")) != -1)
 	{
 		switch (argvs)

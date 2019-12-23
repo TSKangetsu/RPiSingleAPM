@@ -18,13 +18,12 @@
 enum APMS_MPU9250Type
 {
 	MPU_Is_I2C,
-	MPU_Is_SPI,
+	MPU_Is_SPI
 };
 
 enum APMS_RCType
 {
 	RC_Is_IBUS,
-	RC_Is_SBUSCONVERTER,
 	RC_IS_SBUS
 };
 
@@ -57,11 +56,11 @@ struct APMSettinngs
 	float _flag_PID_D___Yaw_Gain;
 	float _flag_PID_Level_Max;
 
-	long _Flag_MPU9250_G_X_Cali;
-	long _Flag_MPU9250_G_Y_Cali;
-	long _Flag_MPU9250_G_Z_Cali;
-	long _Flag_Accel__Roll_Cali;
-	long _Flag_Accel_Pitch_Cali;
+	long _flag_MPU9250_G_X_Cali;
+	long _flag_MPU9250_G_Y_Cali;
+	long _flag_MPU9250_G_Z_Cali;
+	long _flag_Accel__Roll_Cali;
+	long _flag_Accel_Pitch_Cali;
 
 	int _flag_A1_Pin = 0;
 	int _flag_A2_Pin = 1;
@@ -122,7 +121,7 @@ public:
 			}
 		}
 
-		if (APMInit.RC_Type == APMS_RCType::RC_Is_IBUS)
+		if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
 		{
 			DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
 			if (DF.RCReader_fd < 0)
@@ -134,7 +133,7 @@ public:
 				delete SbusInit;
 			}
 		}
-		else if (APMInit.RC_Type == APMS_RCType::RC_IS_SBUS)
+		else if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
 		{
 			SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 		}
@@ -147,9 +146,9 @@ public:
 		AF.Update_TimerStart = micros();
 		SensorsDataRead();
 		//Gryo----------------------------------------------------------------------//
-		SF._uORB_MPU9250_G_X -= SF._Flag_MPU9250_G_X_Cali;
-		SF._uORB_MPU9250_G_Y -= SF._Flag_MPU9250_G_Y_Cali;
-		SF._uORB_MPU9250_G_Z -= SF._Flag_MPU9250_G_Z_Cali;
+		SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
+		SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
+		SF._uORB_MPU9250_G_Z -= SF._flag_MPU9250_G_Z_Cali;
 		SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
 		SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
 		SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
@@ -159,8 +158,8 @@ public:
 			SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
 		if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
 			SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
-		SF._uORB_Accel__Roll -= SF._Flag_Accel__Roll_Cali;
-		SF._uORB_Accel_Pitch -= SF._Flag_Accel_Pitch_Cali;
+		SF._uORB_Accel__Roll -= SF._flag_Accel__Roll_Cali;
+		SF._uORB_Accel_Pitch -= SF._flag_Accel_Pitch_Cali;
 		//Gryo_MIX_ACCEL------------------------------------------------------------//
 		SF._uORB_Real_Pitch += SF._uORB_MPU9250_G_X / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
 		SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Y / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
@@ -336,10 +335,10 @@ public:
 
 		if (AF._flag_ForceFailed_Safe)
 		{
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
 		}
 		if (!AF._flag_ForceFailed_Safe)
 		{
@@ -370,7 +369,6 @@ protected:
 	struct SafyINFO
 	{
 		long int RC_Lose_Clocking;
-
 		int Update_Freqeuncy;
 		int Update_Freq_Time;
 		long int Update_TimerStart;
@@ -431,11 +429,11 @@ protected:
 		unsigned long _Tmp_MPU9250_A_Y;
 		unsigned long _Tmp_MPU9250_A_Z;
 
-		long _Flag_MPU9250_G_X_Cali;
-		long _Flag_MPU9250_G_Y_Cali;
-		long _Flag_MPU9250_G_Z_Cali;
-		long _Flag_Accel__Roll_Cali;
-		long _Flag_Accel_Pitch_Cali;
+		long _flag_MPU9250_G_X_Cali;
+		long _flag_MPU9250_G_Y_Cali;
+		long _flag_MPU9250_G_Z_Cali;
+		long _flag_Accel__Roll_Cali;
+		long _flag_Accel_Pitch_Cali;
 
 		long _Tmp_IMU_Accel_Calibration[20];
 		long _Tmp_IMU_Accel_Vector;
@@ -503,8 +501,8 @@ protected:
 		int _flag_A2_Pin = 1;
 		int _flag_B1_Pin = 2;
 		int _flag_B2_Pin = 3;
-		const int _flag_Lazy_Throttle = 2300;
-		const int _flag_Lock_Throttle = 2200;
+		const int _Flag_Lazy_Throttle = 2300;
+		const int _Flag_Lock_Throttle = 2200;
 	}EF;
 
 	inline void PID_Caculate(float inputData, float& outputData,
@@ -528,29 +526,22 @@ protected:
 
 	inline void ConfigReader(APMSettinngs APMInit)
 	{
+
 #ifdef USINGJSON
 		std::cout << "[ConfigRead]starting to check out config file ....\n";
 		std::ifstream config(DF.configDir);
 		std::string content((std::istreambuf_iterator<char>(config)),
 			(std::istreambuf_iterator<char>()));
 		nlohmann::json Configdata = nlohmann::json::parse(content);
+		//==========================================================Device Type=======/
+		RF.RC_Type = Configdata["Type_RC"].get<int>();
+		SF.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
 		//==========================================================Controller cofig==/
-		RF._flag_RC_Max__Roll = Configdata["_flag_RC_Max__Roll"].get<int>();
-		RF._flag_RC_Max_Pitch = Configdata["_flag_RC_Max_Pitch"].get<int>();
-		RF._flag_RC_Max_Throttle = Configdata["_flag_RC_Max_Throttle"].get<int>();
-		RF._flag_RC_Max___Yaw = Configdata["_flag_RC_Max___Yaw"].get<int>();
-
-		RF._flag_RC_Middle__Roll = Configdata["_flag_RC_Middle__Roll"].get<int>();
-		RF._flag_RC_Middle_Pitch = Configdata["_flag_RC_Middle_Pitch"].get<int>();
-		RF._flag_RC_Middle___Yaw = Configdata["_flag_RC_Middle___Yaw"].get<int>();
-
-		RF._flag_RC_Min__Roll = Configdata["_flag_RC_Min__Roll"].get<int>();
-		RF._flag_RC_Min_Pitch = Configdata["_flag_RC_Min_Pitch"].get<int>();
-		RF._flag_RC_Min_Throttle = Configdata["_flag_RC_Min_Throttle"].get<int>();
-		RF._flag_RC_Min___Yaw = Configdata["_flag_RC_Min___Yaw"].get<int>();
-
-		RF._flag_RC_Safe_Area = Configdata["_flag_RC_Safe_Area"].get<int>();
-
+		RF._flag_RC_ARM_PWM_Value = Configdata["_flag_RC_ARM_PWM_Value"].get<int>();
+		RF._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();
+		RF._flag_RC_Mid_PWM_Value = Configdata["_flag_RC_Mid_PWM_Value"].get<int>();
+		RF._flag_RC_Max_PWM_Value = Configdata["_flag_RC_Max_PWM_Value"].get<int>();
+		//==========================================================ESC cofig=========/
 		EF._flag_A1_Pin = Configdata["_flag_A1_Pin"].get<int>();
 		EF._flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
 		EF._flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
@@ -569,13 +560,12 @@ protected:
 
 		PF._flag_PID_D__Roll_Gain = Configdata["_flag_PID_D__Roll_Gain"].get<float>();
 		PF._flag_PID_D_Pitch_Gain = Configdata["_flag_PID_D_Pitch_Gain"].get<float>();
-		APMInit;
 		PF._flag_PID_D___Yaw_Gain = Configdata["_flag_PID_D___Yaw_Gain"].get<float>();
 
 		PF._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
 		//==============================================================Sensors cofig==/
-		SF._Flag_Accel__Roll_Cali = Configdata["_Flag_Accel__Roll_Cali"].get<float>();
-		SF._Flag_Accel_Pitch_Cali = Configdata["_Flag_Accel_Pitch_Cali"].get<float>();
+		SF._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<float>();
+		SF._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<float>();
 		//===============================================================Update cofig==/
 		AF.Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
 		AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
@@ -601,11 +591,11 @@ protected:
 		PF._flag_PID_D___Yaw_Gain = APMInit._flag_PID_D___Yaw_Gain;
 		PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
 
-		SF._Flag_MPU9250_G_X_Cali = APMInit._Flag_MPU9250_G_X_Cali;
-		SF._Flag_MPU9250_G_Y_Cali = APMInit._Flag_MPU9250_G_Y_Cali;
-		SF._Flag_MPU9250_G_Z_Cali = APMInit._Flag_MPU9250_G_Z_Cali;
-		SF._Flag_Accel__Roll_Cali = APMInit._Flag_Accel__Roll_Cali;
-		SF._Flag_Accel_Pitch_Cali = APMInit._Flag_Accel_Pitch_Cali;
+		SF._flag_MPU9250_G_X_Cali = APMInit._flag_MPU9250_G_X_Cali;
+		SF._flag_MPU9250_G_Y_Cali = APMInit._flag_MPU9250_G_Y_Cali;
+		SF._flag_MPU9250_G_Z_Cali = APMInit._flag_MPU9250_G_Z_Cali;
+		SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
+		SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;
 
 		EF._flag_A1_Pin = APMInit._flag_A1_Pin;
 		EF._flag_A2_Pin = APMInit._flag_A2_Pin;
@@ -724,21 +714,20 @@ protected:
 
 	inline void GryoCali()
 	{
-		SF._Flag_MPU9250_G_X_Cali = 0;
-		SF._Flag_MPU9250_G_Y_Cali = 0;
-		SF._Flag_MPU9250_G_Z_Cali = 0;
+		SF._flag_MPU9250_G_X_Cali = 0;
+		SF._flag_MPU9250_G_Y_Cali = 0;
+		SF._flag_MPU9250_G_Z_Cali = 0;
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
 			SensorsDataRead();
-			SF._Flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
-			SF._Flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
-			SF._Flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
+			SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
+			SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
+			SF._flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
 			usleep(3);
 		}
-		SF._Flag_MPU9250_G_X_Cali = SF._Flag_MPU9250_G_X_Cali / 2000;
-		SF._Flag_MPU9250_G_Y_Cali = SF._Flag_MPU9250_G_Y_Cali / 2000;
-		SF._Flag_MPU9250_G_Z_Cali = SF._Flag_MPU9250_G_Z_Cali / 2000;
-
+		SF._flag_MPU9250_G_X_Cali = SF._flag_MPU9250_G_X_Cali / 2000;
+		SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
+		SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
 	}
 };
 
@@ -764,14 +753,14 @@ public:
 				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
 			if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
 				SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
-			SF._Flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
-			SF._Flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
+			SF._flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
+			SF._flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
 			usleep(3);
 		}
-		SF._Flag_Accel__Roll_Cali = (float)SF._Flag_Accel__Roll_Cali / 2000;
-		SF._Flag_Accel_Pitch_Cali = (float)SF._Flag_Accel_Pitch_Cali / 2000;
-		std::cout << "AccelPitchCali: " << SF._Flag_Accel_Pitch_Cali << " \n";
-		std::cout << "AccelRollCali: " << SF._Flag_Accel__Roll_Cali << " \n";
+		SF._flag_Accel__Roll_Cali = (float)SF._flag_Accel__Roll_Cali / 2000;
+		SF._flag_Accel_Pitch_Cali = (float)SF._flag_Accel_Pitch_Cali / 2000;
+		std::cout << "AccelPitchCali: " << SF._flag_Accel_Pitch_Cali << " \n";
+		std::cout << "AccelRollCali: " << SF._flag_Accel__Roll_Cali << " \n";
 		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
 		std::cin >> CalibrationComfirm;
 		if (CalibrationComfirm == -1)
@@ -785,8 +774,8 @@ public:
 				(std::istreambuf_iterator<char>()));
 			nlohmann::json Configdata = nlohmann::json::parse(content);
 
-			Configdata["_Flag_Accel__Roll_Cali"] = SF._Flag_Accel__Roll_Cali;
-			Configdata["_Flag_Accel_Pitch_Cali"] = SF._Flag_Accel_Pitch_Cali;
+			Configdata["_flag_Accel__Roll_Cali"] = SF._flag_Accel__Roll_Cali;
+			Configdata["_flag_Accel_Pitch_Cali"] = SF._flag_Accel_Pitch_Cali;
 
 			std::ofstream configIN;
 			configIN.open(DF.configDir);
@@ -822,139 +811,6 @@ public:
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 2200);
 		sleep(3);
 		std::cout << "[ESCStatus] ESC calibration over" << " \n";
-	}
-
-	inline void ControlCalibration()
-	{
-		bool IS_first = true;
-		int CalibrationComfirm;
-		std::cout << "[Controller] ControlCalibraion start , input 1 to start , input -1 to skip \n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			return;
-		}
-		std::cout << "[Controller] ControlCalibraion start ...... \n";
-		for (int cali_count = 0; cali_count < 4000; cali_count++)
-		{
-			ControlRead();
-			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
-			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
-			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
-			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
-			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
-			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
-			if (IS_first)
-			{
-				if (RF._uORB_RC__Roll != 0)
-				{
-					RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
-					RF._flag_RC_Min_Pitch = RF._uORB_RC__Roll;
-					RF._flag_RC_Min_Throttle = RF._uORB_RC__Roll;
-					RF._flag_RC_Min___Yaw = RF._uORB_RC__Roll;
-
-					RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
-					RF._flag_RC_Max_Pitch = RF._uORB_RC__Roll;
-					RF._flag_RC_Max_Throttle = RF._uORB_RC__Roll;
-					RF._flag_RC_Max___Yaw = RF._uORB_RC__Roll;
-
-					IS_first = false;
-				}
-			}
-
-			if (RF._uORB_RC__Roll > RF._flag_RC_Max__Roll&& RF._uORB_RC__Roll != 0)
-				RF._flag_RC_Max__Roll = RF._uORB_RC__Roll;
-			if (RF._uORB_RC_Pitch > RF._flag_RC_Max_Pitch&& RF._uORB_RC_Pitch != 0)
-				RF._flag_RC_Max_Pitch = RF._uORB_RC_Pitch;
-			if (RF._uORB_RC_Throttle > RF._flag_RC_Max_Throttle&& RF._uORB_RC_Throttle != 0)
-				RF._flag_RC_Max_Throttle = RF._uORB_RC_Throttle;
-			if (RF._uORB_RC___Yaw > RF._flag_RC_Max___Yaw&& RF._uORB_RC___Yaw != 0)
-				RF._flag_RC_Max___Yaw = RF._uORB_RC___Yaw;
-
-			if (RF._uORB_RC__Roll < RF._flag_RC_Min__Roll && RF._uORB_RC__Roll != 0)
-				RF._flag_RC_Min__Roll = RF._uORB_RC__Roll;
-			if (RF._uORB_RC_Pitch < RF._flag_RC_Min_Pitch && RF._uORB_RC_Pitch != 0)
-				RF._flag_RC_Min_Pitch = RF._uORB_RC_Pitch;
-			if (RF._uORB_RC_Throttle < RF._flag_RC_Min_Throttle && RF._uORB_RC_Throttle != 0)
-				RF._flag_RC_Min_Throttle = RF._uORB_RC_Throttle;
-			if (RF._uORB_RC___Yaw < RF._flag_RC_Min___Yaw && RF._uORB_RC___Yaw != 0)
-				RF._flag_RC_Min___Yaw = RF._uORB_RC___Yaw;
-
-			usleep(2000);
-		}
-		std::cout << "\n[Controller] Calibration will finshed"
-			<< " Please Check the tick middle and throttle down and pass enter" << "\n";
-		std::cin >> CalibrationComfirm;
-		for (int cali_count = 0; cali_count < 1000; cali_count++)
-		{
-			ControlRead();
-			std::cout << "Roll:" << RF._uORB_RC__Roll << " ";
-			std::cout << "Pitch:" << RF._uORB_RC_Pitch << " ";
-			std::cout << "Throttle:" << RF._uORB_RC_Throttle << " ";
-			std::cout << "Yaw:" << RF._uORB_RC___Yaw << " ";
-			std::cout << "SafeSwitch:" << RF._uORB_RC__Safe << " ";
-			std::cout << "FuncSwitch:" << RF._uORB_RC__Func << " \r";
-
-			RF._flag_RC_Middle_Pitch = RF._uORB_RC_Pitch;
-			RF._flag_RC_Middle__Roll = RF._uORB_RC__Roll;
-			RF._flag_RC_Middle___Yaw = RF._uORB_RC___Yaw;
-			RF._flag_RC_Safe_Area = RF._uORB_RC__Safe;
-			usleep(2000);
-		}
-		std::cout << "[Controler] Controller calitbration comfirm:\n"
-			<< "Max__Roll    = " << RF._flag_RC_Max__Roll << "\n"
-			<< "Max_Pitch    = " << RF._flag_RC_Max_Pitch << "\n"
-			<< "Max_Throttle = " << RF._flag_RC_Max_Throttle << "\n"
-			<< "Max___Yaw    = " << RF._flag_RC_Max___Yaw << "\n\n"
-
-			<< "Middle__Roll = " << RF._flag_RC_Middle__Roll << "\n"
-			<< "Middle_Pitch = " << RF._flag_RC_Middle_Pitch << "\n"
-			<< "Middle___Yaw = " << RF._flag_RC_Middle___Yaw << "\n\n"
-
-			<< "Min__Roll    = " << RF._flag_RC_Min__Roll << "\n"
-			<< "Min_Pitch    = " << RF._flag_RC_Min_Pitch << "\n"
-			<< "Min_Throttle = " << RF._flag_RC_Min_Throttle << "\n"
-			<< "Min___Yaw    = " << RF._flag_RC_Min___Yaw << "\n"
-
-			<< "SafeSwitch   = " << RF._flag_RC_Safe_Area << "\n";
-		std::cout << "<-----------Controller_calibration_over---------------->\n";
-		std::cout << "[Controller] Calibration finshed ,if you want to retry input -1 , to write to configJSON input 1 , input 0 to skip" << "\n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			ControlCalibration();
-		}
-		else if (CalibrationComfirm == 1)
-		{
-			std::ifstream config(DF.configDir);
-			std::string content((std::istreambuf_iterator<char>(config)),
-				(std::istreambuf_iterator<char>()));
-			nlohmann::json Configdata = nlohmann::json::parse(content);
-
-			Configdata["_flag_RC_Max__Roll"] = RF._flag_RC_Max__Roll;
-			Configdata["_flag_RC_Max_Pitch"] = RF._flag_RC_Max_Pitch;
-			Configdata["_flag_RC_Max_Throttle"] = RF._flag_RC_Max_Throttle;
-			Configdata["_flag_RC_Max___Yaw"] = RF._flag_RC_Max___Yaw;
-
-			Configdata["_flag_RC_Middle__Roll"] = RF._flag_RC_Middle__Roll;
-			Configdata["_flag_RC_Middle_Pitch"] = RF._flag_RC_Middle_Pitch;
-			Configdata["_flag_RC_Middle___Yaw"] = RF._flag_RC_Middle___Yaw;
-
-			Configdata["_flag_RC_Min__Roll"] = RF._flag_RC_Min__Roll;
-			Configdata["_flag_RC_Min_Pitch"] = RF._flag_RC_Min_Pitch;
-			Configdata["_flag_RC_Min_Throttle"] = RF._flag_RC_Min_Throttle;
-			Configdata["_flag_RC_Min___Yaw"] = RF._flag_RC_Min___Yaw;
-
-			Configdata["_flag_RC_Safe_Area"] = RF._flag_RC_Safe_Area;
-
-			std::ofstream configIN;
-			configIN.open(DF.configDir);
-			configIN.clear();
-			configIN << Configdata.dump(4).c_str();
-			configIN.close();
-
-			std::cout << "[Controller] Config write success\n";
-		}
 	}
 };
 #endif
