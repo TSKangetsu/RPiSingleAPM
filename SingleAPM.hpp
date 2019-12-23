@@ -57,8 +57,8 @@ struct APMSettinngs
 	float _flag_PID_D___Yaw_Gain;
 	float _flag_PID_Level_Max;
 
-	long _flag_Accel__Roll_Cali;
-	long _flag_Accel_Pitch_Cali;
+	double _flag_Accel__Roll_Cali;
+	double _flag_Accel_Pitch_Cali;
 
 	int _flag_A1_Pin = 0;
 	int _flag_A2_Pin = 1;
@@ -358,6 +358,87 @@ public:
 		delayMicroseconds(AF.Update_Freq_Time - AF.Update_loopTime);
 	}
 
+#ifdef USINGJSON
+	inline void SensorsCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[Sensors] Calibration will start , input 1 to start , input -1 to skip" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			return;
+		}
+		std::cout << "[Sensors] Accel Calibration ......" << "\n";
+		SF._flag_Accel_Pitch_Cali = 0.f;
+		SF._flag_Accel__Roll_Cali = 0.f;
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			SensorsDataRead();
+			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
+			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
+				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / (float)SF._Tmp_IMU_Accel_Vector) * -57.296;
+			if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
+				SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / (float)SF._Tmp_IMU_Accel_Vector) * 57.296;
+			SF._flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
+			SF._flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
+			usleep(3);
+		}
+		SF._flag_Accel__Roll_Cali = (float)SF._flag_Accel__Roll_Cali / (float)2000;
+		SF._flag_Accel_Pitch_Cali = (float)SF._flag_Accel_Pitch_Cali / (float)2000;
+		std::cout << "AccelPitchCali: " << SF._flag_Accel_Pitch_Cali << " \n";
+		std::cout << "AccelRollCali: " << SF._flag_Accel__Roll_Cali << " \n";
+		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			SensorsCalibration();
+		}
+		else if (CalibrationComfirm == 1)
+		{
+			std::ifstream config(DF.configDir);
+			std::string content((std::istreambuf_iterator<char>(config)),
+				(std::istreambuf_iterator<char>()));
+			nlohmann::json Configdata = nlohmann::json::parse(content);
+
+			Configdata["_flag_Accel__Roll_Cali"] = SF._flag_Accel__Roll_Cali;
+			Configdata["_flag_Accel_Pitch_Cali"] = SF._flag_Accel_Pitch_Cali;
+
+			std::ofstream configIN;
+			configIN.open(DF.configDir);
+			configIN.clear();
+			configIN << Configdata.dump(4).c_str();
+			configIN.close();
+
+			std::cout << "[Sensors] Config write success\n";
+		}
+	}
+#endif
+
+	inline void ESCCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
+		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 1 , or input -1 to skip calibration" << " \n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			std::cout << "[ESCStatus] Exiting ESC calibration ........." << " \n";
+			return;
+		}
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 3000);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 3000);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 3000);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 3000);
+		std::cout << "[ESCStatus] ESC calibration will finsh , input 1 to stop " << " \n";
+		std::cin >> CalibrationComfirm;
+		std::cout << "[ESCStatus] ESC calibration Finsh....." << " \n";
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 2200);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 2200);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 2200);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 2200);
+		sleep(3);
+		std::cout << "[ESCStatus] ESC calibration over" << " \n";
+	}
 
 protected:
 	Sbus* SbusInit;
@@ -428,8 +509,8 @@ protected:
 		long _flag_MPU9250_G_X_Cali;
 		long _flag_MPU9250_G_Y_Cali;
 		long _flag_MPU9250_G_Z_Cali;
-		long _flag_Accel__Roll_Cali;
-		long _flag_Accel_Pitch_Cali;
+		double _flag_Accel__Roll_Cali;
+		double _flag_Accel_Pitch_Cali;
 
 		long _Tmp_IMU_Accel_Calibration[20];
 		long _Tmp_IMU_Accel_Vector;
@@ -560,8 +641,8 @@ protected:
 
 		PF._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
 		//==============================================================Sensors cofig==/
-		SF._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<float>();
-		SF._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<float>();
+		SF._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
+		SF._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
 		//===============================================================Update cofig==/
 		AF.Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
 		AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
@@ -720,88 +801,3 @@ protected:
 		SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
 	}
 };
-
-#ifdef USINGJSON
-class RPiAPMCalibration :RPiSingleAPM
-{
-public:
-	inline void SensorsCalibration()
-	{
-		int CalibrationComfirm;
-		std::cout << "[Sensors] Calibration will start , input 1 to start , input -1 to skip" << "\n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			return;
-		}
-		std::cout << "[Sensors] Accel Calibration ......" << "\n";
-		for (int cali_count = 0; cali_count < 2000; cali_count++)
-		{
-			SensorsDataRead();
-			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
-			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
-				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
-			if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
-				SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
-			SF._flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
-			SF._flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
-			usleep(3);
-		}
-		SF._flag_Accel__Roll_Cali = (float)SF._flag_Accel__Roll_Cali / 2000;
-		SF._flag_Accel_Pitch_Cali = (float)SF._flag_Accel_Pitch_Cali / 2000;
-		std::cout << "AccelPitchCali: " << SF._flag_Accel_Pitch_Cali << " \n";
-		std::cout << "AccelRollCali: " << SF._flag_Accel__Roll_Cali << " \n";
-		std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			SensorsCalibration();
-		}
-		else if (CalibrationComfirm == 1)
-		{
-			std::ifstream config(DF.configDir);
-			std::string content((std::istreambuf_iterator<char>(config)),
-				(std::istreambuf_iterator<char>()));
-			nlohmann::json Configdata = nlohmann::json::parse(content);
-
-			Configdata["_flag_Accel__Roll_Cali"] = SF._flag_Accel__Roll_Cali;
-			Configdata["_flag_Accel_Pitch_Cali"] = SF._flag_Accel_Pitch_Cali;
-
-			std::ofstream configIN;
-			configIN.open(DF.configDir);
-			configIN.clear();
-			configIN << Configdata.dump(4).c_str();
-			configIN.close();
-
-			std::cout << "[Sensors] Config write success\n";
-		}
-	}
-
-	inline void ESCCalibration()
-	{
-		int CalibrationComfirm;
-		std::cout << "[ESCStatus] ESC calibration start........." << " \n";
-		std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 1 , or input -1 to skip calibration" << " \n";
-		std::cin >> CalibrationComfirm;
-		if (CalibrationComfirm == -1)
-		{
-			std::cout << "[ESCStatus] Exiting ESC calibration ........." << " \n";
-			return;
-		}
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 3000);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 3000);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 3000);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 3000);
-		std::cout << "[ESCStatus] ESC calibration will finsh , input 1 to stop " << " \n";
-		std::cin >> CalibrationComfirm;
-		std::cout << "[ESCStatus] ESC calibration Finsh....." << " \n";
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 2200);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 2200);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 2200);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 2200);
-		sleep(3);
-		std::cout << "[ESCStatus] ESC calibration over" << " \n";
-	}
-};
-#endif
-

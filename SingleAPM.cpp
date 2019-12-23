@@ -6,14 +6,20 @@ int main(int argc, char* argv[])
 	int APMChannelOut[16];
 	APMSafeStatus statusOut;
 	APMSettinngs setting;
-	while ((argvs = getopt(argc, argv, "vrh")) != -1)
+	while ((argvs = getopt(argc, argv, "vcrh")) != -1)
 	{
 		switch (argvs)
 		{
 		case 'v':
 			std::cout << "[RPiSingleAPM] version 1.0.f Beta , Acess By TSKangetsu\n"
-				<< "	checkout : https://github.com/TSKangetsu/RPiSingleAPM";
+				<< "	checkout : https://github.com/TSKangetsu/RPiSingleAPM \n";
 			break;
+		case 'c':
+		{
+			RPiSingleAPM APM_Settle(setting);
+			APM_Settle.SensorsCalibration();
+		}
+		break;
 		case 'r':
 		{
 			RPiSingleAPM APM_Settle(setting);
@@ -31,7 +37,7 @@ int main(int argc, char* argv[])
 						std::cout << APMChannelOut[i] << " ";
 					}
 					std::cout << statusOut.ForceFailedSafe << " ";
-					std::cout << statusOut.Is_RCDisconnect << " zzx";
+					std::cout << statusOut.Is_RCDisconnect << " =-=";
 					std::cout << "\n";
 				}
 				});
