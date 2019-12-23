@@ -57,9 +57,6 @@ struct APMSettinngs
 	float _flag_PID_D___Yaw_Gain;
 	float _flag_PID_Level_Max;
 
-	long _flag_MPU9250_G_X_Cali;
-	long _flag_MPU9250_G_Y_Cali;
-	long _flag_MPU9250_G_Z_Cali;
 	long _flag_Accel__Roll_Cali;
 	long _flag_Accel_Pitch_Cali;
 
@@ -590,9 +587,6 @@ protected:
 		PF._flag_PID_D___Yaw_Gain = APMInit._flag_PID_D___Yaw_Gain;
 		PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
 
-		SF._flag_MPU9250_G_X_Cali = APMInit._flag_MPU9250_G_X_Cali;
-		SF._flag_MPU9250_G_Y_Cali = APMInit._flag_MPU9250_G_Y_Cali;
-		SF._flag_MPU9250_G_Z_Cali = APMInit._flag_MPU9250_G_Z_Cali;
 		SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
 		SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;
 
