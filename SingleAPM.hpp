@@ -186,20 +186,21 @@ public:
 			RF._uORB_RC_Channel_PWM[0] = 0;
 		else
 			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 3;
-
-		if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+		//
+		if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
 			RF._uORB_RC_Channel_PWM[1] = 0;
 		else
-			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 3;
-
+			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 3;
+		//
 		RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
-
-		if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+		//
+		if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
 			RF._uORB_RC_Channel_PWM[3] = 0;
 		else
-			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 3;
-
+			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 3;
+		//
 		RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+		//
 	}
 
 	inline void AttitudeUpdate()
@@ -241,7 +242,9 @@ public:
 
 	inline bool SaftyChecking(APMSafeStatus& status)
 	{
-		if (RF._uORB_RC_Channel_PWM[2] < RF._flag_RC_ARM_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
+		if (RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 20 
+			&& RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM 
+			&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 		{
 			if (AF._flag_Device_setupFailed == false)
 			{
@@ -258,7 +261,8 @@ public:
 				}
 			}
 		}
-		else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
+		else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM 
+			&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
 		{
 			AF._flag_StartUP_Protect = false;
 			AF._flag_ForceFailed_Safe = true;
@@ -271,7 +275,8 @@ public:
 				AF._flag_ForceFailed_Safe = true;
 			}
 		}
-		if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
+		if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM 
+			&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 		{
 			if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
 			{
@@ -295,7 +300,8 @@ public:
 			AF._flag_Error = true;
 			status.Is_SyncTimeOut = true;
 		}
-		if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
+		if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 
+			|| SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 		{
 			AF._flag_Error = true;
 			status.Is_AngelOutLimit = true;
