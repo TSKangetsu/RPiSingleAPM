@@ -414,6 +414,81 @@ public:
 	}
 #endif
 
+	inline void RCCalibration()
+	{
+		int CalibrationComfirm;
+		std::cout << "[RCStatus] RC calibration start........." << " \n";
+		std::cout << "[RCStatus] RC calibration start, input 1 to start, or input -1 to skip calibration" << " \n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			std::cout << "[RCStatus] Exiting RC calibration ........." << " \n";
+			return;
+		}
+		std::cout << "Max the Throttle , and input 1" << "\n";
+		std::cin >> CalibrationComfirm;
+		for (size_t i = 0; i < 2000; i++)
+		{
+			ControlRead();
+			RF._flag_RC_Max_PWM_Value = RF._uORB_RC_Channel_PWM[2];
+		}
+
+		std::cout << "Mid the Roll , and input 1" << "\n";
+		std::cin >> CalibrationComfirm;
+		for (size_t i = 0; i < 2000; i++)
+		{
+			ControlRead();
+			RF._flag_RC_Mid_PWM_Value = RF._uORB_RC_Channel_PWM[0];
+		}
+
+		std::cout << "Min the Throttle , and input 1" << "\n";
+		std::cin >> CalibrationComfirm;
+		for (size_t i = 0; i < 2000; i++)
+		{
+			ControlRead();
+			RF._flag_RC_Min_PWM_Value = RF._uORB_RC_Channel_PWM[2];
+		}
+
+		std::cout << "please input ARM channel , and turn to on \n";
+		for (size_t i = 0; i < 2000; i++)
+		{
+			ControlRead();
+			RF._flag_RC_ARM_PWM_Value = RF._uORB_RC_Channel_PWM[4];
+		}
+
+		std::cout << "_flag_RC_Max_PWM_Value: " << RF._flag_RC_Max_PWM_Value << " \n";
+		std::cout << "_flag_RC_Mid_PWM_Value: " << RF._flag_RC_Mid_PWM_Value << " \n";
+		std::cout << "_flag_RC_Min_PWM_Value: " << RF._flag_RC_Min_PWM_Value << " \n";
+		std::cout << "_flag_RC_ARM_PWM_Value: " << RF._flag_RC_ARM_PWM_Value << " \n";
+
+		std::cout << "[RCStatus] RC Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip" << "\n";
+		std::cin >> CalibrationComfirm;
+		if (CalibrationComfirm == -1)
+		{
+			RCCalibration();
+		}
+		else if (CalibrationComfirm == 1)
+		{
+			std::ifstream config(DF.configDir);
+			std::string content((std::istreambuf_iterator<char>(config)),
+				(std::istreambuf_iterator<char>()));
+			nlohmann::json Configdata = nlohmann::json::parse(content);
+
+			Configdata["_flag_RC_Max_PWM_Value"] = RF._flag_RC_Max_PWM_Value;
+			Configdata["_flag_RC_Mid_PWM_Value"] = RF._flag_RC_Mid_PWM_Value;
+			Configdata["_flag_RC_Min_PWM_Value"] = RF._flag_RC_Min_PWM_Value;
+			Configdata["_flag_RC_ARM_PWM_Value"] = RF._flag_RC_ARM_PWM_Value;
+
+			std::ofstream configIN;
+			configIN.open(DF.configDir);
+			configIN.clear();
+			configIN << Configdata.dump(4).c_str();
+			configIN.close();
+
+			std::cout << "[RCStatus] Config write success\n";
+		}
+	}
+
 	inline void ESCCalibration()
 	{
 		int CalibrationComfirm;

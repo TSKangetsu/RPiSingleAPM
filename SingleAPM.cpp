@@ -17,6 +17,7 @@ int main(int argc, char* argv[])
 		case 'c':
 		{
 			RPiSingleAPM APM_Settle(setting);
+			APM_Settle.RCCalibration();
 			APM_Settle.SensorsCalibration();
 		}
 		break;
@@ -37,7 +38,7 @@ int main(int argc, char* argv[])
 						std::cout << APMChannelOut[i] << " ";
 					}
 					std::cout << statusOut.ForceFailedSafe << " ";
-					std::cout << statusOut.Is_RCDisconnect << " =-=";
+					std::cout << statusOut.Is_RCDisconnect << " ";
 					std::cout << "\n";
 				}
 				});
