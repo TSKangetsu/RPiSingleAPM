@@ -33,13 +33,6 @@ int main(int argc, char* argv[])
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
 					APM_Settle.ClockingTimer();
-					for (size_t i = 0; i < 16; i++)
-					{
-						std::cout << APMChannelOut[i] << " ";
-					}
-					std::cout << statusOut.ForceFailedSafe << " ";
-					std::cout << statusOut.Is_RCDisconnect << " ";
-					std::cout << "\n";
 				}
 				});
 			cpu_set_t cpuset;

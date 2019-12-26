@@ -35,6 +35,7 @@ struct APMSafeStatus
 
 	bool Is_SyncTimeOut;
 	bool Is_RCDisconnect;
+	bool Is_RCErrorInput;
 	bool Is_AngelOutLimit;
 };
 
@@ -138,7 +139,7 @@ public:
 	inline void SensorsParse()
 	{
 		AF.Update_TimerStart = micros();
-		SensorsDataRead();
+		IMUSensorsDataRead();
 		//Gryo----------------------------------------------------------------------//
 		SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 		SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
@@ -236,6 +237,7 @@ public:
 
 	inline bool SaftyChecking(APMSafeStatus& status)
 	{
+		//ECSLockCheck
 		if (RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 20
 			&& RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM
 			&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
@@ -289,6 +291,7 @@ public:
 			PF._uORB_PID_I_Last_Value___Yaw = 0;
 		}
 
+		//ErrorDetect
 		if (AF.Update_loopTime > AF.Update_Freq_Time)
 		{
 			AF._flag_Error = true;
@@ -300,7 +303,16 @@ public:
 			AF._flag_Error = true;
 			status.Is_AngelOutLimit = true;
 		}
+		if (RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[0] && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Max_PWM_Value ||
+			RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[1] && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Max_PWM_Value ||
+			RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[2] && RF._uORB_RC_Channel_PWM[2] > RF._flag_RC_Max_PWM_Value ||
+			RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value)
+		{
+			AF._flag_RC_Disconnected = true;
+			status.Is_RCErrorInput;
+		}
 
+		//RC_LOSE_Detect
 		if (AF._flag_RC_Disconnected == true)
 		{
 			AF.RC_Lose_Clocking += 1;
@@ -317,6 +329,7 @@ public:
 			status.Is_RCDisconnect = false;
 		}
 
+		//StatusUpdate
 		status.ForceFailedSafe = AF._flag_ForceFailed_Safe;
 		status.SafyError = AF._flag_Error;
 		status.SyncTime = AF.Update_loopTime;
@@ -357,7 +370,6 @@ public:
 			AF.Update_loopTime *= -1;
 		delayMicroseconds(AF.Update_Freq_Time - AF.Update_loopTime);
 	}
-
 #ifdef USINGJSON
 	inline void SensorsCalibration()
 	{
@@ -373,7 +385,7 @@ public:
 		SF._flag_Accel__Roll_Cali = 0.f;
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
-			SensorsDataRead();
+			IMUSensorsDataRead();
 			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
 			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
 				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / (float)SF._Tmp_IMU_Accel_Vector) * -57.296;
@@ -412,7 +424,6 @@ public:
 			std::cout << "[Sensors] Config write success\n";
 		}
 	}
-#endif
 
 	inline void RCCalibration()
 	{
@@ -488,6 +499,7 @@ public:
 			std::cout << "[RCStatus] Config write success\n";
 		}
 	}
+#endif
 
 	inline void ESCCalibration()
 	{
@@ -808,7 +820,7 @@ protected:
 		}
 	}
 
-	inline void SensorsDataRead()
+	inline void IMUSensorsDataRead()
 	{
 		if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
 		{
@@ -858,6 +870,11 @@ protected:
 		}
 	}
 
+	inline  int IMUSensorFilter(long FilterInput)
+	{
+		
+	}
+
 	inline void GryoCali()
 	{
 		SF._flag_MPU9250_G_X_Cali = 0;
@@ -865,7 +882,7 @@ protected:
 		SF._flag_MPU9250_G_Z_Cali = 0;
 		for (int cali_count = 0; cali_count < 2000; cali_count++)
 		{
-			SensorsDataRead();
+			IMUSensorsDataRead();
 			SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
 			SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
 			SF._flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
