@@ -1,4 +1,5 @@
 #include "SingleAPM.hpp"
+using namespace SingleAPMAPI;
 
 int main(int argc, char* argv[])
 {
