@@ -10,6 +10,7 @@
 #include <iostream>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Sbus/src/RPiSbus.h"
+#include "_thirdparty/Ibus/src/RPiIBus.hpp"
 
 #ifdef USINGJSON
 #include <nlohmann/json.hpp>
