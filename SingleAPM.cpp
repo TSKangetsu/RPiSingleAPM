@@ -1,53 +1,39 @@
 #include "SingleAPM.hpp"
+using namespace SingleAPMAPI;
 
 int main(int argc, char* argv[])
 {
 	int argvs;
-	RPiSingelAPM APM_Settle;
-	while ((argvs = getopt(argc, argv, "vcerh")) != -1)
+	int APMChannelOut[16];
+	APMSafeStatus statusOut;
+	APMSettinngs setting;
+	while ((argvs = getopt(argc, argv, "vcrh")) != -1)
 	{
 		switch (argvs)
 		{
 		case 'v':
 			std::cout << "[RPiSingleAPM] version 1.0.f Beta , Acess By TSKangetsu\n"
-				<< "	checkout : https://github.com/TSKangetsu/RPiSingleAPM";
+				<< "	checkout : https://github.com/TSKangetsu/RPiSingleAPM \n";
 			break;
-			//--------------------------------------------------------------------------------//
 		case 'c':
 		{
-			APM_Settle.ControlCalibration();
+			RPiSingleAPM APM_Settle(setting);
+			APM_Settle.RCCalibration();
 			APM_Settle.SensorsCalibration();
 		}
 		break;
-		case 'e':
-		{
-			APM_Settle.ESCCalibration();
-		}
-		break;
-		//--------------------------------------------------------------------------------//
 		case 'r':
-		{	
-			std::thread controllerUORB([&] {
-				while (true)
-				{
-					APM_Settle.ControlParse();
-					delayMicroseconds(2000);
-				}
-				});
+		{
+			RPiSingleAPM APM_Settle(setting);
 			std::thread AutoLevelingMain([&] {
-				long int timer;
-				long int timer_end;
 				while (true)
 				{
-					timer = micros();
 					APM_Settle.SensorsParse();
+					APM_Settle.ControlParse(APMChannelOut);
 					APM_Settle.AttitudeUpdate();
-					APM_Settle.SaftyChecking();
+					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
-					APM_Settle.Debug();
-					timer_end = micros();
-					APM_Settle.Attitude_loopTime = timer_end - timer;
-					delayMicroseconds(APM_Settle.Update_Freq_Time - APM_Settle.Attitude_loopTime);
+					APM_Settle.ClockingTimer();
 				}
 				});
 			cpu_set_t cpuset;
