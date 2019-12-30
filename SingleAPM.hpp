@@ -146,6 +146,9 @@ namespace SingleAPMAPI
 			SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 			SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
 			SF._uORB_MPU9250_G_Z -= SF._flag_MPU9250_G_Z_Cali;
+			IMUGryoFilter(SF._uORB_MPU9250_G_X , SF._uORB_MPU9250_G_X , SF._Tmp_Gryo_filer_Input_Quene_X , SF._Tmp_Gryo_filer_Output_Quene_X);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Y , SF._uORB_MPU9250_G_Y , SF._Tmp_Gryo_filer_Input_Quene_Y , SF._Tmp_Gryo_filer_Output_Quene_Y);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Z , SF._uORB_MPU9250_G_Z , SF._Tmp_Gryo_filer_Input_Quene_Z , SF._Tmp_Gryo_filer_Output_Quene_Z);
 			SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
@@ -602,6 +605,16 @@ namespace SingleAPMAPI
 
 			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
+
+			long _Tmp_Gryo_filer_Input_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };	
+
+			long _Tmp_Gryo_filer_Input_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
+
+			long _Tmp_Gryo_filer_Input_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			float _flag_Filter_Gain = 1.212821833e+01;
 		}SF;
 
 		struct PIDINFO
@@ -870,6 +883,18 @@ namespace SingleAPMAPI
 				SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
 			}
 		}
+
+		inline void IMUGryoFilter(long next_input_value, long &next_output_value , long *xv ,long* yv)
+		{
+			xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
+			xv[5] = next_input_value / SF._flag_Filter_Gain;
+			yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
+			yv[5] = (xv[0] + xv[5]) + 5 * (xv[1] + xv[4]) + 10 * (xv[2] + xv[3])
+				+ (-0.0057777101 * yv[0]) + (-0.0747769633 * yv[1])
+				+ (-0.2114498565 * yv[2]) + (-0.7556294463 * yv[3])
+				+ (-0.5908409531 * yv[4]);
+			next_output_value = yv[5];
+		};
 
 		inline void GryoCali()
 		{
