@@ -167,8 +167,8 @@ namespace SingleAPMAPI
 			SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 			if (!AF._flag_first_StartUp)
 			{
-				SF._uORB_Real_Pitch = SF._uORB_Real_Pitch * 0.999 + SF._uORB_Accel_Pitch * 0.001;
-				SF._uORB_Real__Roll = SF._uORB_Real__Roll * 0.999 + SF._uORB_Accel__Roll * 0.001;
+				SF._uORB_Real_Pitch = SF._uORB_Real_Pitch * 0.9994 + SF._uORB_Accel_Pitch * 0.0006;
+				SF._uORB_Real__Roll = SF._uORB_Real__Roll * 0.9994 + SF._uORB_Accel__Roll * 0.0006;
 			}
 			else
 			{
@@ -243,7 +243,7 @@ namespace SingleAPMAPI
 		inline bool SaftyChecking(APMSafeStatus& status)
 		{
 			//ECSLockCheck
-			if (RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 20
+			if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20
 				&& RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM
 				&& RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 			{
