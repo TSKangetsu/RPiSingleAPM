@@ -10,7 +10,7 @@
 #include <iostream>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Sbus/src/RPiSbus.h"
-#include "_thirdparty/Ibus/src/RPiIBus.hpp"
+#include "_thirdparty/Ibus/src/RPiIBus.h"
 
 #ifdef USINGJSON
 #include <nlohmann/json.hpp>
@@ -125,11 +125,7 @@ namespace SingleAPMAPI
 
 			if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
 			{
-				DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
-				if (DF.RCReader_fd < 0)
-				{
-
-				}
+				IbusInit = new Ibus("/dev/ttyS0");
 			}
 			else if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
 			{
@@ -147,9 +143,9 @@ namespace SingleAPMAPI
 			SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 			SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
 			SF._uORB_MPU9250_G_Z -= SF._flag_MPU9250_G_Z_Cali;
-			IMUGryoFilter(SF._uORB_MPU9250_G_X , SF._uORB_MPU9250_G_X , SF._Tmp_Gryo_filer_Input_Quene_X , SF._Tmp_Gryo_filer_Output_Quene_X);
-			IMUGryoFilter(SF._uORB_MPU9250_G_Y , SF._uORB_MPU9250_G_Y , SF._Tmp_Gryo_filer_Input_Quene_Y , SF._Tmp_Gryo_filer_Output_Quene_Y);
-			IMUGryoFilter(SF._uORB_MPU9250_G_Z , SF._uORB_MPU9250_G_Z , SF._Tmp_Gryo_filer_Input_Quene_Z , SF._Tmp_Gryo_filer_Output_Quene_Z);
+			IMUGryoFilter(SF._uORB_MPU9250_G_X, SF._uORB_MPU9250_G_X, SF._Tmp_Gryo_filer_Input_Quene_X, SF._Tmp_Gryo_filer_Output_Quene_X);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Y, SF._uORB_MPU9250_G_Y, SF._Tmp_Gryo_filer_Input_Quene_Y, SF._Tmp_Gryo_filer_Output_Quene_Y);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z);
 			SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
@@ -534,6 +530,7 @@ namespace SingleAPMAPI
 
 	protected:
 		Sbus* SbusInit;
+		Ibus* IbusInit;
 
 		struct SafyINFO
 		{
@@ -608,7 +605,7 @@ namespace SingleAPMAPI
 			long _Tmp_IMU_Accel_Vector;
 
 			long _Tmp_Gryo_filer_Input_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };	
+			long _Tmp_Gryo_filer_Output_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
 
 			long _Tmp_Gryo_filer_Input_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
 			long _Tmp_Gryo_filer_Output_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
@@ -799,34 +796,13 @@ namespace SingleAPMAPI
 			}
 			else if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
 			{
-				if (serialDataAvail(DF.RCReader_fd) > 0)
+				if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 				{
-					if (serialGetchar(DF.RCReader_fd) == 64)
+					for (size_t i = 0; i < 16; i++)
 					{
-						for (int i = 0; i < 32; i++)
-						{
-							if (serialDataAvail(DF.RCReader_fd) > 0)
-							{
-								RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
-							}
-						}
-						if (RF._Tmp_RC_Data[31] == 64)
-						{
-							for (size_t i = 0; i < 16; i++)
-							{
-								RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i * 2 + 1] * 255 + RF._Tmp_RC_Data[i * 2];
-							}
-							serialFlush(DF.RCReader_fd);
-							AF._flag_RC_Disconnected = false;
-						}
-						else if (RF._Tmp_RC_Data[31] != 64)
-						{
-							AF._flag_RC_Disconnected = true;
-							serialFlush(DF.RCReader_fd);
-						}
-
-						RF._Tmp_RC_Data[31] = 0;
+						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
 					}
+					AF._flag_RC_Disconnected = false;
 				}
 				else
 				{
@@ -885,7 +861,7 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void IMUGryoFilter(long next_input_value, long &next_output_value , long *xv ,long* yv)
+		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
 		{
 			xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
 			xv[5] = next_input_value / SF._flag_Filter_Gain;
