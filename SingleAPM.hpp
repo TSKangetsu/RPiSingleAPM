@@ -37,8 +37,8 @@ namespace SingleAPMAPI
 
 	struct APMSettinngs
 	{
-		int MPU9250_Type;
 		int RC_Type;
+		int MPU9250_Type;
 		int Update_Freqeuncy;
 
 		float _flag_PID_P__Roll_Gain;
@@ -74,52 +74,39 @@ namespace SingleAPMAPI
 	public:
 		RPiSingleAPM(APMSettinngs APMInit)
 		{
+			wiringPiSetupSys();
+			piHiPri(99);
+
 			AF.RC_Lose_Clocking = 0;
 			AF._flag_first_StartUp = true;
 			AF._flag_ForceFailed_Safe = true;
 			ConfigReader(APMInit);
 
-			wiringPiSetupSys();
-			piHiPri(99);
 			DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
 			if (SF.MPU9250_Type == MPUIsI2c)
 			{
 				DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
-				if (DF.MPU9250_fd < 0)
-				{
-
-				}
-				else
-				{
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
-				}
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
 			}
 			else if (SF.MPU9250_Type == MPUIsSpi)
 			{
 				DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
-				if (DF.MPU9250_fd < 0)
-				{
-
-				}
-				else
-				{
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x00;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //reset
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x1c;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x1b;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
-				}
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x00;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //reset
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1c;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1b;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
 			}
 
 			if (RF.RC_Type == RCIsIbus)
@@ -199,7 +186,7 @@ namespace SingleAPMAPI
 			std::copy(std::begin(RF._uORB_RC_Channel_PWM), std::end(RF._uORB_RC_Channel_PWM), ChannelOut);
 		}
 
-		inline void AttitudeUpdate()
+		inline void AttitudeUpdate(bool IsAltHoldModeEnable)
 		{
 			//Roll PID Mix
 			PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
@@ -229,6 +216,12 @@ namespace SingleAPMAPI
 				PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
 			if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 				PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
+
+			//AltHoldMode
+			if (IsAltHoldModeEnable)
+			{
+
+			}
 
 			EF._uORB_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
 			EF._uORB_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
@@ -567,6 +560,7 @@ namespace SingleAPMAPI
 
 		struct SensorsINFO
 		{
+			//=========================MPU9250======//
 			int MPU9250_Type;
 			int _Tmp_MPU9250_Buffer[14];
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
@@ -612,6 +606,8 @@ namespace SingleAPMAPI
 			long _Tmp_Gryo_filer_Input_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
 			long _Tmp_Gryo_filer_Output_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
 			float _flag_Filter_Gain = 1.212821833e+01;
+			//=========================MS5611======//
+			float _uORB_Pre_Read_Altitude;
 		}SF;
 
 		struct PIDINFO
