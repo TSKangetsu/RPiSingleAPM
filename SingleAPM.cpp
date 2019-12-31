@@ -18,8 +18,10 @@ int main(int argc, char* argv[])
 		case 'c':
 		{
 			RPiSingleAPM APM_Settle(setting);
+#ifdef USINGJSON
 			APM_Settle.RCCalibration();
 			APM_Settle.SensorsCalibration();
+#endif
 		}
 		break;
 		case 'r':

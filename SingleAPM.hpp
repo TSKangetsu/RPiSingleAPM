@@ -16,20 +16,13 @@
 #include <nlohmann/json.hpp>
 #endif
 
+#define MPUIsI2c 0
+#define MPUIsSpi 1
+#define	RCIsIbus 0
+#define RCIsSbus 1
+
 namespace SingleAPMAPI
 {
-	enum APMS_MPU9250Type
-	{
-		MPU_Is_I2C,
-		MPU_Is_SPI
-	};
-
-	enum APMS_RCType
-	{
-		RC_Is_IBUS,
-		RC_IS_SBUS
-	};
-
 	struct APMSafeStatus
 	{
 		int SyncTime;
@@ -44,8 +37,9 @@ namespace SingleAPMAPI
 
 	struct APMSettinngs
 	{
-		APMS_MPU9250Type MPU9250_Type;
-		APMS_RCType RC_Type;
+		int MPU9250_Type;
+		int RC_Type;
+		int Update_Freqeuncy;
 
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
@@ -68,6 +62,11 @@ namespace SingleAPMAPI
 		int _flag_A2_Pin = 1;
 		int _flag_B1_Pin = 2;
 		int _flag_B2_Pin = 3;
+
+		int _flag_RC_ARM_PWM_Value;
+		int _flag_RC_Min_PWM_Value;
+		int _flag_RC_Mid_PWM_Value;
+		int _flag_RC_Max_PWM_Value;
 	};
 
 	class RPiSingleAPM
@@ -84,7 +83,7 @@ namespace SingleAPMAPI
 			piHiPri(99);
 			DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
-			if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
+			if (SF.MPU9250_Type == MPUIsI2c)
 			{
 				DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
 				if (DF.MPU9250_fd < 0)
@@ -99,7 +98,7 @@ namespace SingleAPMAPI
 					wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
 				}
 			}
-			else if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
+			else if (SF.MPU9250_Type == MPUIsSpi)
 			{
 				DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
 				if (DF.MPU9250_fd < 0)
@@ -123,11 +122,11 @@ namespace SingleAPMAPI
 				}
 			}
 
-			if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
+			if (RF.RC_Type == RCIsIbus)
 			{
 				IbusInit = new Ibus("/dev/ttyS0");
 			}
-			else if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
+			else if (RF.RC_Type == RCIsSbus)
 			{
 				SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 			}
@@ -702,7 +701,6 @@ namespace SingleAPMAPI
 
 		inline void ConfigReader(APMSettinngs APMInit)
 		{
-
 #ifdef USINGJSON
 			std::cout << "[ConfigRead]starting to check out config file ....\n";
 			std::ifstream config(DF.configDir);
@@ -750,6 +748,9 @@ namespace SingleAPMAPI
 			SF.MPU9250_Type = APMInit.MPU9250_Type;
 			RF.RC_Type = APMInit.RC_Type;
 
+			AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
+			AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
+
 			PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
 			PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
 			PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
@@ -774,12 +775,17 @@ namespace SingleAPMAPI
 			EF._flag_A2_Pin = APMInit._flag_A2_Pin;
 			EF._flag_B1_Pin = APMInit._flag_B1_Pin;
 			EF._flag_B2_Pin = APMInit._flag_B2_Pin;
+
+			RF._flag_RC_Min_PWM_Value = APMInit._flag_RC_Min_PWM_Value;
+			RF._flag_RC_Mid_PWM_Value = APMInit._flag_RC_Mid_PWM_Value;
+			RF._flag_RC_Max_PWM_Value = APMInit._flag_RC_Max_PWM_Value;
+			RF._flag_RC_ARM_PWM_Value = APMInit._flag_RC_ARM_PWM_Value;
 #endif
 		}
 
 		inline void ControlRead()
 		{
-			if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
+			if (RF.RC_Type == RCIsSbus)
 			{
 				if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 				{
@@ -794,7 +800,7 @@ namespace SingleAPMAPI
 					AF._flag_RC_Disconnected = true;
 				}
 			}
-			else if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
+			else if (RF.RC_Type == RCIsIbus)
 			{
 				if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 				{
@@ -813,7 +819,7 @@ namespace SingleAPMAPI
 
 		inline void IMUSensorsDataRead()
 		{
-			if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
+			if (SF.MPU9250_Type == MPUIsI2c)
 			{
 				SF._Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3B);
 				SF._Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3C);
@@ -841,7 +847,7 @@ namespace SingleAPMAPI
 				SF._Tmp_MPU9250_G_Z = (SF._Tmp_MPU9250_Buffer[10] << 8 | SF._Tmp_MPU9250_Buffer[11]);
 				SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
 			}
-			else if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
+			else if (SF.MPU9250_Type == MPUIsSpi)
 			{
 				SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
 				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Buffer, 20);
