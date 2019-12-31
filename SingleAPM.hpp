@@ -911,8 +911,35 @@ namespace SingleAPMAPI
 			SF._Tmp_MS5611_REG[1] = wiringPiI2CReadReg8(0x77, 0x00);
 			SF._Tmp_MS5611_REG[2] = wiringPiI2CReadReg8(0x77, 0x00);
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_REG[0] * 65536 + SF._Tmp_MS5611_REG[1] * 256 + SF._Tmp_MS5611_REG[2];
-			std::cout << SF._uORB_MS5611_Pressure << " \n";
-			std::cout << SF._uORB_MS5611_Temp << " \n";
+
+			float dT = SF._uORB_MS5611_Pressure + SF._uORB_MS5611_Reference_Temperature * 256;
+			float Temp = 2000 + dT * SF._uORB_MS5611_Temperature_Coefficient_T / 8388608;
+			float OFF = SF._uORB_MS5611_Pressure_Sensitivity * 32768 + (SF._uORB_MS5611_Temperature_Coefficient_PS * dT) / 128;
+			float  SENS = SF._uORB_MS5611_Pressure_Sensitivity * 32768 + (SF._uORB_MS5611_Temperature_Coefficient_PS * dT) / 256;
+			float  T2 = 0;
+			float OFF2 = 0;
+			float SENS2 = 0;
+			if (Temp >= 2000)
+			{
+
+			}
+			else if (Temp < 2000)
+			{
+				T2 = dT * dT / 2147483648;
+				OFF2 = 5 * ((Temp - 2000) * (Temp - 2000)) / 2;
+				SENS2 = 5 * ((Temp - 2000) * (Temp - 2000)) / 4;
+				if (Temp < -1500)
+				{
+					OFF2 = OFF2 + 7 * ((Temp + 1500) * (Temp + 1500));
+					SENS2 = SENS2 + 11 * ((Temp + 1500) * (Temp + 1500)) / 2;
+				}
+			}
+			Temp = Temp - T2;
+			OFF = OFF - OFF2;
+			SENS = SENS - SENS2;
+
+			SF._uORB_MS5611_Pressure = (float)((((SF._uORB_MS5611_Pressure * SENS) / 2097152) - OFF) / 32768.0) / 100.0;
+			SF._uORB_MS5611_Temp = Temp / 100.0;
 		}
 
 		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
@@ -944,5 +971,5 @@ namespace SingleAPMAPI
 			SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
 			SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
 		}
-		};
-	}
+	};
+}
