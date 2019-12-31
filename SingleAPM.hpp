@@ -40,6 +40,7 @@ namespace SingleAPMAPI
 		int RC_Type;
 		int MPU9250_Type;
 		int Update_Freqeuncy;
+		bool UsingMS5611;
 
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
@@ -118,6 +119,29 @@ namespace SingleAPMAPI
 				SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 			}
 
+			if (DF.UsingMS5611 == true)
+			{
+				DF.MS5611_fd = wiringPiI2CSetup(DF.MS5611_ADDR);
+				wiringPiI2CWrite(DF.MS5611_fd, 0x1E);
+				SF._Tmp_MS5611_PROM[0] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA2);
+				SF._Tmp_MS5611_PROM[1] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA3);
+				SF._uORB_MS5611_Pressure_Sensitivity = SF._Tmp_MS5611_PROM[0] * 255 + SF._Tmp_MS5611_PROM[1];
+				SF._Tmp_MS5611_PROM[2] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA4);
+				SF._Tmp_MS5611_PROM[3] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA5);
+				SF._uORB_MS5611_Pressure_Offset = SF._Tmp_MS5611_PROM[2] * 255 + SF._Tmp_MS5611_PROM[3];
+				SF._Tmp_MS5611_PROM[4] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA6);
+				SF._Tmp_MS5611_PROM[5] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA7);
+				SF._uORB_MS5611_Temperature_Coefficient_PS = SF._Tmp_MS5611_PROM[4] * 255 + SF._Tmp_MS5611_PROM[5];
+				SF._Tmp_MS5611_PROM[6] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA8);
+				SF._Tmp_MS5611_PROM[7] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xA9);
+				SF._uORB_MS5611_Temperature_Coefficient_PO = SF._Tmp_MS5611_PROM[6] * 255 + SF._Tmp_MS5611_PROM[7];
+				SF._Tmp_MS5611_PROM[8] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xAA);
+				SF._Tmp_MS5611_PROM[9] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xAB);
+				SF._uORB_MS5611_Reference_Temperature = SF._Tmp_MS5611_PROM[8] * 255 + SF._Tmp_MS5611_PROM[9];
+				SF._Tmp_MS5611_PROM[10] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xAC);
+				SF._Tmp_MS5611_PROM[11] = wiringPiI2CReadReg8(DF.MS5611_fd, 0xAD);
+				SF._uORB_MS5611_Temperature_Coefficient_T = SF._Tmp_MS5611_PROM[10] * 255 + SF._Tmp_MS5611_PROM[11];
+			}
 			GryoCali();
 		}
 
@@ -554,7 +578,8 @@ namespace SingleAPMAPI
 			float _flag_MPU9250_LSB = 65.5;
 			int MPU9250_SPI_Freq = 1000000;
 			int MS5611_fd;
-			const int MS5611_ADDR = 0x70;
+			bool UsingMS5611 = true;
+			const int MS5611_ADDR = 0x77;
 			char configDir[20] = "/etc/APMconfig.json";
 		}DF;
 
@@ -607,7 +632,18 @@ namespace SingleAPMAPI
 			long _Tmp_Gryo_filer_Output_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
 			float _flag_Filter_Gain = 1.212821833e+01;
 			//=========================MS5611======//
+			int _Tmp_MS5611_PROM[12];
+			int _Tmp_MS5611_REG[5];
 			float _uORB_Pre_Read_Altitude;
+			double _uORB_MS5611_Pressure;
+			double _uORB_MS5611_Temp;
+
+			int _uORB_MS5611_Pressure_Sensitivity;
+			int _uORB_MS5611_Pressure_Offset;
+			int _uORB_MS5611_Temperature_Coefficient_PS;
+			int _uORB_MS5611_Temperature_Coefficient_PO;
+			int _uORB_MS5611_Reference_Temperature;
+			int _uORB_MS5611_Temperature_Coefficient_T;
 		}SF;
 
 		struct PIDINFO
@@ -863,6 +899,22 @@ namespace SingleAPMAPI
 			}
 		}
 
+		inline void ALTSensorsDataRead()
+		{
+			wiringPiI2CWrite(DF.MS5611_fd, 0x40);
+			SF._Tmp_MS5611_REG[0] = wiringPiI2CReadReg8(0x77, 0x00);
+			SF._Tmp_MS5611_REG[1] = wiringPiI2CReadReg8(0x77, 0x00);
+			SF._Tmp_MS5611_REG[2] = wiringPiI2CReadReg8(0x77, 0x00);
+			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_REG[0] * 65536 + SF._Tmp_MS5611_REG[1] * 256 + SF._Tmp_MS5611_REG[2];
+			wiringPiI2CWrite(DF.MS5611_fd, 0x50);
+			SF._Tmp_MS5611_REG[0] = wiringPiI2CReadReg8(0x77, 0x00);
+			SF._Tmp_MS5611_REG[1] = wiringPiI2CReadReg8(0x77, 0x00);
+			SF._Tmp_MS5611_REG[2] = wiringPiI2CReadReg8(0x77, 0x00);
+			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_REG[0] * 65536 + SF._Tmp_MS5611_REG[1] * 256 + SF._Tmp_MS5611_REG[2];
+			std::cout << SF._uORB_MS5611_Pressure << " \n";
+			std::cout << SF._uORB_MS5611_Temp << " \n";
+		}
+
 		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
 		{
 			xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
@@ -892,5 +944,5 @@ namespace SingleAPMAPI
 			SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
 			SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
 		}
-	};
-}
+		};
+	}
