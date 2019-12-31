@@ -1,3 +1,6 @@
 [submodule "_thirdparty/Sbus"]
 	path = _thirdparty/Sbus
 	url = https://github.com/TSKangetsu/RaspberryPi_SBUS
+[submodule "_thirdparty/Ibus"]
+	path = _thirdparty/Ibus
+	url = https://github.com/TSKangetsu/Raspberry_IBUS

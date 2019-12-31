@@ -10,25 +10,19 @@
 #include <iostream>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Sbus/src/RPiSbus.h"
+#include "_thirdparty/Ibus/src/RPiIBus.h"
 
 #ifdef USINGJSON
 #include <nlohmann/json.hpp>
 #endif
 
+#define MPUIsI2c 0
+#define MPUIsSpi 1
+#define	RCIsIbus 0
+#define RCIsSbus 1
+
 namespace SingleAPMAPI
 {
-	enum APMS_MPU9250Type
-	{
-		MPU_Is_I2C,
-		MPU_Is_SPI
-	};
-
-	enum APMS_RCType
-	{
-		RC_Is_IBUS,
-		RC_IS_SBUS
-	};
-
 	struct APMSafeStatus
 	{
 		int SyncTime;
@@ -43,8 +37,9 @@ namespace SingleAPMAPI
 
 	struct APMSettinngs
 	{
-		APMS_MPU9250Type MPU9250_Type;
-		APMS_RCType RC_Type;
+		int MPU9250_Type;
+		int RC_Type;
+		int Update_Freqeuncy;
 
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
@@ -67,6 +62,11 @@ namespace SingleAPMAPI
 		int _flag_A2_Pin = 1;
 		int _flag_B1_Pin = 2;
 		int _flag_B2_Pin = 3;
+
+		int _flag_RC_ARM_PWM_Value;
+		int _flag_RC_Min_PWM_Value;
+		int _flag_RC_Mid_PWM_Value;
+		int _flag_RC_Max_PWM_Value;
 	};
 
 	class RPiSingleAPM
@@ -83,7 +83,7 @@ namespace SingleAPMAPI
 			piHiPri(99);
 			DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
-			if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
+			if (SF.MPU9250_Type == MPUIsI2c)
 			{
 				DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
 				if (DF.MPU9250_fd < 0)
@@ -98,7 +98,7 @@ namespace SingleAPMAPI
 					wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
 				}
 			}
-			else if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
+			else if (SF.MPU9250_Type == MPUIsSpi)
 			{
 				DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
 				if (DF.MPU9250_fd < 0)
@@ -122,15 +122,11 @@ namespace SingleAPMAPI
 				}
 			}
 
-			if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
+			if (RF.RC_Type == RCIsIbus)
 			{
-				DF.RCReader_fd = serialOpen("/dev/ttyS0", 115200);
-				if (DF.RCReader_fd < 0)
-				{
-
-				}
+				IbusInit = new Ibus("/dev/ttyS0");
 			}
-			else if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
+			else if (RF.RC_Type == RCIsSbus)
 			{
 				SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 			}
@@ -146,9 +142,9 @@ namespace SingleAPMAPI
 			SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 			SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
 			SF._uORB_MPU9250_G_Z -= SF._flag_MPU9250_G_Z_Cali;
-			IMUGryoFilter(SF._uORB_MPU9250_G_X , SF._uORB_MPU9250_G_X , SF._Tmp_Gryo_filer_Input_Quene_X , SF._Tmp_Gryo_filer_Output_Quene_X);
-			IMUGryoFilter(SF._uORB_MPU9250_G_Y , SF._uORB_MPU9250_G_Y , SF._Tmp_Gryo_filer_Input_Quene_Y , SF._Tmp_Gryo_filer_Output_Quene_Y);
-			IMUGryoFilter(SF._uORB_MPU9250_G_Z , SF._uORB_MPU9250_G_Z , SF._Tmp_Gryo_filer_Input_Quene_Z , SF._Tmp_Gryo_filer_Output_Quene_Z);
+			IMUGryoFilter(SF._uORB_MPU9250_G_X, SF._uORB_MPU9250_G_X, SF._Tmp_Gryo_filer_Input_Quene_X, SF._Tmp_Gryo_filer_Output_Quene_X);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Y, SF._uORB_MPU9250_G_Y, SF._Tmp_Gryo_filer_Input_Quene_Y, SF._Tmp_Gryo_filer_Output_Quene_Y);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z);
 			SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
@@ -533,6 +529,7 @@ namespace SingleAPMAPI
 
 	protected:
 		Sbus* SbusInit;
+		Ibus* IbusInit;
 
 		struct SafyINFO
 		{
@@ -607,7 +604,7 @@ namespace SingleAPMAPI
 			long _Tmp_IMU_Accel_Vector;
 
 			long _Tmp_Gryo_filer_Input_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };	
+			long _Tmp_Gryo_filer_Output_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
 
 			long _Tmp_Gryo_filer_Input_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
 			long _Tmp_Gryo_filer_Output_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
@@ -704,7 +701,6 @@ namespace SingleAPMAPI
 
 		inline void ConfigReader(APMSettinngs APMInit)
 		{
-
 #ifdef USINGJSON
 			std::cout << "[ConfigRead]starting to check out config file ....\n";
 			std::ifstream config(DF.configDir);
@@ -752,6 +748,9 @@ namespace SingleAPMAPI
 			SF.MPU9250_Type = APMInit.MPU9250_Type;
 			RF.RC_Type = APMInit.RC_Type;
 
+			AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
+			AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
+
 			PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
 			PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
 			PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
@@ -776,12 +775,17 @@ namespace SingleAPMAPI
 			EF._flag_A2_Pin = APMInit._flag_A2_Pin;
 			EF._flag_B1_Pin = APMInit._flag_B1_Pin;
 			EF._flag_B2_Pin = APMInit._flag_B2_Pin;
+
+			RF._flag_RC_Min_PWM_Value = APMInit._flag_RC_Min_PWM_Value;
+			RF._flag_RC_Mid_PWM_Value = APMInit._flag_RC_Mid_PWM_Value;
+			RF._flag_RC_Max_PWM_Value = APMInit._flag_RC_Max_PWM_Value;
+			RF._flag_RC_ARM_PWM_Value = APMInit._flag_RC_ARM_PWM_Value;
 #endif
 		}
 
 		inline void ControlRead()
 		{
-			if (RF.RC_Type == APMS_RCType::RC_IS_SBUS)
+			if (RF.RC_Type == RCIsSbus)
 			{
 				if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 				{
@@ -796,36 +800,15 @@ namespace SingleAPMAPI
 					AF._flag_RC_Disconnected = true;
 				}
 			}
-			else if (RF.RC_Type == APMS_RCType::RC_Is_IBUS)
+			else if (RF.RC_Type == RCIsIbus)
 			{
-				if (serialDataAvail(DF.RCReader_fd) > 0)
+				if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 				{
-					if (serialGetchar(DF.RCReader_fd) == 64)
+					for (size_t i = 0; i < 16; i++)
 					{
-						for (int i = 0; i < 32; i++)
-						{
-							if (serialDataAvail(DF.RCReader_fd) > 0)
-							{
-								RF._Tmp_RC_Data[i] = serialGetchar(DF.RCReader_fd);
-							}
-						}
-						if (RF._Tmp_RC_Data[31] == 64)
-						{
-							for (size_t i = 0; i < 16; i++)
-							{
-								RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i * 2 + 1] * 255 + RF._Tmp_RC_Data[i * 2];
-							}
-							serialFlush(DF.RCReader_fd);
-							AF._flag_RC_Disconnected = false;
-						}
-						else if (RF._Tmp_RC_Data[31] != 64)
-						{
-							AF._flag_RC_Disconnected = true;
-							serialFlush(DF.RCReader_fd);
-						}
-
-						RF._Tmp_RC_Data[31] = 0;
+						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
 					}
+					AF._flag_RC_Disconnected = false;
 				}
 				else
 				{
@@ -836,7 +819,7 @@ namespace SingleAPMAPI
 
 		inline void IMUSensorsDataRead()
 		{
-			if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_I2C)
+			if (SF.MPU9250_Type == MPUIsI2c)
 			{
 				SF._Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3B);
 				SF._Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3C);
@@ -864,7 +847,7 @@ namespace SingleAPMAPI
 				SF._Tmp_MPU9250_G_Z = (SF._Tmp_MPU9250_Buffer[10] << 8 | SF._Tmp_MPU9250_Buffer[11]);
 				SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
 			}
-			else if (SF.MPU9250_Type == APMS_MPU9250Type::MPU_Is_SPI)
+			else if (SF.MPU9250_Type == MPUIsSpi)
 			{
 				SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
 				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Buffer, 20);
@@ -884,7 +867,7 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void IMUGryoFilter(long next_input_value, long &next_output_value , long *xv ,long* yv)
+		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
 		{
 			xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
 			xv[5] = next_input_value / SF._flag_Filter_Gain;
