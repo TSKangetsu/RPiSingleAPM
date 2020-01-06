@@ -149,6 +149,10 @@ namespace SingleAPMAPI
 		{
 			AF.Update_TimerStart = micros();
 			IMUSensorsDataRead();
+			if (DF.UsingMS5611)
+			{
+				ALTPreSensorsDataRead();
+			}
 			//Gryo----------------------------------------------------------------------//
 			SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 			SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
@@ -185,9 +189,17 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void ControlParse(int* ChannelOut)
+		inline void ControlParse(int* ChannelIn, int* ChannelOut, bool UsingInputControl)
 		{
-			ControlRead();
+			if (UsingInputControl)
+			{
+				ControlRead();
+			}
+			else
+			{
+
+			}
+			
 			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
 			else
@@ -210,7 +222,7 @@ namespace SingleAPMAPI
 			std::copy(std::begin(RF._uORB_RC_Channel_PWM), std::end(RF._uORB_RC_Channel_PWM), ChannelOut);
 		}
 
-		inline void AttitudeUpdate(bool IsAltHoldModeEnable)
+		inline void AttitudeUpdate()
 		{
 			//Roll PID Mix
 			PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
@@ -241,8 +253,7 @@ namespace SingleAPMAPI
 			if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 				PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 
-			//AltHoldMode
-			if (IsAltHoldModeEnable)
+			if (DF.UsingMS5611)
 			{
 
 			}
@@ -384,9 +395,9 @@ namespace SingleAPMAPI
 		{
 			AF.Update_TimerEnd = micros();
 			AF.Update_loopTime = AF.Update_TimerEnd - AF.Update_TimerStart;
-			if (AF.Update_loopTime < 0)
+			if (AF.Update_loopTime > AF.Update_Freq_Time)
 				AF.Update_loopTime *= -1;
-			delayMicroseconds(AF.Update_Freq_Time - AF.Update_loopTime);
+			usleep(AF.Update_Freq_Time - AF.Update_loopTime);
 		}
 #ifdef USINGJSON
 		inline void SensorsCalibration()
@@ -555,7 +566,7 @@ namespace SingleAPMAPI
 			int Update_Freq_Time;
 			long int Update_TimerStart;
 			long int Update_TimerEnd;
-			unsigned int Update_loopTime;
+			int Update_loopTime;
 
 			bool _flag_Error;
 			bool _flag_StartUP_Protect;
@@ -899,7 +910,7 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void ALTSensorsDataRead()
+		inline void ALTPreSensorsDataRead()
 		{
 			wiringPiI2CWrite(DF.MS5611_fd, 0x40);
 			SF._Tmp_MS5611_REG[0] = wiringPiI2CReadReg8(0x77, 0x00);
