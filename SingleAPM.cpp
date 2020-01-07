@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					APM_Settle.SensorsParse();
-					APM_Settle.ControlParse(APMChannelIn ,APMChannelOut , true);
+					APM_Settle.ControlParse(APMChannelOut ,APMChannelIn , true);
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
