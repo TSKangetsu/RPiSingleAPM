@@ -174,7 +174,7 @@ namespace SingleAPMAPI
 					RF._uORB_RC_Channel_PWM[i] = ChannelIn[i];
 				}
 			}
-			
+
 			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
 			else
@@ -600,15 +600,15 @@ namespace SingleAPMAPI
 			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
 
-			long _Tmp_Gryo_filer_Input_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			long _Tmp_Gryo_filer_Input_Quene_X[3] = { 0 , 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_X[3] = { 0 , 0 ,0 };
 
-			long _Tmp_Gryo_filer_Input_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			long _Tmp_Gryo_filer_Input_Quene_Y[3] = { 0 , 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_Y[3] = { 0 , 0 ,0 };
 
-			long _Tmp_Gryo_filer_Input_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			float _flag_Filter_Gain = 1.212821833e+01;
+			long _Tmp_Gryo_filer_Input_Quene_Z[3] = { 0 , 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_Z[3] = { 0 , 0 ,0 };
+			float _flag_Filter_Gain = 4.840925170e+00;
 			//=========================MS5611======//
 		}SF;
 
@@ -867,14 +867,12 @@ namespace SingleAPMAPI
 
 		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
 		{
-			xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
-			xv[5] = next_input_value / SF._flag_Filter_Gain;
-			yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
-			yv[5] = (xv[0] + xv[5]) + 5 * (xv[1] + xv[4]) + 10 * (xv[2] + xv[3])
-				+ (-0.0057777101 * yv[0]) + (-0.0747769633 * yv[1])
-				+ (-0.2114498565 * yv[2]) + (-0.7556294463 * yv[3])
-				+ (-0.5908409531 * yv[4]);
-			next_output_value = yv[5];
+			xv[0] = xv[1]; xv[1] = xv[2];
+			xv[2] = next_input_value / SF._flag_Filter_Gain;
+			yv[0] = yv[1]; yv[1] = yv[2];
+			yv[2] = (xv[0] + xv[2]) + 2 * xv[1]
+				+ (-0.1958157127 * yv[0]) + (0.3695273774 * yv[1]);
+			next_output_value = yv[2];
 		};
 
 		inline void GryoCali()
