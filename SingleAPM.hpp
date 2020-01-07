@@ -37,8 +37,8 @@ namespace SingleAPMAPI
 
 	struct APMSettinngs
 	{
-		int MPU9250_Type;
 		int RC_Type;
+		int MPU9250_Type;
 		int Update_Freqeuncy;
 
 		float _flag_PID_P__Roll_Gain;
@@ -74,52 +74,39 @@ namespace SingleAPMAPI
 	public:
 		RPiSingleAPM(APMSettinngs APMInit)
 		{
+			wiringPiSetupSys();
+			piHiPri(99);
+
 			AF.RC_Lose_Clocking = 0;
 			AF._flag_first_StartUp = true;
 			AF._flag_ForceFailed_Safe = true;
 			ConfigReader(APMInit);
 
-			wiringPiSetupSys();
-			piHiPri(99);
 			DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
 			if (SF.MPU9250_Type == MPUIsI2c)
 			{
 				DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
-				if (DF.MPU9250_fd < 0)
-				{
-
-				}
-				else
-				{
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
-					wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
-				}
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
+				wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
 			}
 			else if (SF.MPU9250_Type == MPUIsSpi)
 			{
 				DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
-				if (DF.MPU9250_fd < 0)
-				{
-
-				}
-				else
-				{
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x00;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //reset
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x1c;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x1b;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
-					SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
-					SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
-					wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
-				}
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x00;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //reset
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1c;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1b;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
+				SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
+				SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
+				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
 			}
 
 			if (RF.RC_Type == RCIsIbus)
@@ -130,7 +117,6 @@ namespace SingleAPMAPI
 			{
 				SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 			}
-
 			GryoCali();
 		}
 
@@ -174,9 +160,21 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void ControlParse(int* ChannelOut)
+		inline void ControlParse(int* ChannelOut, int* ChannelIn, bool UsingInputControl)
 		{
-			ControlRead();
+			std::copy(std::begin(RF._uORB_RC_Channel_PWM), std::end(RF._uORB_RC_Channel_PWM), ChannelOut);
+			if (UsingInputControl)
+			{
+				ControlRead();
+			}
+			else
+			{
+				for (size_t i = 0; i < 16; i++)
+				{
+					RF._uORB_RC_Channel_PWM[i] = ChannelIn[i];
+				}
+			}
+			
 			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
 			else
@@ -195,8 +193,6 @@ namespace SingleAPMAPI
 				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 3;
 			//
 			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
-			//
-			std::copy(std::begin(RF._uORB_RC_Channel_PWM), std::end(RF._uORB_RC_Channel_PWM), ChannelOut);
 		}
 
 		inline void AttitudeUpdate()
@@ -367,9 +363,9 @@ namespace SingleAPMAPI
 		{
 			AF.Update_TimerEnd = micros();
 			AF.Update_loopTime = AF.Update_TimerEnd - AF.Update_TimerStart;
-			if (AF.Update_loopTime < 0)
+			if (AF.Update_loopTime > AF.Update_Freq_Time)
 				AF.Update_loopTime *= -1;
-			delayMicroseconds(AF.Update_Freq_Time - AF.Update_loopTime);
+			usleep(AF.Update_Freq_Time - AF.Update_loopTime);
 		}
 #ifdef USINGJSON
 		inline void SensorsCalibration()
@@ -538,7 +534,7 @@ namespace SingleAPMAPI
 			int Update_Freq_Time;
 			long int Update_TimerStart;
 			long int Update_TimerEnd;
-			unsigned int Update_loopTime;
+			int Update_loopTime;
 
 			bool _flag_Error;
 			bool _flag_StartUP_Protect;
@@ -561,12 +557,13 @@ namespace SingleAPMAPI
 			float _flag_MPU9250_LSB = 65.5;
 			int MPU9250_SPI_Freq = 1000000;
 			int MS5611_fd;
-			const int MS5611_ADDR = 0x70;
+			const int MS5611_ADDR = 0x77;
 			char configDir[20] = "/etc/APMconfig.json";
 		}DF;
 
 		struct SensorsINFO
 		{
+			//=========================MPU9250======//
 			int MPU9250_Type;
 			int _Tmp_MPU9250_Buffer[14];
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
@@ -612,6 +609,7 @@ namespace SingleAPMAPI
 			long _Tmp_Gryo_filer_Input_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
 			long _Tmp_Gryo_filer_Output_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
 			float _flag_Filter_Gain = 1.212821833e+01;
+			//=========================MS5611======//
 		}SF;
 
 		struct PIDINFO
