@@ -8,6 +8,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <iostream>
+#include <iomanip>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Sbus/src/RPiSbus.h"
 #include "_thirdparty/Ibus/src/RPiIBus.h"
@@ -359,6 +360,30 @@ namespace SingleAPMAPI
 			}
 		}
 
+		inline void DebugOutPut(bool Is_EnableDebug)
+		{
+			if (Is_EnableDebug)
+			{
+				std::cout << "ESCSpeedOutput:" << " \n";
+				std::cout << "A1 " << EF._uORB_A1_Speed << "    " << "A2 " << EF._uORB_A2_Speed << "                        " << "\n";
+				std::cout << "B1 " << EF._uORB_B1_Speed << "    " << "B2 " << EF._uORB_B2_Speed << "                        " << "\n\n";
+
+				std::cout << "IMUSenorData: " << " \n";
+				std::cout << "GryoPitch: " << (int)SF._uORB_Gryo_Pitch << "    " << "GryoRoll: " << (int)SF._uORB_Gryo__Roll << "    " << "GryoYaw: " << (int)SF._uORB_Gryo___Yaw
+					<< "                        " << "\n";
+				std::cout << "AccePitch: " << (int)SF._uORB_Accel_Pitch << "    " << "AcceRoll: " << (int)SF._uORB_Accel__Roll
+					<< "                        " << "\n";
+				std::cout << "RealPitch: " << (int)SF._uORB_Real_Pitch << "    " << "RealRoll: " << (int)SF._uORB_Real__Roll
+					<< "                        " << "\n\n";
+
+				std::cout << "RCOutPUTINFO:   " << "\n";
+				std::cout << "ChannelRoll  " << ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
+				std::cout << "ChannelPitch " << ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
+				std::cout << "ChannelThrot " << ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
+				std::cout << "ChannelYaw   " << ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
+			}
+		}
+
 		inline void ClockingTimer()
 		{
 			AF.Update_TimerEnd = micros();
@@ -650,8 +675,8 @@ namespace SingleAPMAPI
 		struct RCINFO
 		{
 			int RC_Type;
-			int _Tmp_RC_Data[36];
-			int _uORB_RC_Channel_PWM[16];
+			int _Tmp_RC_Data[36] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+			int _uORB_RC_Channel_PWM[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 			int _flag_RC_Max_PWM_Value;
 			int _flag_RC_Mid_PWM_Value;
 			int _flag_RC_Min_PWM_Value;

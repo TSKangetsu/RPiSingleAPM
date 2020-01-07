@@ -1,8 +1,10 @@
 #include "SingleAPM.hpp"
+#include <iomanip>
 using namespace SingleAPMAPI;
 
 int main(int argc, char* argv[])
 {
+	system("clear");
 	int argvs;
 	int APMChannelOut[16];
 	int APMChannelIn[16];
@@ -36,19 +38,23 @@ int main(int argc, char* argv[])
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
+					APM_Settle.DebugOutPut(false);
 					APM_Settle.ClockingTimer();
+					std::cout << "\033[150A";
+					std::cout << "\033[K";
+					std::cout << "RCINFO:   " << "\n";
 					for (size_t i = 0; i < 16; i++)
 					{
-						std::cout << APMChannelOut[i] << "-";
+						std::cout << "Channel " << i << ": " << APMChannelOut[i] << std::setw(10) << std::setfill(' ') << "\n";
 					}
-					std::cout << " ===( ";
-					std::cout << statusOut.ForceFailedSafe << " ";
-					std::cout << statusOut.Is_AngelOutLimit << " ";
-					std::cout << statusOut.Is_RCDisconnect << " ";
-					std::cout << statusOut.Is_RCErrorInput << " ";
-					std::cout << statusOut.Is_SyncTimeOut << " ";
-					std::cout << statusOut.SafyError << " ";
-					std::cout << statusOut.SyncTime << " ))))\r";
+					std::cout << "\n";
+					std::cout << "ForceFailedSafe  " << statusOut.ForceFailedSafe << "\n";
+					std::cout << "Is_AngelOutLimit " << statusOut.Is_AngelOutLimit << "\n";
+					std::cout << "Is_RCDisconnect  " << statusOut.Is_RCDisconnect << "\n";
+					std::cout << "Is_RCErrorInput  " << statusOut.Is_RCErrorInput << "\n";
+					std::cout << "Is_SyncTimeOut   " << statusOut.Is_SyncTimeOut << "\n";
+					std::cout << "SafyError        " << statusOut.SafyError << "\n";
+					std::cout << "SyncTime         " << statusOut.SyncTime << "                    \n\n";
 				}
 				});
 			cpu_set_t cpuset;
