@@ -34,27 +34,12 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					APM_Settle.SensorsParse();
-					APM_Settle.ControlParse(APMChannelOut ,APMChannelIn , true);
+					APM_Settle.ControlParse(APMChannelOut, APMChannelIn, true);
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
-					APM_Settle.DebugOutPut(false);
+					APM_Settle.DebugOutPut(true);
 					APM_Settle.ClockingTimer();
-					std::cout << "\033[150A";
-					std::cout << "\033[K";
-					std::cout << "RCINFO:   " << "\n";
-					for (size_t i = 0; i < 16; i++)
-					{
-						std::cout << "Channel " << i << ": " << APMChannelOut[i] << std::setw(10) << std::setfill(' ') << "\n";
-					}
-					std::cout << "\n";
-					std::cout << "ForceFailedSafe  " << statusOut.ForceFailedSafe << "\n";
-					std::cout << "Is_AngelOutLimit " << statusOut.Is_AngelOutLimit << "\n";
-					std::cout << "Is_RCDisconnect  " << statusOut.Is_RCDisconnect << "\n";
-					std::cout << "Is_RCErrorInput  " << statusOut.Is_RCErrorInput << "\n";
-					std::cout << "Is_SyncTimeOut   " << statusOut.Is_SyncTimeOut << "\n";
-					std::cout << "SafyError        " << statusOut.SafyError << "\n";
-					std::cout << "SyncTime         " << statusOut.SyncTime << "                    \n\n";
 				}
 				});
 			cpu_set_t cpuset;

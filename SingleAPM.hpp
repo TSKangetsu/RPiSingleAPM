@@ -175,7 +175,6 @@ namespace SingleAPMAPI
 					RF._uORB_RC_Channel_PWM[i] = ChannelIn[i];
 				}
 			}
-
 			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
 			else
@@ -362,6 +361,8 @@ namespace SingleAPMAPI
 
 		inline void DebugOutPut(bool Is_EnableDebug)
 		{
+			std::cout << "\033[150A";
+			std::cout << "\033[K";
 			if (Is_EnableDebug)
 			{
 				std::cout << "ESCSpeedOutput:" << " \n";
@@ -381,6 +382,13 @@ namespace SingleAPMAPI
 				std::cout << "ChannelPitch " << ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
 				std::cout << "ChannelThrot " << ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
 				std::cout << "ChannelYaw   " << ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
+
+				std::cout << "ChannelINFO: " << " \n";
+				for (size_t i = 0; i < 16; i++)
+				{
+					std::cout << RF._uORB_RC_Channel_PWM[i] << " ";
+				}
+				std::cout << " \n";
 			}
 		}
 
