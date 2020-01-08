@@ -8,6 +8,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <iostream>
+#include <iomanip>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Sbus/src/RPiSbus.h"
 #include "_thirdparty/Ibus/src/RPiIBus.h"
@@ -174,7 +175,6 @@ namespace SingleAPMAPI
 					RF._uORB_RC_Channel_PWM[i] = ChannelIn[i];
 				}
 			}
-			
 			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
 			else
@@ -356,6 +356,46 @@ namespace SingleAPMAPI
 					EF._uORB_B1_Speed);
 				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0,
 					EF._uORB_B2_Speed);
+			}
+		}
+
+		inline void DebugOutPut(bool Is_EnableDebug)
+		{
+			std::cout << "\033[150A";
+			std::cout << "\033[K";
+			if (Is_EnableDebug)
+			{
+				std::cout << "ESCSpeedOutput:" << " \n";
+				std::cout << " A1 " << EF._uORB_A1_Speed << "    " << " A2 " << EF._uORB_A2_Speed << "                        " << "\n";
+				std::cout << " B1 " << EF._uORB_B1_Speed << "    " << " B2 " << EF._uORB_B2_Speed << "                        " << "\n\n";
+
+				std::cout << "IMUSenorData: " << " \n";
+				std::cout << " GryoPitch: " << (int)SF._uORB_Gryo_Pitch << "    " << " GryoRoll: " << (int)SF._uORB_Gryo__Roll << "    " << " GryoYaw: " << (int)SF._uORB_Gryo___Yaw
+					<< "                        " << "\n";
+				std::cout << " AccePitch: " << (int)SF._uORB_Accel_Pitch << "    " << " AcceRoll: " << (int)SF._uORB_Accel__Roll
+					<< "                        " << "\n";
+				std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    " << " RealRoll: " << (int)SF._uORB_Real__Roll
+					<< "                        " << "\n\n";
+
+				std::cout << "RCOutPUTINFO:   " << "\n";
+				std::cout << " ChannelRoll  " << ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
+				std::cout << " ChannelPitch " << ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
+				std::cout << " ChannelThrot " << ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
+				std::cout << " ChannelYaw   " << ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
+
+				std::cout << "ChannelINFO: " << " \n";
+				for (size_t i = 0; i < 16; i++)
+				{
+					std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
+				}
+				std::cout << " \n\n";
+
+				std::cout << "SystemINFO:" << "    \n";
+				std::cout << " Update_loopTime:" << AF.Update_loopTime << "         \n";
+				std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ForceFailed_Safe << "               \n";
+				std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
+				std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
+				std::cout << " RC_Lose_Clocking:"<< AF.RC_Lose_Clocking << "                        \n\n";
 			}
 		}
 
@@ -600,15 +640,15 @@ namespace SingleAPMAPI
 			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
 
-			long _Tmp_Gryo_filer_Input_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_X[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			long _Tmp_Gryo_filer_Input_Quene_X[3] = { 0 , 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_X[3] = { 0 , 0 ,0 };
 
-			long _Tmp_Gryo_filer_Input_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_Y[6] = { 0 , 0 ,0, 0, 0 ,0 };
+			long _Tmp_Gryo_filer_Input_Quene_Y[3] = { 0 , 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_Y[3] = { 0 , 0 ,0 };
 
-			long _Tmp_Gryo_filer_Input_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			long _Tmp_Gryo_filer_Output_Quene_Z[6] = { 0 , 0 ,0, 0, 0 ,0 };
-			float _flag_Filter_Gain = 1.212821833e+01;
+			long _Tmp_Gryo_filer_Input_Quene_Z[3] = { 0 , 0 ,0 };
+			long _Tmp_Gryo_filer_Output_Quene_Z[3] = { 0 , 0 ,0 };
+			float _flag_Filter_Gain = 4.840925170e+00;
 			//=========================MS5611======//
 		}SF;
 
@@ -650,8 +690,8 @@ namespace SingleAPMAPI
 		struct RCINFO
 		{
 			int RC_Type;
-			int _Tmp_RC_Data[36];
-			int _uORB_RC_Channel_PWM[16];
+			int _Tmp_RC_Data[36] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+			int _uORB_RC_Channel_PWM[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 			int _flag_RC_Max_PWM_Value;
 			int _flag_RC_Mid_PWM_Value;
 			int _flag_RC_Min_PWM_Value;
@@ -867,14 +907,12 @@ namespace SingleAPMAPI
 
 		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
 		{
-			xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
-			xv[5] = next_input_value / SF._flag_Filter_Gain;
-			yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
-			yv[5] = (xv[0] + xv[5]) + 5 * (xv[1] + xv[4]) + 10 * (xv[2] + xv[3])
-				+ (-0.0057777101 * yv[0]) + (-0.0747769633 * yv[1])
-				+ (-0.2114498565 * yv[2]) + (-0.7556294463 * yv[3])
-				+ (-0.5908409531 * yv[4]);
-			next_output_value = yv[5];
+			xv[0] = xv[1]; xv[1] = xv[2];
+			xv[2] = next_input_value / SF._flag_Filter_Gain;
+			yv[0] = yv[1]; yv[1] = yv[2];
+			yv[2] = (xv[0] + xv[2]) + 2 * xv[1]
+				+ (-0.1958157127 * yv[0]) + (0.3695273774 * yv[1]);
+			next_output_value = yv[2];
 		};
 
 		inline void GryoCali()

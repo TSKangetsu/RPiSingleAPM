@@ -1,8 +1,10 @@
 #include "SingleAPM.hpp"
+#include <iomanip>
 using namespace SingleAPMAPI;
 
 int main(int argc, char* argv[])
 {
+	system("clear");
 	int argvs;
 	int APMChannelOut[16];
 	int APMChannelIn[16];
@@ -32,23 +34,12 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					APM_Settle.SensorsParse();
-					APM_Settle.ControlParse(APMChannelOut ,APMChannelIn , true);
+					APM_Settle.ControlParse(APMChannelOut, APMChannelIn, true);
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
+					APM_Settle.DebugOutPut(true);
 					APM_Settle.ClockingTimer();
-					for (size_t i = 0; i < 16; i++)
-					{
-						std::cout << APMChannelOut[i] << "-";
-					}
-					std::cout << " ===( ";
-					std::cout << statusOut.ForceFailedSafe << " ";
-					std::cout << statusOut.Is_AngelOutLimit << " ";
-					std::cout << statusOut.Is_RCDisconnect << " ";
-					std::cout << statusOut.Is_RCErrorInput << " ";
-					std::cout << statusOut.Is_SyncTimeOut << " ";
-					std::cout << statusOut.SafyError << " ";
-					std::cout << statusOut.SyncTime << " ))))\r";
 				}
 				});
 			cpu_set_t cpuset;
