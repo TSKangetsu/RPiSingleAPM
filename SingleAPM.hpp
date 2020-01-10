@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <iostream>
 #include <iomanip>
+#include <math.h>
+#include <linux/i2c-dev.h>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Sbus/src/RPiSbus.h"
 #include "_thirdparty/Ibus/src/RPiIBus.h"
@@ -19,6 +21,9 @@
 
 #define MPUIsI2c 0
 #define MPUIsSpi 1
+#define MS5611IsI2c 0
+#define MS5611IsSpi 1
+#define MS5611NotUse -1
 #define	RCIsIbus 0
 #define RCIsSbus 1
 
@@ -110,6 +115,23 @@ namespace SingleAPMAPI
 				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
 			}
 
+			if (SF.ALT_MS5611Type == MS5611IsI2c)
+			{
+				DF.MS5611_fd = open("/dev/i2c-1", O_RDWR);
+				ioctl(DF.MS5611_fd, I2C_SLAVE, DF.MS5611_ADDR);
+				char Reset = 0x1E;
+				write(DF.MS5611_fd, &Reset, 1);
+				usleep(10000);
+				for (size_t i = 0; i < 7; i++)
+				{
+					char PROMRead = (0xA0 + (i * 2));
+					write(DF.MS5611_fd, &PROMRead, 1);
+					read(DF.MS5611_fd, SF._Tmp_MS5611Data, 2);
+					SF._flag_MS5611PromData[i] = (unsigned int)(SF._Tmp_MS5611Data[0] * 256 + SF._Tmp_MS5611Data[1]);
+					usleep(1000);
+				};
+			}
+
 			if (RF.RC_Type == RCIsIbus)
 			{
 				IbusInit = new Ibus("/dev/ttyS0");
@@ -118,6 +140,7 @@ namespace SingleAPMAPI
 			{
 				SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 			}
+
 			GryoCali();
 		}
 
@@ -193,6 +216,57 @@ namespace SingleAPMAPI
 				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 3;
 			//
 			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+		}
+
+		inline void AltHoldTransRead(int* ALTDataOut, bool EnableALTHOLD)
+		{
+			if (EnableALTHOLD)
+			{
+				char DA = 0x40;
+				write(DF.MS5611_fd, &DA, 1);
+				usleep(1000);
+				char Reset = 0x0;
+				write(DF.MS5611_fd, &Reset, 1);
+				read(DF.MS5611_fd, SF._Tmp_MS5611Datas, 3);
+				SF._uORB_MS5611Data[0] = SF._Tmp_MS5611Datas[0] * (unsigned long)65536 + SF._Tmp_MS5611Datas[1] * (unsigned long)256 + SF._Tmp_MS5611Datas[2];
+				//======================================================//
+				char DB = 0x50;
+				write(DF.MS5611_fd, &DA, 1);
+				usleep(1000);
+				write(DF.MS5611_fd, &Reset, 1);
+				read(DF.MS5611_fd, SF._Tmp_MS5611Data, 3);
+				SF._uORB_MS5611Data[1] = SF._Tmp_MS5611Datas[0] * (unsigned long)65536 + SF._Tmp_MS5611Datas[1] * (unsigned long)256 + SF._Tmp_MS5611Datas[2];
+				//======================================================//
+				SF.dT = SF._uORB_MS5611Data[1] -(uint32_t)SF._flag_MS5611PromData[5] * pow(2, 8);
+				SF.TEMP = (2000 + (SF.dT * (int64_t)SF._flag_MS5611PromData[5] / pow(2, 23)));
+				SF.OFF = (int64_t)SF._flag_MS5611PromData[2] * pow(2, 16) + (SF.dT * SF._flag_MS5611PromData[4]) / pow(2, 7);
+				SF.SENS = (int32_t)SF._flag_MS5611PromData[1] * pow(2, 15) + SF.dT * SF._flag_MS5611PromData[3] / pow(2, 8);
+
+				if (SF.TEMP < 2000) // if temperature lower than 20 Celsius 
+				{
+					int32_t T1 = 0;
+					int64_t OFF1 = 0;
+					int64_t SENS1 = 0;
+
+					T1 = pow((double)SF.dT, 2) / 2147483648;
+					OFF1 = 5 * pow(((double)SF.TEMP - 2000), 2) / 2;
+					SENS1 = 5 * pow(((double)SF.TEMP - 2000), 2) / 4;
+
+					if (SF.TEMP < -1500) // if temperature lower than -15 Celsius 
+					{
+						OFF1 = OFF1 + 7 * pow(((double)SF.TEMP + 1500), 2);
+						SENS1 = SENS1 + 11 * pow(((double)SF.TEMP + 1500), 2) / 2;
+					}
+
+					SF.TEMP -= T1;
+					SF.OFF -= OFF1;
+					SF.SENS -= SENS1;
+				}
+				SF.P = ((((int64_t)SF._uORB_MS5611Data[0] * SF.SENS) / pow(2, 21) - SF.OFF) / pow(2, 15));
+				SF.fltd_Pressure = SF.Pressure;
+				SF.fltd_Pressure = 0.96 * SF.fltd_Pressure + (1 - 0.96) * SF.Pressure;
+				SF.Altitude = 44330.0f * (1.0f - pow((double)SF.fltd_Pressure / (double)1023.20, 0.1902949f));
+			}
 		}
 
 		inline void AttitudeUpdate()
@@ -361,10 +435,10 @@ namespace SingleAPMAPI
 
 		inline void DebugOutPut(bool Is_EnableDebug)
 		{
-			std::cout << "\033[150A";
-			std::cout << "\033[K";
 			if (Is_EnableDebug)
 			{
+				std::cout << "\033[150A";
+				std::cout << "\033[K";
 				std::cout << "ESCSpeedOutput:" << " \n";
 				std::cout << " A1 " << EF._uORB_A1_Speed << "    " << " A2 " << EF._uORB_A2_Speed << "                        " << "\n";
 				std::cout << " B1 " << EF._uORB_B1_Speed << "    " << " B2 " << EF._uORB_B2_Speed << "                        " << "\n\n";
@@ -376,6 +450,9 @@ namespace SingleAPMAPI
 					<< "                        " << "\n";
 				std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    " << " RealRoll: " << (int)SF._uORB_Real__Roll
 					<< "                        " << "\n\n";
+				
+				std::cout << "Altitude: " << SF.Altitude << " ";
+				std::cout << "TEMP: " << SF.TEMP << "             \n\n";
 
 				std::cout << "RCOutPUTINFO:   " << "\n";
 				std::cout << " ChannelRoll  " << ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
@@ -395,7 +472,7 @@ namespace SingleAPMAPI
 				std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ForceFailed_Safe << "               \n";
 				std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 				std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
-				std::cout << " RC_Lose_Clocking:"<< AF.RC_Lose_Clocking << "                        \n\n";
+				std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
 			}
 		}
 
@@ -650,6 +727,21 @@ namespace SingleAPMAPI
 			long _Tmp_Gryo_filer_Output_Quene_Z[3] = { 0 , 0 ,0 };
 			float _flag_Filter_Gain = 4.840925170e+00;
 			//=========================MS5611======//
+			int ALT_MS5611Type = MS5611IsI2c;
+			uint8_t _Tmp_MS5611Data[2] = { 0 , 0 };
+			uint8_t _Tmp_MS5611Datas[3] = { 0 , 0 ,0 };
+			uint16_t _flag_MS5611PromData[7];
+			uint32_t _uORB_MS5611Data[2];
+
+			int64_t dT;
+			int32_t TEMP;
+			int64_t OFF;
+			int64_t SENS;
+			int32_t P;
+			double Temparature;
+			double Pressure;
+			float fltd_Pressure;
+			float Altitude;
 		}SF;
 
 		struct PIDINFO

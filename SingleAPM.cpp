@@ -6,6 +6,7 @@ int main(int argc, char* argv[])
 {
 	system("clear");
 	int argvs;
+	int ALTDATA[2];
 	int APMChannelOut[16];
 	int APMChannelIn[16];
 	APMSafeStatus statusOut;
@@ -24,6 +25,7 @@ int main(int argc, char* argv[])
 #ifdef USINGJSON
 			APM_Settle.RCCalibration();
 			APM_Settle.SensorsCalibration();
+			APM_Settle.ESCCalibration();
 #endif
 		}
 		break;
@@ -35,6 +37,7 @@ int main(int argc, char* argv[])
 				{
 					APM_Settle.SensorsParse();
 					APM_Settle.ControlParse(APMChannelOut, APMChannelIn, true);
+					APM_Settle.AltHoldTransRead(ALTDATA, false);
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking(statusOut);
 					APM_Settle.ESCUpdate();
