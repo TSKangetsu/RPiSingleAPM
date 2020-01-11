@@ -84,7 +84,8 @@ namespace SingleAPMAPI
 			piHiPri(99);
 
 			AF.RC_Lose_Clocking = 0;
-			AF._flag_first_StartUp = true;
+			AF._flag_MPU9250_first_StartUp = true;
+			AF._flag_MS5611_firstStartUp = true;
 			AF._flag_ForceFailed_Safe = true;
 			ConfigReader(APMInit);
 
@@ -117,17 +118,17 @@ namespace SingleAPMAPI
 
 			if (SF.ALT_MS5611Type == MS5611IsI2c)
 			{
+				char Reset = 0x1E;
 				DF.MS5611_fd = open("/dev/i2c-1", O_RDWR);
 				ioctl(DF.MS5611_fd, I2C_SLAVE, DF.MS5611_ADDR);
-				char Reset = 0x1E;
 				write(DF.MS5611_fd, &Reset, 1);
 				usleep(10000);
 				for (size_t i = 0; i < 7; i++)
 				{
 					char PROMRead = (0xA0 + (i * 2));
 					write(DF.MS5611_fd, &PROMRead, 1);
-					read(DF.MS5611_fd, SF._Tmp_MS5611Data, 2);
-					SF._flag_MS5611PromData[i] = (unsigned int)(SF._Tmp_MS5611Data[0] * 256 + SF._Tmp_MS5611Data[1]);
+					read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 2);
+					SF._flag_MS5611_PromData[i] = (unsigned int)(SF._Tmp_MS5611_Data[0] * 256 + SF._Tmp_MS5611_Data[1]);
 					usleep(1000);
 				};
 			}
@@ -171,7 +172,7 @@ namespace SingleAPMAPI
 			SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Y / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
 			SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 			SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
-			if (!AF._flag_first_StartUp)
+			if (!AF._flag_MPU9250_first_StartUp)
 			{
 				SF._uORB_Real_Pitch = SF._uORB_Real_Pitch * 0.9994 + SF._uORB_Accel_Pitch * 0.0006;
 				SF._uORB_Real__Roll = SF._uORB_Real__Roll * 0.9994 + SF._uORB_Accel__Roll * 0.0006;
@@ -180,7 +181,7 @@ namespace SingleAPMAPI
 			{
 				SF._uORB_Real_Pitch = SF._uORB_Accel_Pitch;
 				SF._uORB_Real__Roll = SF._uORB_Accel__Roll;
-				AF._flag_first_StartUp = false;
+				AF._flag_MPU9250_first_StartUp = false;
 			}
 		}
 
@@ -222,50 +223,58 @@ namespace SingleAPMAPI
 		{
 			if (EnableALTHOLD)
 			{
-				char DA = 0x40;
-				write(DF.MS5611_fd, &DA, 1);
-				usleep(1000);
-				char Reset = 0x0;
-				write(DF.MS5611_fd, &Reset, 1);
-				read(DF.MS5611_fd, SF._Tmp_MS5611Datas, 3);
-				SF._uORB_MS5611Data[0] = SF._Tmp_MS5611Datas[0] * (unsigned long)65536 + SF._Tmp_MS5611Datas[1] * (unsigned long)256 + SF._Tmp_MS5611Datas[2];
+				char ZERO = 0x0;
+				char DA = 0x48;
+				char DB = 0x58;
 				//======================================================//
-				char DB = 0x50;
 				write(DF.MS5611_fd, &DA, 1);
-				usleep(1000);
-				write(DF.MS5611_fd, &Reset, 1);
-				read(DF.MS5611_fd, SF._Tmp_MS5611Data, 3);
-				SF._uORB_MS5611Data[1] = SF._Tmp_MS5611Datas[0] * (unsigned long)65536 + SF._Tmp_MS5611Datas[1] * (unsigned long)256 + SF._Tmp_MS5611Datas[2];
+				usleep(10000);
+				write(DF.MS5611_fd, &ZERO, 1);
+				read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
+				SF._uORB_MS5611_Data[0] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
 				//======================================================//
-				SF.dT = SF._uORB_MS5611Data[1] -(uint32_t)SF._flag_MS5611PromData[5] * pow(2, 8);
-				SF.TEMP = (2000 + (SF.dT * (int64_t)SF._flag_MS5611PromData[5] / pow(2, 23)));
-				SF.OFF = (int64_t)SF._flag_MS5611PromData[2] * pow(2, 16) + (SF.dT * SF._flag_MS5611PromData[4]) / pow(2, 7);
-				SF.SENS = (int32_t)SF._flag_MS5611PromData[1] * pow(2, 15) + SF.dT * SF._flag_MS5611PromData[3] / pow(2, 8);
+				write(DF.MS5611_fd, &DB, 1);
+				usleep(10000);
+				write(DF.MS5611_fd, &ZERO, 1);
+				read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
+				SF._uORB_MS5611_Data[1] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
+				//======================================================//
+				SF._Tmp_MS5611_dT = SF._uORB_MS5611_Data[1] - (uint32_t)SF._flag_MS5611_PromData[5] * pow(2, 8);
+				SF._Tmp_MS5611_Temprture = (2000 + (SF._Tmp_MS5611_dT * (int64_t)SF._flag_MS5611_PromData[5] / pow(2, 23)));
 
-				if (SF.TEMP < 2000) // if temperature lower than 20 Celsius 
+				SF._Tmp_MS5611_Offset = (int64_t)SF._flag_MS5611_PromData[2] * pow(2, 16) + (SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[4]) / pow(2, 7);
+				SF._Tmp_MS5611_Sensitfy = (int32_t)SF._flag_MS5611_PromData[1] * pow(2, 15) + SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[3] / pow(2, 8);
+				if (SF._Tmp_MS5611_Temprture < 2000)
 				{
 					int32_t T1 = 0;
 					int64_t OFF1 = 0;
 					int64_t SENS1 = 0;
-
-					T1 = pow((double)SF.dT, 2) / 2147483648;
-					OFF1 = 5 * pow(((double)SF.TEMP - 2000), 2) / 2;
-					SENS1 = 5 * pow(((double)SF.TEMP - 2000), 2) / 4;
-
-					if (SF.TEMP < -1500) // if temperature lower than -15 Celsius 
+					T1 = pow((double)SF._Tmp_MS5611_dT, 2) / 2147483648;
+					OFF1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 2;
+					SENS1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 4;
+					if (SF._Tmp_MS5611_Temprture < -1500)
 					{
-						OFF1 = OFF1 + 7 * pow(((double)SF.TEMP + 1500), 2);
-						SENS1 = SENS1 + 11 * pow(((double)SF.TEMP + 1500), 2) / 2;
+						OFF1 = OFF1 + 7 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2);
+						SENS1 = SENS1 + 11 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2) / 2;
 					}
-
-					SF.TEMP -= T1;
-					SF.OFF -= OFF1;
-					SF.SENS -= SENS1;
+					SF._Tmp_MS5611_Temprture -= T1;
+					SF._Tmp_MS5611_Offset -= OFF1;
+					SF._Tmp_MS5611_Sensitfy -= SENS1;
 				}
-				SF.P = ((((int64_t)SF._uORB_MS5611Data[0] * SF.SENS) / pow(2, 21) - SF.OFF) / pow(2, 15));
-				SF.fltd_Pressure = SF.Pressure;
-				SF.fltd_Pressure = 0.96 * SF.fltd_Pressure + (1 - 0.96) * SF.Pressure;
-				SF.Altitude = 44330.0f * (1.0f - pow((double)SF.fltd_Pressure / (double)1023.20, 0.1902949f));
+				SF._Tmp_MS5611_Presure = ((((int64_t)SF._uORB_MS5611_Data[0] * SF._Tmp_MS5611_Sensitfy) / pow(2, 21) - SF._Tmp_MS5611_Offset) / pow(2, 15));
+
+				SF._uORB_MS5611_Pressure = (double)SF._Tmp_MS5611_Presure / (double)100.0;
+				SF._uORB_MS5611_Temprture = (double)SF._Tmp_MS5611_Temprture / 100.0;
+				if (AF._flag_MS5611_firstStartUp)
+				{
+					SF._flag_MS5611_StartUp_Pressure = SF._uORB_MS5611_Pressure;
+					AF._flag_MS5611_firstStartUp = false;
+				}
+				SF._uORB_MS5611_Altitude = 44330.0f * (1.0f - pow((double)SF._uORB_MS5611_Pressure / (double)SF._flag_MS5611_StartUp_Pressure, 0.1902949f)) * 100.0;
+				IMUGryoFilter(SF._uORB_MS5611_Altitude, SF._uORB_MS5611_Altitude, SF._Tmp_MS5611_filter_Queue_IN, SF._Tmp_MS5611_filter_Queue_OUT);
+				ALTDataOut[0] = SF._uORB_MS5611_Pressure;
+				ALTDataOut[1] = SF._uORB_MS5611_Temprture;
+				ALTDataOut[2] = SF._uORB_MS5611_Altitude;
 			}
 		}
 
@@ -347,13 +356,13 @@ namespace SingleAPMAPI
 			{
 				if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
 				{
-
 					AF._flag_StartUP_Protect = true;
 				}
 			}
 			if (AF._flag_ForceFailed_Safe == true)
 			{
-				AF._flag_first_StartUp = true;
+				AF._flag_MS5611_firstStartUp = true;
+				AF._flag_MPU9250_first_StartUp = true;
 				PF._uORB_PID_D_Last_Value__Roll = 0;
 				PF._uORB_PID_D_Last_Value_Pitch = 0;
 				PF._uORB_PID_D_Last_Value___Yaw = 0;
@@ -450,9 +459,11 @@ namespace SingleAPMAPI
 					<< "                        " << "\n";
 				std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    " << " RealRoll: " << (int)SF._uORB_Real__Roll
 					<< "                        " << "\n\n";
-				
-				std::cout << "Altitude: " << SF.Altitude << " ";
-				std::cout << "TEMP: " << SF.TEMP << "             \n\n";
+
+				std::cout << "Alttitude: " << SF._uORB_MS5611_Altitude << "                                 \n";
+				std::cout << "Presure: " << SF._uORB_MS5611_Pressure << "                                   \n";
+				std::cout << "Temprture: " << SF._uORB_MS5611_Temprture << "                                \n";
+				std::cout << "MS5611Data:" << SF._uORB_MS5611_Data[0] << " " << SF._uORB_MS5611_Data[1] << "                             \n\n";
 
 				std::cout << "RCOutPUTINFO:   " << "\n";
 				std::cout << " ChannelRoll  " << ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
@@ -655,7 +666,8 @@ namespace SingleAPMAPI
 
 			bool _flag_Error;
 			bool _flag_StartUP_Protect;
-			bool _flag_first_StartUp;
+			bool _flag_MPU9250_first_StartUp;
+			bool _flag_MS5611_firstStartUp;
 			bool _flag_RC_Disconnected;
 			bool _flag_ForceFailed_Safe;
 			bool _flag_Device_setupFailed;
@@ -728,20 +740,20 @@ namespace SingleAPMAPI
 			float _flag_Filter_Gain = 4.840925170e+00;
 			//=========================MS5611======//
 			int ALT_MS5611Type = MS5611IsI2c;
-			uint8_t _Tmp_MS5611Data[2] = { 0 , 0 };
-			uint8_t _Tmp_MS5611Datas[3] = { 0 , 0 ,0 };
-			uint16_t _flag_MS5611PromData[7];
-			uint32_t _uORB_MS5611Data[2];
-
-			int64_t dT;
-			int32_t TEMP;
-			int64_t OFF;
-			int64_t SENS;
-			int32_t P;
-			double Temparature;
-			double Pressure;
-			float fltd_Pressure;
-			float Altitude;
+			double	 _flag_MS5611_StartUp_Pressure;
+			uint8_t  _Tmp_MS5611_Data[3] = { 0 , 0 , 0 };
+			uint16_t _flag_MS5611_PromData[7];
+			uint32_t _uORB_MS5611_Data[2];
+			int64_t  _Tmp_MS5611_dT;
+			int32_t  _Tmp_MS5611_Temprture;
+			int64_t	 _Tmp_MS5611_Offset;
+			int64_t	 _Tmp_MS5611_Sensitfy;
+			int32_t	 _Tmp_MS5611_Presure;
+			double	 _uORB_MS5611_Pressure;
+			double   _uORB_MS5611_Temprture;
+			double	 _uORB_MS5611_Altitude;
+			double   _Tmp_MS5611_filter_Queue_IN[3] = { 0,0,0 };
+			double   _Tmp_MS5611_filter_Queue_OUT[3] = { 0,0,0 };
 		}SF;
 
 		struct PIDINFO
@@ -997,7 +1009,8 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
+		template<typename T>
+		inline void IMUGryoFilter(T next_input_value, T& next_output_value, T* xv, T* yv)
 		{
 			xv[0] = xv[1]; xv[1] = xv[2];
 			xv[2] = next_input_value / SF._flag_Filter_Gain;
