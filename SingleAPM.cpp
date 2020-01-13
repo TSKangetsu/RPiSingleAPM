@@ -6,10 +6,6 @@ int main(int argc, char *argv[])
 {
 	system("clear");
 	int argvs;
-	int ALTDATA[3];
-	int APMChannelOut[16];
-	int APMChannelIn[16];
-	APMSafeStatus statusOut;
 	APMSettinngs setting;
 	while ((argvs = getopt(argc, argv, "vcrh")) != -1)
 	{
@@ -19,34 +15,24 @@ int main(int argc, char *argv[])
 			std::cout << "[RPiSingleAPM] version 1.0.f Beta , Acess By TSKangetsu\n"
 					  << "	checkout : https://github.com/TSKangetsu/RPiSingleAPM \n";
 			break;
-		case 'c':
-		{
-			RPiSingleAPM APM_Settle(setting);
-#ifdef USINGJSON
-			APM_Settle.RCCalibration();
-			APM_Settle.SensorsCalibration();
-			APM_Settle.ESCCalibration();
-#endif
-		}
-		break;
 		case 'r':
 		{
 			RPiSingleAPM APM_Settle(setting);
 			std::thread AltHoldModeMain([&] {
 				while (true)
 				{
-					APM_Settle.AltHoldTransRead(ALTDATA, true);
+					APM_Settle.AltHoldTransRead();
 				}
 			});
 			std::thread AutoLevelingMain([&] {
 				while (true)
 				{
 					APM_Settle.SensorsParse();
-					APM_Settle.ControlParse(APMChannelOut, APMChannelIn, true);
+					APM_Settle.ControlParse();
 					APM_Settle.AttitudeUpdate();
-					APM_Settle.SaftyChecking(statusOut);
+					APM_Settle.SaftyChecking();
 					APM_Settle.ESCUpdate();
-					APM_Settle.DebugOutPut(true);
+					APM_Settle.DebugOutPut();
 					APM_Settle.ClockingTimer();
 				}
 			});

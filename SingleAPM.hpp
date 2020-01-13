@@ -29,18 +29,6 @@
 
 namespace SingleAPMAPI
 {
-	struct APMSafeStatus
-	{
-		int SyncTime;
-		bool ForceFailedSafe;
-		bool SafyError;
-
-		bool Is_SyncTimeOut;
-		bool Is_RCDisconnect;
-		bool Is_RCErrorInput;
-		bool Is_AngelOutLimit;
-	};
-
 	struct APMSettinngs
 	{
 		int RC_Type;
@@ -189,20 +177,9 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void ControlParse(int* ChannelOut, int* ChannelIn, bool UsingInputControl)
+		inline void ControlParse()
 		{
-			std::copy(std::begin(RF._uORB_RC_Channel_PWM), std::end(RF._uORB_RC_Channel_PWM), ChannelOut);
-			if (UsingInputControl)
-			{
-				ControlRead();
-			}
-			else
-			{
-				for (size_t i = 0; i < 16; i++)
-				{
-					RF._uORB_RC_Channel_PWM[i] = ChannelIn[i];
-				}
-			}
+			ControlRead();
 			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
 			else
@@ -223,62 +200,56 @@ namespace SingleAPMAPI
 			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
 		}
 
-		inline void AltHoldTransRead(int* ALTDataOut, bool EnableALTHOLD)
+		inline void AltHoldTransRead()
 		{
-			if (EnableALTHOLD)
+			char ZERO = 0x0;
+			char DA = 0x48;
+			char DB = 0x58;
+			//======================================================//
+			write(DF.MS5611_fd, &DA, 1);
+			usleep(10000);
+			write(DF.MS5611_fd, &ZERO, 1);
+			read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
+			SF._uORB_MS5611_Data[0] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
+			//======================================================//
+			write(DF.MS5611_fd, &DB, 1);
+			usleep(10000);
+			write(DF.MS5611_fd, &ZERO, 1);
+			read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
+			SF._uORB_MS5611_Data[1] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
+			//======================================================//
+			SF._Tmp_MS5611_dT = SF._uORB_MS5611_Data[1] - (uint32_t)SF._flag_MS5611_PromData[5] * pow(2, 8);
+			SF._Tmp_MS5611_Temprture = (2000 + (SF._Tmp_MS5611_dT * (int64_t)SF._flag_MS5611_PromData[5] / pow(2, 23)));
+
+			SF._Tmp_MS5611_Offset = (int64_t)SF._flag_MS5611_PromData[2] * pow(2, 16) + (SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[4]) / pow(2, 7);
+			SF._Tmp_MS5611_Sensitfy = (int32_t)SF._flag_MS5611_PromData[1] * pow(2, 15) + SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[3] / pow(2, 8);
+			if (SF._Tmp_MS5611_Temprture < 2000)
 			{
-				char ZERO = 0x0;
-				char DA = 0x48;
-				char DB = 0x58;
-				//======================================================//
-				write(DF.MS5611_fd, &DA, 1);
-				usleep(10000);
-				write(DF.MS5611_fd, &ZERO, 1);
-				read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
-				SF._uORB_MS5611_Data[0] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
-				//======================================================//
-				write(DF.MS5611_fd, &DB, 1);
-				usleep(10000);
-				write(DF.MS5611_fd, &ZERO, 1);
-				read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
-				SF._uORB_MS5611_Data[1] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
-				//======================================================//
-				SF._Tmp_MS5611_dT = SF._uORB_MS5611_Data[1] - (uint32_t)SF._flag_MS5611_PromData[5] * pow(2, 8);
-				SF._Tmp_MS5611_Temprture = (2000 + (SF._Tmp_MS5611_dT * (int64_t)SF._flag_MS5611_PromData[5] / pow(2, 23)));
-
-				SF._Tmp_MS5611_Offset = (int64_t)SF._flag_MS5611_PromData[2] * pow(2, 16) + (SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[4]) / pow(2, 7);
-				SF._Tmp_MS5611_Sensitfy = (int32_t)SF._flag_MS5611_PromData[1] * pow(2, 15) + SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[3] / pow(2, 8);
-				if (SF._Tmp_MS5611_Temprture < 2000)
+				int32_t T1 = 0;
+				int64_t OFF1 = 0;
+				int64_t SENS1 = 0;
+				T1 = pow((double)SF._Tmp_MS5611_dT, 2) / 2147483648;
+				OFF1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 2;
+				SENS1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 4;
+				if (SF._Tmp_MS5611_Temprture < -1500)
 				{
-					int32_t T1 = 0;
-					int64_t OFF1 = 0;
-					int64_t SENS1 = 0;
-					T1 = pow((double)SF._Tmp_MS5611_dT, 2) / 2147483648;
-					OFF1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 2;
-					SENS1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 4;
-					if (SF._Tmp_MS5611_Temprture < -1500)
-					{
-						OFF1 = OFF1 + 7 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2);
-						SENS1 = SENS1 + 11 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2) / 2;
-					}
-					SF._Tmp_MS5611_Temprture -= T1;
-					SF._Tmp_MS5611_Offset -= OFF1;
-					SF._Tmp_MS5611_Sensitfy -= SENS1;
+					OFF1 = OFF1 + 7 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2);
+					SENS1 = SENS1 + 11 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2) / 2;
 				}
-				SF._Tmp_MS5611_Presure = ((((int64_t)SF._uORB_MS5611_Data[0] * SF._Tmp_MS5611_Sensitfy) / pow(2, 21) - SF._Tmp_MS5611_Offset) / pow(2, 15));
-
-				SF._uORB_MS5611_Pressure = (double)SF._Tmp_MS5611_Presure / (double)100.0;
-				SF._uORB_MS5611_Temprture = (double)SF._Tmp_MS5611_Temprture / 100.0;
-				if (AF._flag_MS5611_firstStartUp)
-				{
-					SF._flag_MS5611_StartUp_Pressure = SF._uORB_MS5611_Pressure;
-					AF._flag_MS5611_firstStartUp = false;
-				}
-				SF._uORB_MS5611_Altitude = 44330.0f * (1.0f - pow((double)SF._uORB_MS5611_Pressure / (double)SF._flag_MS5611_StartUp_Pressure, 0.1902949f)) * 100.0;
-				ALTDataOut[0] = SF._uORB_MS5611_Pressure;
-				ALTDataOut[1] = SF._uORB_MS5611_Temprture;
-				ALTDataOut[2] = SF._uORB_MS5611_Altitude;
+				SF._Tmp_MS5611_Temprture -= T1;
+				SF._Tmp_MS5611_Offset -= OFF1;
+				SF._Tmp_MS5611_Sensitfy -= SENS1;
 			}
+			SF._Tmp_MS5611_Presure = ((((int64_t)SF._uORB_MS5611_Data[0] * SF._Tmp_MS5611_Sensitfy) / pow(2, 21) - SF._Tmp_MS5611_Offset) / pow(2, 15));
+
+			SF._uORB_MS5611_Pressure = (double)SF._Tmp_MS5611_Presure / (double)100.0;
+			SF._uORB_MS5611_Temprture = (double)SF._Tmp_MS5611_Temprture / 100.0;
+			if (AF._flag_MS5611_firstStartUp)
+			{
+				SF._flag_MS5611_StartUp_Pressure = SF._uORB_MS5611_Pressure;
+				AF._flag_MS5611_firstStartUp = false;
+			}
+			SF._uORB_MS5611_Altitude = 44330.0f * (1.0f - pow((double)SF._uORB_MS5611_Pressure / (double)SF._flag_MS5611_StartUp_Pressure, 0.1902949f)) * 100.0;
 		}
 
 		inline void AttitudeUpdate()
@@ -318,7 +289,7 @@ namespace SingleAPMAPI
 			EF._uORB_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
 		}
 
-		inline bool SaftyChecking(APMSafeStatus& status)
+		inline bool SaftyChecking()
 		{
 			//ECSLockCheck
 			if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
@@ -374,12 +345,10 @@ namespace SingleAPMAPI
 			if (AF.Update_loopTime > AF.Update_Freq_Time)
 			{
 				AF._flag_Error = true;
-				status.Is_SyncTimeOut = true;
 			}
 			if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 			{
 				AF._flag_Error = true;
-				status.Is_AngelOutLimit = true;
 			}
 			if (RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[0] && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Max_PWM_Value ||
 				RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[1] && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Max_PWM_Value ||
@@ -387,7 +356,6 @@ namespace SingleAPMAPI
 				RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value)
 			{
 				AF._flag_RC_Disconnected = true;
-				status.Is_RCErrorInput;
 			}
 
 			//RC_LOSE_Detect
@@ -397,20 +365,13 @@ namespace SingleAPMAPI
 				if (AF.RC_Lose_Clocking == 200)
 				{
 					AF._flag_Error = true;
-					status.Is_RCDisconnect = true;
 					AF.RC_Lose_Clocking = 0;
 				}
 			}
 			else if (AF._flag_RC_Disconnected == false)
 			{
 				AF.RC_Lose_Clocking = 0;
-				status.Is_RCDisconnect = false;
 			}
-
-			//StatusUpdate
-			status.ForceFailedSafe = AF._flag_ForceFailed_Safe;
-			status.SafyError = AF._flag_Error;
-			status.SyncTime = AF.Update_loopTime;
 		}
 
 		inline void ESCUpdate()
@@ -440,69 +401,66 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void DebugOutPut(bool Is_EnableDebug)
+		inline void DebugOutPut()
 		{
-			if (Is_EnableDebug)
+			std::cout << "\033[150A";
+			std::cout << "\033[K";
+			std::cout << "ESCSpeedOutput:"
+				<< " \n";
+			std::cout << " A1 " << EF._uORB_A1_Speed << "    "
+				<< " A2 " << EF._uORB_A2_Speed << "                        "
+				<< "\n";
+			std::cout << " B1 " << EF._uORB_B1_Speed << "    "
+				<< " B2 " << EF._uORB_B2_Speed << "                        "
+				<< "\n\n";
+
+			std::cout << "IMUSenorData: "
+				<< " \n";
+			std::cout << " GryoPitch: " << (int)SF._uORB_Gryo_Pitch << "    "
+				<< " GryoRoll: " << (int)SF._uORB_Gryo__Roll << "    "
+				<< " GryoYaw: " << (int)SF._uORB_Gryo___Yaw
+				<< "                        "
+				<< "\n";
+			std::cout << " AccePitch: " << (int)SF._uORB_Accel_Pitch << "    "
+				<< " AcceRoll: " << (int)SF._uORB_Accel__Roll
+				<< "                        "
+				<< "\n";
+			std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    "
+				<< " RealRoll: " << (int)SF._uORB_Real__Roll
+				<< "                        "
+				<< "\n\n";
+
+			std::cout << "Alttitude: " << SF._uORB_MS5611_Altitude << "                                 \n";
+			std::cout << "Presure: " << SF._uORB_MS5611_Pressure << "                                   \n";
+			std::cout << "Temprture: " << SF._uORB_MS5611_Temprture << "                                \n";
+			std::cout << "MS5611Data:" << SF._uORB_MS5611_Data[0] << " " << SF._uORB_MS5611_Data[1] << "                             \n\n";
+
+			std::cout << "RCOutPUTINFO:   "
+				<< "\n";
+			std::cout << " ChannelRoll  "
+				<< ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
+			std::cout << " ChannelPitch "
+				<< ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
+			std::cout << " ChannelThrot "
+				<< ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
+			std::cout << " ChannelYaw   "
+				<< ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
+
+			std::cout << "ChannelINFO: "
+				<< " \n";
+			for (size_t i = 0; i < 16; i++)
 			{
-				std::cout << "\033[150A";
-				std::cout << "\033[K";
-				std::cout << "ESCSpeedOutput:"
-					<< " \n";
-				std::cout << " A1 " << EF._uORB_A1_Speed << "    "
-					<< " A2 " << EF._uORB_A2_Speed << "                        "
-					<< "\n";
-				std::cout << " B1 " << EF._uORB_B1_Speed << "    "
-					<< " B2 " << EF._uORB_B2_Speed << "                        "
-					<< "\n\n";
-
-				std::cout << "IMUSenorData: "
-					<< " \n";
-				std::cout << " GryoPitch: " << (int)SF._uORB_Gryo_Pitch << "    "
-					<< " GryoRoll: " << (int)SF._uORB_Gryo__Roll << "    "
-					<< " GryoYaw: " << (int)SF._uORB_Gryo___Yaw
-					<< "                        "
-					<< "\n";
-				std::cout << " AccePitch: " << (int)SF._uORB_Accel_Pitch << "    "
-					<< " AcceRoll: " << (int)SF._uORB_Accel__Roll
-					<< "                        "
-					<< "\n";
-				std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    "
-					<< " RealRoll: " << (int)SF._uORB_Real__Roll
-					<< "                        "
-					<< "\n\n";
-
-				std::cout << "Alttitude: " << SF._uORB_MS5611_Altitude << "                                 \n";
-				std::cout << "Presure: " << SF._uORB_MS5611_Pressure << "                                   \n";
-				std::cout << "Temprture: " << SF._uORB_MS5611_Temprture << "                                \n";
-				std::cout << "MS5611Data:" << SF._uORB_MS5611_Data[0] << " " << SF._uORB_MS5611_Data[1] << "                             \n\n";
-
-				std::cout << "RCOutPUTINFO:   "
-					<< "\n";
-				std::cout << " ChannelRoll  "
-					<< ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
-				std::cout << " ChannelPitch "
-					<< ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
-				std::cout << " ChannelThrot "
-					<< ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
-				std::cout << " ChannelYaw   "
-					<< ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
-
-				std::cout << "ChannelINFO: "
-					<< " \n";
-				for (size_t i = 0; i < 16; i++)
-				{
-					std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
-				}
-				std::cout << " \n\n";
-
-				std::cout << "SystemINFO:"
-					<< "    \n";
-				std::cout << " Update_loopTime:" << AF.Update_loopTime << "         \n";
-				std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ForceFailed_Safe << "               \n";
-				std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
-				std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
-				std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
+				std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
 			}
+			std::cout << " \n\n";
+
+			std::cout << "SystemINFO:"
+				<< "    \n";
+			std::cout << " Update_loopTime:" << AF.Update_loopTime << "         \n";
+			std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ForceFailed_Safe << "               \n";
+			std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
+			std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
+			std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
 		}
 
 		inline void ClockingTimer()
@@ -1086,4 +1044,4 @@ namespace SingleAPMAPI
 			SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
 		}
 	};
-} // namespace SingleAPMAPI
+}
