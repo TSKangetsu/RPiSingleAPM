@@ -21,9 +21,6 @@
 
 #define MPUIsI2c 0
 #define MPUIsSpi 1
-#define MS5611IsI2c 0
-#define MS5611IsSpi 1
-#define MS5611NotUse -1
 #define RCIsIbus 0
 #define RCIsSbus 1
 
@@ -81,7 +78,7 @@ namespace SingleAPMAPI
 			AF._flag_ForceFailed_Safe = true;
 			ConfigReader(APMInit);
 
-			if (DF.PCA9658_fd != 0)
+			if (DF.PCA9658_fd == -1)
 				DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
 			if (SF.MPU9250_Type == MPUIsI2c)
@@ -118,10 +115,26 @@ namespace SingleAPMAPI
 				SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 			}
 
-			GryoCali();
+			//GryoCali()
+			{
+				SF._flag_MPU9250_G_X_Cali = 0;
+				SF._flag_MPU9250_G_Y_Cali = 0;
+				SF._flag_MPU9250_G_Z_Cali = 0;
+				for (int cali_count = 0; cali_count < 2000; cali_count++)
+				{
+					IMUSensorsDataRead();
+					SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
+					SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
+					SF._flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
+					usleep(3);
+				}
+				SF._flag_MPU9250_G_X_Cali = SF._flag_MPU9250_G_X_Cali / 2000;
+				SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
+				SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
+			}
 		}
 
-		inline void SensorsParse()
+		inline void IMUSensorsParse()
 		{
 			AF.Update_TimerStart = micros();
 			IMUSensorsDataRead();
@@ -165,22 +178,19 @@ namespace SingleAPMAPI
 		{
 			if (AF._flag_MS5611_firstStartUp)
 			{
-				if (SF.ALT_MS5611Type == MS5611IsI2c)
+				char Reset = 0x1E;
+				DF.MS5611_fd = open("/dev/i2c-1", O_RDWR);
+				ioctl(DF.MS5611_fd, I2C_SLAVE, DF.MS5611_ADDR);
+				write(DF.MS5611_fd, &Reset, 1);
+				usleep(10000);
+				for (size_t i = 0; i < 7; i++)
 				{
-					char Reset = 0x1E;
-					DF.MS5611_fd = open("/dev/i2c-1", O_RDWR);
-					ioctl(DF.MS5611_fd, I2C_SLAVE, DF.MS5611_ADDR);
-					write(DF.MS5611_fd, &Reset, 1);
-					usleep(10000);
-					for (size_t i = 0; i < 7; i++)
-					{
-						char PROMRead = (0xA0 + (i * 2));
-						write(DF.MS5611_fd, &PROMRead, 1);
-						read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 2);
-						SF._flag_MS5611_PromData[i] = (unsigned int)(SF._Tmp_MS5611_Data[0] * 256 + SF._Tmp_MS5611_Data[1]);
-						usleep(1000);
-					};
-				}
+					char PROMRead = (0xA0 + (i * 2));
+					write(DF.MS5611_fd, &PROMRead, 1);
+					read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 2);
+					SF._flag_MS5611_PromData[i] = (unsigned int)(SF._Tmp_MS5611_Data[0] * 256 + SF._Tmp_MS5611_Data[1]);
+					usleep(1000);
+				};
 			}
 			char ZERO = 0x0;
 			char DA = 0x48;
@@ -234,7 +244,37 @@ namespace SingleAPMAPI
 
 		inline void ControlParse()
 		{
-			ControlRead();
+			if (RF.RC_Type == RCIsSbus)
+			{
+				if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
+				{
+					for (size_t i = 0; i < 16; i++)
+					{
+						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
+					}
+					AF._flag_RC_Disconnected = false;
+				}
+				else
+				{
+					AF._flag_RC_Disconnected = true;
+				}
+			}
+			else if (RF.RC_Type == RCIsIbus)
+			{
+				if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
+				{
+					for (size_t i = 0; i < 16; i++)
+					{
+						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
+					}
+					AF._flag_RC_Disconnected = false;
+				}
+				else
+				{
+					AF._flag_RC_Disconnected = true;
+				}
+			}
+
 			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
 			else
@@ -500,7 +540,7 @@ namespace SingleAPMAPI
 		struct DeviceINFO
 		{
 			int RCReader_fd;
-			int PCA9658_fd = 0;
+			int PCA9658_fd = -1;
 			const int PWM_Freq = 400;
 			const int PCA9685_PinBase = 65;
 			const int PCA9685_Address = 0x40;
@@ -570,7 +610,6 @@ namespace SingleAPMAPI
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
 			float _flag_Filter4x25_Gain = 2.072820954e+02;
 			//=========================MS5611======//
-			int ALT_MS5611Type = MS5611IsI2c;
 			double _flag_MS5611_StartUp_Pressure;
 			uint8_t _Tmp_MS5611_Data[3] = { 0, 0, 0 };
 			uint16_t _flag_MS5611_PromData[7];
@@ -762,40 +801,6 @@ namespace SingleAPMAPI
 #endif
 		}
 
-		inline void ControlRead()
-		{
-			if (RF.RC_Type == RCIsSbus)
-			{
-				if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
-				{
-					for (size_t i = 0; i < 16; i++)
-					{
-						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
-					}
-					AF._flag_RC_Disconnected = false;
-				}
-				else
-				{
-					AF._flag_RC_Disconnected = true;
-				}
-			}
-			else if (RF.RC_Type == RCIsIbus)
-			{
-				if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
-				{
-					for (size_t i = 0; i < 16; i++)
-					{
-						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
-					}
-					AF._flag_RC_Disconnected = false;
-				}
-				else
-				{
-					AF._flag_RC_Disconnected = true;
-				}
-			}
-		}
-
 		inline void IMUSensorsDataRead()
 		{
 			if (SF.MPU9250_Type == MPUIsI2c)
@@ -856,23 +861,5 @@ namespace SingleAPMAPI
 			yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.1958157127 * yv[0]) + (0.3695273774 * yv[1]);
 			next_output_value = yv[2];
 		};
-
-		inline void GryoCali()
-		{
-			SF._flag_MPU9250_G_X_Cali = 0;
-			SF._flag_MPU9250_G_Y_Cali = 0;
-			SF._flag_MPU9250_G_Z_Cali = 0;
-			for (int cali_count = 0; cali_count < 2000; cali_count++)
-			{
-				IMUSensorsDataRead();
-				SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
-				SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
-				SF._flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
-				usleep(3);
-			}
-			SF._flag_MPU9250_G_X_Cali = SF._flag_MPU9250_G_X_Cali / 2000;
-			SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
-			SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
-		}
 	};
 }

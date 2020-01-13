@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 			std::thread AutoLevelingMain([&] {
 				while (true)
 				{
-					APM_Settle.SensorsParse();
+					APM_Settle.IMUSensorsParse();
 					APM_Settle.ControlParse();
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking();
