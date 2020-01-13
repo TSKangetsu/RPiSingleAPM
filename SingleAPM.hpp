@@ -889,7 +889,6 @@ namespace SingleAPMAPI
 		inline void ConfigReader(APMSettinngs APMInit)
 		{
 #ifdef USINGJSON
-			std::cout << "[ConfigRead]starting to check out config file ....\n";
 			std::ifstream config(DF.configDir);
 			std::string content((std::istreambuf_iterator<char>(config)),
 				(std::istreambuf_iterator<char>()));
@@ -934,7 +933,6 @@ namespace SingleAPMAPI
 			//===============================================================Update cofig==/
 			AF.Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
 			AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
-			std::cout << "[ConfigRead]Config Set Success!\n";
 #else
 			SF.MPU9250_Type = APMInit.MPU9250_Type;
 			RF.RC_Type = APMInit.RC_Type;
