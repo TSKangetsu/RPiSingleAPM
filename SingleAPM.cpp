@@ -17,11 +17,12 @@ int main(int argc, char *argv[])
 			break;
 		case 'r':
 		{
-			RPiSingleAPM APM_Settle(setting);
+			RPiSingleAPM APM_Settle;
+			APM_Settle.RPiSingleAPMInit(setting);
 			std::thread AltHoldModeMain([&] {
 				while (true)
 				{
-					APM_Settle.AltHoldTransRead();
+					APM_Settle.AltholdSensorsParse();
 				}
 			});
 			std::thread AutoLevelingMain([&] {

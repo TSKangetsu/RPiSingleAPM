@@ -70,7 +70,7 @@ namespace SingleAPMAPI
 	class RPiSingleAPM
 	{
 	public:
-		RPiSingleAPM(APMSettinngs APMInit)
+		inline void RPiSingleAPMInit(APMSettinngs APMInit)
 		{
 			wiringPiSetupSys();
 			piHiPri(99);
@@ -81,7 +81,8 @@ namespace SingleAPMAPI
 			AF._flag_ForceFailed_Safe = true;
 			ConfigReader(APMInit);
 
-			DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
+			if (DF.PCA9658_fd != 0)
+				DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 
 			if (SF.MPU9250_Type == MPUIsI2c)
 			{
@@ -108,23 +109,6 @@ namespace SingleAPMAPI
 				wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
 			}
 
-			if (SF.ALT_MS5611Type == MS5611IsI2c)
-			{
-				char Reset = 0x1E;
-				DF.MS5611_fd = open("/dev/i2c-1", O_RDWR);
-				ioctl(DF.MS5611_fd, I2C_SLAVE, DF.MS5611_ADDR);
-				write(DF.MS5611_fd, &Reset, 1);
-				usleep(10000);
-				for (size_t i = 0; i < 7; i++)
-				{
-					char PROMRead = (0xA0 + (i * 2));
-					write(DF.MS5611_fd, &PROMRead, 1);
-					read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 2);
-					SF._flag_MS5611_PromData[i] = (unsigned int)(SF._Tmp_MS5611_Data[0] * 256 + SF._Tmp_MS5611_Data[1]);
-					usleep(1000);
-				};
-			}
-
 			if (RF.RC_Type == RCIsIbus)
 			{
 				IbusInit = new Ibus("/dev/ttyS0");
@@ -145,9 +129,9 @@ namespace SingleAPMAPI
 			SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 			SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
 			SF._uORB_MPU9250_G_Z -= SF._flag_MPU9250_G_Z_Cali;
-			Butterworth2x50HzLP_Filter(SF._uORB_MPU9250_G_X, SF._uORB_MPU9250_G_X, SF._Tmp_Gryo_filer_Input_Quene_X, SF._Tmp_Gryo_filer_Output_Quene_X);
-			Butterworth2x50HzLP_Filter(SF._uORB_MPU9250_G_Y, SF._uORB_MPU9250_G_Y, SF._Tmp_Gryo_filer_Input_Quene_Y, SF._Tmp_Gryo_filer_Output_Quene_Y);
-			Butterworth2x50HzLP_Filter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z);
+			IMUGryoFilter(SF._uORB_MPU9250_G_X, SF._uORB_MPU9250_G_X, SF._Tmp_Gryo_filer_Input_Quene_X, SF._Tmp_Gryo_filer_Output_Quene_X);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Y, SF._uORB_MPU9250_G_Y, SF._Tmp_Gryo_filer_Input_Quene_Y, SF._Tmp_Gryo_filer_Output_Quene_Y);
+			IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z);
 			SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
@@ -177,31 +161,27 @@ namespace SingleAPMAPI
 			}
 		}
 
-		inline void ControlParse()
+		inline void AltholdSensorsParse()
 		{
-			ControlRead();
-			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
-				RF._uORB_RC_Out__Roll = 0;
-			else
-				RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
-			//
-			if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
-				RF._uORB_RC_Out_Pitch = 0;
-			else
-				RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * -1 * RF._flag_RCIsReserv_Pitch;
-			//
-			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
-			//
-			if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
-				RF._uORB_RC_Out___Yaw = 0;
-			else
-				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
-			//
-			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
-		}
-
-		inline void AltHoldTransRead()
-		{
+			if (AF._flag_MS5611_firstStartUp)
+			{
+				if (SF.ALT_MS5611Type == MS5611IsI2c)
+				{
+					char Reset = 0x1E;
+					DF.MS5611_fd = open("/dev/i2c-1", O_RDWR);
+					ioctl(DF.MS5611_fd, I2C_SLAVE, DF.MS5611_ADDR);
+					write(DF.MS5611_fd, &Reset, 1);
+					usleep(10000);
+					for (size_t i = 0; i < 7; i++)
+					{
+						char PROMRead = (0xA0 + (i * 2));
+						write(DF.MS5611_fd, &PROMRead, 1);
+						read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 2);
+						SF._flag_MS5611_PromData[i] = (unsigned int)(SF._Tmp_MS5611_Data[0] * 256 + SF._Tmp_MS5611_Data[1]);
+						usleep(1000);
+					};
+				}
+			}
 			char ZERO = 0x0;
 			char DA = 0x48;
 			char DB = 0x58;
@@ -250,6 +230,29 @@ namespace SingleAPMAPI
 				AF._flag_MS5611_firstStartUp = false;
 			}
 			SF._uORB_MS5611_Altitude = 44330.0f * (1.0f - pow((double)SF._uORB_MS5611_Pressure / (double)SF._flag_MS5611_StartUp_Pressure, 0.1902949f)) * 100.0;
+		}
+
+		inline void ControlParse()
+		{
+			ControlRead();
+			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+				RF._uORB_RC_Out__Roll = 0;
+			else
+				RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
+			//
+			if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
+				RF._uORB_RC_Out_Pitch = 0;
+			else
+				RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * -1 * RF._flag_RCIsReserv_Pitch;
+			//
+			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
+			//
+			if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
+				RF._uORB_RC_Out___Yaw = 0;
+			else
+				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
+			//
+			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
 		}
 
 		inline void AttitudeUpdate()
@@ -471,177 +474,6 @@ namespace SingleAPMAPI
 				AF.Update_loopTime *= -1;
 			usleep(AF.Update_Freq_Time - AF.Update_loopTime);
 		}
-#ifdef USINGJSON
-		inline void SensorsCalibration()
-		{
-			int CalibrationComfirm;
-			std::cout << "[Sensors] Calibration will start , input 1 to start , input -1 to skip"
-				<< "\n";
-			std::cin >> CalibrationComfirm;
-			if (CalibrationComfirm == -1)
-			{
-				return;
-			}
-			std::cout << "[Sensors] Accel Calibration ......"
-				<< "\n";
-			SF._flag_Accel_Pitch_Cali = 0.f;
-			SF._flag_Accel__Roll_Cali = 0.f;
-			for (int cali_count = 0; cali_count < 2000; cali_count++)
-			{
-				IMUSensorsDataRead();
-				SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
-				if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
-					SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / (float)SF._Tmp_IMU_Accel_Vector) * -57.296;
-				if (abs(SF._uORB_MPU9250_A_Y) < SF._Tmp_IMU_Accel_Vector)
-					SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / (float)SF._Tmp_IMU_Accel_Vector) * 57.296;
-				SF._flag_Accel__Roll_Cali += SF._uORB_Accel__Roll;
-				SF._flag_Accel_Pitch_Cali += SF._uORB_Accel_Pitch;
-				usleep(3);
-			}
-			SF._flag_Accel__Roll_Cali = (float)SF._flag_Accel__Roll_Cali / (float)2000;
-			SF._flag_Accel_Pitch_Cali = (float)SF._flag_Accel_Pitch_Cali / (float)2000;
-			std::cout << "AccelPitchCali: " << SF._flag_Accel_Pitch_Cali << " \n";
-			std::cout << "AccelRollCali: " << SF._flag_Accel__Roll_Cali << " \n";
-			std::cout << "[Sensors] Accel Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip"
-				<< "\n";
-			std::cin >> CalibrationComfirm;
-			if (CalibrationComfirm == -1)
-			{
-				SensorsCalibration();
-			}
-			else if (CalibrationComfirm == 1)
-			{
-				std::ifstream config(DF.configDir);
-				std::string content((std::istreambuf_iterator<char>(config)),
-					(std::istreambuf_iterator<char>()));
-				nlohmann::json Configdata = nlohmann::json::parse(content);
-
-				Configdata["_flag_Accel__Roll_Cali"] = SF._flag_Accel__Roll_Cali;
-				Configdata["_flag_Accel_Pitch_Cali"] = SF._flag_Accel_Pitch_Cali;
-
-				std::ofstream configIN;
-				configIN.open(DF.configDir);
-				configIN.clear();
-				configIN << Configdata.dump(4).c_str();
-				configIN.close();
-
-				std::cout << "[Sensors] Config write success\n";
-			}
-		}
-
-		inline void RCCalibration()
-		{
-			int CalibrationComfirm;
-			std::cout << "[RCStatus] RC calibration start........."
-				<< " \n";
-			std::cout << "[RCStatus] RC calibration start, input 1 to start, or input -1 to skip calibration"
-				<< " \n";
-			std::cin >> CalibrationComfirm;
-			if (CalibrationComfirm == -1)
-			{
-				std::cout << "[RCStatus] Exiting RC calibration ........."
-					<< " \n";
-				return;
-			}
-			std::cout << "Max the Throttle , and input 1"
-				<< "\n";
-			std::cin >> CalibrationComfirm;
-			for (size_t i = 0; i < 2000; i++)
-			{
-				ControlRead();
-				RF._flag_RC_Max_PWM_Value = RF._uORB_RC_Channel_PWM[2];
-			}
-
-			std::cout << "Mid the Roll , and input 1"
-				<< "\n";
-			std::cin >> CalibrationComfirm;
-			for (size_t i = 0; i < 2000; i++)
-			{
-				ControlRead();
-				RF._flag_RC_Mid_PWM_Value = RF._uORB_RC_Channel_PWM[0];
-			}
-
-			std::cout << "Min the Throttle , and input 1"
-				<< "\n";
-			std::cin >> CalibrationComfirm;
-			for (size_t i = 0; i < 2000; i++)
-			{
-				ControlRead();
-				RF._flag_RC_Min_PWM_Value = RF._uORB_RC_Channel_PWM[2];
-			}
-
-			std::cout << "please input ARM channel , and turn to on \n";
-			for (size_t i = 0; i < 2000; i++)
-			{
-				ControlRead();
-				RF._flag_RC_ARM_PWM_Value = RF._uORB_RC_Channel_PWM[4];
-			}
-
-			std::cout << "_flag_RC_Max_PWM_Value: " << RF._flag_RC_Max_PWM_Value << " \n";
-			std::cout << "_flag_RC_Mid_PWM_Value: " << RF._flag_RC_Mid_PWM_Value << " \n";
-			std::cout << "_flag_RC_Min_PWM_Value: " << RF._flag_RC_Min_PWM_Value << " \n";
-			std::cout << "_flag_RC_ARM_PWM_Value: " << RF._flag_RC_ARM_PWM_Value << " \n";
-
-			std::cout << "[RCStatus] RC Calibration finsh , input -1 to retry , input 1 to write to configJSON , 0 to skip"
-				<< "\n";
-			std::cin >> CalibrationComfirm;
-			if (CalibrationComfirm == -1)
-			{
-				RCCalibration();
-			}
-			else if (CalibrationComfirm == 1)
-			{
-				std::ifstream config(DF.configDir);
-				std::string content((std::istreambuf_iterator<char>(config)),
-					(std::istreambuf_iterator<char>()));
-				nlohmann::json Configdata = nlohmann::json::parse(content);
-
-				Configdata["_flag_RC_Max_PWM_Value"] = RF._flag_RC_Max_PWM_Value;
-				Configdata["_flag_RC_Mid_PWM_Value"] = RF._flag_RC_Mid_PWM_Value;
-				Configdata["_flag_RC_Min_PWM_Value"] = RF._flag_RC_Min_PWM_Value;
-				Configdata["_flag_RC_ARM_PWM_Value"] = RF._flag_RC_ARM_PWM_Value;
-
-				std::ofstream configIN;
-				configIN.open(DF.configDir);
-				configIN.clear();
-				configIN << Configdata.dump(4).c_str();
-				configIN.close();
-
-				std::cout << "[RCStatus] Config write success\n";
-			}
-		}
-#endif
-		inline void ESCCalibration()
-		{
-			int CalibrationComfirm;
-			std::cout << "[ESCStatus] ESC calibration start........."
-				<< " \n";
-			std::cout << "[ESCStatus] ESC calibration start,connect ESC to power and input 1 , or input -1 to skip calibration"
-				<< " \n";
-			std::cin >> CalibrationComfirm;
-			if (CalibrationComfirm == -1)
-			{
-				std::cout << "[ESCStatus] Exiting ESC calibration ........."
-					<< " \n";
-				return;
-			}
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 3000);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 3000);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 3000);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 3000);
-			std::cout << "[ESCStatus] ESC calibration will finsh , input 1 to stop "
-				<< " \n";
-			std::cin >> CalibrationComfirm;
-			std::cout << "[ESCStatus] ESC calibration Finsh....."
-				<< " \n";
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, 2200);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, 2200);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, 2200);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, 2200);
-			sleep(3);
-			std::cout << "[ESCStatus] ESC calibration over"
-				<< " \n";
-		}
 
 	protected:
 		Sbus* SbusInit;
@@ -668,7 +500,7 @@ namespace SingleAPMAPI
 		struct DeviceINFO
 		{
 			int RCReader_fd;
-			int PCA9658_fd;
+			int PCA9658_fd = 0;
 			const int PWM_Freq = 400;
 			const int PCA9685_PinBase = 65;
 			const int PCA9685_Address = 0x40;
@@ -1014,8 +846,7 @@ namespace SingleAPMAPI
 			}
 		}
 
-		template <typename T>
-		inline void Butterworth2x50HzLP_Filter(T next_input_value, T& next_output_value, T* xv, T* yv)
+		inline void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
 		{
 			xv[0] = xv[1];
 			xv[1] = xv[2];
