@@ -4,8 +4,8 @@
   "Update_Freqeucy": 250,
   "_flag_A1_Pin": 0,
   "_flag_A2_Pin": 1,
-  "_flag_Accel_Pitch_Cali": 1.2953853607177734,
-  "_flag_Accel__Roll_Cali": 2.8466432094573975,
+  "_flag_Accel_Pitch_Cali": -1.5450202226638794,
+  "_flag_Accel__Roll_Cali": 4.489660739898682,
   "_flag_B1_Pin": 2,
   "_flag_B2_Pin": 3,
   "_flag_PID_D_Pitch_Gain": 30,
@@ -21,8 +21,11 @@
   "_flag_PID_P_Pitch_Gain": 1.3,
   "_flag_PID_P__Roll_Gain": 1.3,
   "_flag_PID_P___Yaw_Gain": 3,
-  "_flag_RC_ARM_PWM_Value": 2000,
-  "_flag_RC_Max_PWM_Value": 2000,
-  "_flag_RC_Mid_PWM_Value": 1500,
-  "_flag_RC_Min_PWM_Value": 1000
+  "_flag_RC_ARM_PWM_Value": 1993,
+  "_flag_RC_Max_PWM_Value": 1993,
+  "_flag_RC_Mid_PWM_Value": 1495,
+  "_flag_RC_Min_PWM_Value": 997,
+  "_flag_RCIsReserv__Roll": 1,
+  "_flag_RCIsReserv_Pitch": 1,
+  "_flag_RCIsReserv___Yaw": 1
 }

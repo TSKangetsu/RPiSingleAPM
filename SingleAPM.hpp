@@ -64,15 +64,19 @@ namespace SingleAPMAPI
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
 
-		int _flag_A1_Pin = 0;
-		int _flag_A2_Pin = 1;
-		int _flag_B1_Pin = 2;
-		int _flag_B2_Pin = 3;
+		int _flag_A1_Pin;
+		int _flag_A2_Pin;
+		int _flag_B1_Pin;
+		int _flag_B2_Pin;
 
 		int _flag_RC_ARM_PWM_Value;
 		int _flag_RC_Min_PWM_Value;
 		int _flag_RC_Mid_PWM_Value;
 		int _flag_RC_Max_PWM_Value;
+
+		int _flag_RCIsReserv__Roll;
+		int _flag_RCIsReserv_Pitch;
+		int _flag_RCIsReserv___Yaw;
 	};
 
 	class RPiSingleAPM
@@ -209,7 +213,7 @@ namespace SingleAPMAPI
 			else
 				RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * -1 * RF._flag_RCIsReserv_Pitch;
 			//
-			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2] * RF._flag_RCIsReserv_Throtte;
+			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
 			//
 			if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out___Yaw = 0;
@@ -846,7 +850,6 @@ namespace SingleAPMAPI
 
 			int _flag_RCIsReserv__Roll = 1;
 			int _flag_RCIsReserv_Pitch = 1;
-			int _flag_RCIsReserv_Throtte = 1;
 			int _flag_RCIsReserv___Yaw = 1;
 		} RF;
 
@@ -899,6 +902,10 @@ namespace SingleAPMAPI
 			RF._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();
 			RF._flag_RC_Mid_PWM_Value = Configdata["_flag_RC_Mid_PWM_Value"].get<int>();
 			RF._flag_RC_Max_PWM_Value = Configdata["_flag_RC_Max_PWM_Value"].get<int>();
+
+			RF._flag_RCIsReserv__Roll = Configdata["_flag_RCIsReserv__Roll"].get<int>();
+			RF._flag_RCIsReserv_Pitch = Configdata["_flag_RCIsReserv_Pitch"].get<int>();
+			RF._flag_RCIsReserv___Yaw = Configdata["_flag_RCIsReserv___Yaw"].get<int>();
 			//==========================================================ESC cofig=========/
 			EF._flag_A1_Pin = Configdata["_flag_A1_Pin"].get<int>();
 			EF._flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
@@ -1070,7 +1077,6 @@ namespace SingleAPMAPI
 			SF._flag_MPU9250_G_Z_Cali = 0;
 			for (int cali_count = 0; cali_count < 2000; cali_count++)
 			{
-
 				IMUSensorsDataRead();
 				SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
 				SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
