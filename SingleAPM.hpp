@@ -160,9 +160,6 @@ namespace SingleAPMAPI
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
 			//ACCEL---------------------------------------------------------------------//
-			Butterworth4x25HzLP_Filter(SF._uORB_MPU9250_A_X, SF._uORB_MPU9250_A_X, SF._Tmp_Acce_filer_Input_Quene_X, SF._Tmp_Acce_filer_Output_Quene_X);
-			Butterworth4x25HzLP_Filter(SF._uORB_MPU9250_A_Y, SF._uORB_MPU9250_A_Y, SF._Tmp_Acce_filer_Input_Quene_Y, SF._Tmp_Acce_filer_Output_Quene_Y);
-			Butterworth4x25HzLP_Filter(SF._uORB_MPU9250_A_Z, SF._uORB_MPU9250_A_Z, SF._Tmp_Acce_filer_Input_Quene_Z, SF._Tmp_Acce_filer_Output_Quene_Z);
 			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
 			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
 				SF._uORB_Accel__Roll = asin((float)SF._uORB_MPU9250_A_X / SF._Tmp_IMU_Accel_Vector) * -57.296;
@@ -274,7 +271,6 @@ namespace SingleAPMAPI
 					AF._flag_MS5611_firstStartUp = false;
 				}
 				SF._uORB_MS5611_Altitude = 44330.0f * (1.0f - pow((double)SF._uORB_MS5611_Pressure / (double)SF._flag_MS5611_StartUp_Pressure, 0.1902949f)) * 100.0;
-				Butterworth2x50HzLP_Filter(SF._uORB_MS5611_Altitude, SF._uORB_MS5611_Altitude, SF._Tmp_MS5611_filter_Queue_IN, SF._Tmp_MS5611_filter_Queue_OUT);
 				ALTDataOut[0] = SF._uORB_MS5611_Pressure;
 				ALTDataOut[1] = SF._uORB_MS5611_Temprture;
 				ALTDataOut[2] = SF._uORB_MS5611_Altitude;
@@ -1028,18 +1024,7 @@ namespace SingleAPMAPI
 			yv[2] = (xv[0] + xv[2]) + 2 * xv[1]
 				+ (-0.1958157127 * yv[0]) + (0.3695273774 * yv[1]);
 			next_output_value = yv[2];
-		};
 
-		template<typename T>
-		inline void Butterworth4x25HzLP_Filter(T next_input_value, T& next_output_value, T* xv, T* yv)
-		{
-			xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4];
-			xv[4] = next_input_value / SF._flag_Filter4x25_Gain;
-			yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4];
-			yv[4] = (xv[0] + xv[4]) + 4 * (xv[1] + xv[3]) + 6 * xv[2]
-				+ (-0.1873794924 * yv[0]) + (1.0546654059 * yv[1])
-				+ (-2.3139884144 * yv[2]) + (2.3695130072 * yv[3]);
-			next_output_value = yv[4];
 		};
 
 		inline void GryoCali()
@@ -1049,6 +1034,7 @@ namespace SingleAPMAPI
 			SF._flag_MPU9250_G_Z_Cali = 0;
 			for (int cali_count = 0; cali_count < 2000; cali_count++)
 			{
+
 				IMUSensorsDataRead();
 				SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
 				SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
