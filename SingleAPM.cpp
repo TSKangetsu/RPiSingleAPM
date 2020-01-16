@@ -19,8 +19,6 @@ int main(int argc, char* argv[])
 			RPiSingleAPM APM_Settle;
 			APM_Settle.RPiSingleAPMInit(setting);
 			std::thread GryoUpdate([&] {
-				int timers;
-				int timere;
 				while (true)
 				{
 					APM_Settle.IMUSensorsParse();
@@ -40,7 +38,7 @@ int main(int argc, char* argv[])
 				{
 					APM_Settle.ControlParse();
 					APM_Settle.AttitudeUpdate();
-					usleep(4000);
+					usleep(6000);
 				}
 				});
 			std::thread OutputUpdate([&] {
@@ -60,7 +58,7 @@ int main(int argc, char* argv[])
 			cpu_set_t cpuset;
 			CPU_ZERO(&cpuset);
 			CPU_SET(3, &cpuset);
-			int rc = pthread_setaffinity_np(GryoUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
+			int rc1 = pthread_setaffinity_np(GryoUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
 			int rc2 = pthread_setaffinity_np(ESCUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
 			int rc3 = pthread_setaffinity_np(OutputUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
 			int rc4 = pthread_setaffinity_np(AltHoldUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
