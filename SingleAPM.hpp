@@ -137,6 +137,7 @@ namespace SingleAPMAPI
 		inline void IMUSensorsParse()
 		{
 			AF.Update_TimerStart = micros();
+			AF.UpdateNext_loopTime = AF.Update_TimerStart - AF.UpdateNext_TimerStart;
 			IMUSensorsDataRead();
 			//Gryo----------------------------------------------------------------------//
 			SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
@@ -326,10 +327,15 @@ namespace SingleAPMAPI
 			if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 				PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 
-			EF._uORB_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-			EF._uORB_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-			EF._uORB_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-			EF._uORB_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+			EF._Tmp_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+			EF._Tmp_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+			EF._Tmp_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+			EF._Tmp_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+
+			EF._uORB_A1_Speed = (700 * (((float)EF._Tmp_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
+			EF._uORB_A2_Speed = (700 * (((float)EF._Tmp_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
+			EF._uORB_B1_Speed = (700 * (((float)EF._Tmp_B1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
+			EF._uORB_B2_Speed = (700 * (((float)EF._Tmp_B2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
 		}
 
 		inline bool SaftyChecking()
@@ -419,11 +425,6 @@ namespace SingleAPMAPI
 
 		inline void ESCUpdate()
 		{
-			EF._uORB_A1_Speed = (700 * (((float)EF._uORB_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
-			EF._uORB_A2_Speed = (700 * (((float)EF._uORB_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
-			EF._uORB_B1_Speed = (700 * (((float)EF._uORB_B1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
-			EF._uORB_B2_Speed = (700 * (((float)EF._uORB_B2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
-
 			if (AF._flag_ForceFailed_Safe)
 			{
 				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
@@ -500,6 +501,7 @@ namespace SingleAPMAPI
 			std::cout << "SystemINFO:"
 				<< "    \n";
 			std::cout << " Update_loopTime:" << AF.Update_loopTime << "         \n";
+			std::cout << " UpdateNext_loopTime:" << AF.UpdateNext_loopTime << "         \n";
 			std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ForceFailed_Safe << "               \n";
 			std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 			std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
@@ -513,6 +515,7 @@ namespace SingleAPMAPI
 			if (AF.Update_loopTime > AF.Update_Freq_Time)
 				AF.Update_loopTime *= -1;
 			usleep(AF.Update_Freq_Time - AF.Update_loopTime);
+			AF.UpdateNext_TimerStart = micros();
 		}
 
 	protected:
@@ -526,6 +529,8 @@ namespace SingleAPMAPI
 			int Update_Freq_Time;
 			long int Update_TimerStart;
 			long int Update_TimerEnd;
+			long int UpdateNext_TimerStart;
+			long int UpdateNext_loopTime;
 			int Update_loopTime;
 
 			bool _flag_Error;
@@ -688,6 +693,10 @@ namespace SingleAPMAPI
 			int _uORB_A2_Speed;
 			int _uORB_B1_Speed;
 			int _uORB_B2_Speed;
+			int _Tmp_A1_Speed;
+			int _Tmp_A2_Speed;
+			int _Tmp_B1_Speed;
+			int _Tmp_B2_Speed;
 			int _flag_A1_Pin = 0;
 			int _flag_A2_Pin = 1;
 			int _flag_B1_Pin = 2;
