@@ -11,9 +11,9 @@
 #include <iomanip>
 #include <math.h>
 #include <linux/i2c-dev.h>
-#include "_thirdparty/pca9685.h"
-#include "_thirdparty/Sbus/src/RPiSbus.h"
-#include "_thirdparty/Ibus/src/RPiIBus.h"
+#include "../_thirdparty/pca9685.h"
+#include "../_thirdparty/Sbus/src/RPiSbus.h"
+#include "../_thirdparty/Ibus/src/RPiIBus.h"
 
 #ifdef USINGJSON
 #include <nlohmann/json.hpp>
