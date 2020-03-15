@@ -32,6 +32,7 @@ namespace SingleAPMAPI
 		int RC_Type;
 		int MPU9250_Type;
 		int Update_Freqeuncy;
+		int IMUFilter_Type;
 
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
@@ -63,6 +64,13 @@ namespace SingleAPMAPI
 		int _flag_RCIsReserv__Roll;
 		int _flag_RCIsReserv_Pitch;
 		int _flag_RCIsReserv___Yaw;
+	};
+
+	enum filterType
+	{
+		filter_none,
+		filter_pt1,
+		filter_Butterworth
 	};
 
 	class RPiSingleAPM
@@ -98,7 +106,7 @@ namespace SingleAPMAPI
 
 		void IMUSensorsDataRead();
 
-		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv);
+		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv , int filtertype);
 
 		struct SafyINFO
 		{
@@ -141,6 +149,7 @@ namespace SingleAPMAPI
 		{
 			//=========================MPU9250======//
 			int MPU9250_Type;
+			int IMUFilter_Type;
 			int _Tmp_MPU9250_Buffer[14];
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
 			unsigned char _Tmp_MPU9250_SPI_Buffer[28];
@@ -151,6 +160,9 @@ namespace SingleAPMAPI
 			long _uORB_MPU9250_G_X;
 			long _uORB_MPU9250_G_Y;
 			long _uORB_MPU9250_G_Z;
+			long _uORB_MPU9250_G_Fixed_X;
+			long _uORB_MPU9250_G_Fixed_Y;
+			long _uORB_MPU9250_G_Fixed_Z;
 
 			float _uORB_Accel__Roll = 0;
 			float _uORB_Accel_Pitch = 0;

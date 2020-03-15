@@ -76,12 +76,12 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 	SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 	SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
 	SF._uORB_MPU9250_G_Z -= SF._flag_MPU9250_G_Z_Cali;
-	IMUGryoFilter(SF._uORB_MPU9250_G_X, SF._uORB_MPU9250_G_X, SF._Tmp_Gryo_filer_Input_Quene_X, SF._Tmp_Gryo_filer_Output_Quene_X);
-	IMUGryoFilter(SF._uORB_MPU9250_G_Y, SF._uORB_MPU9250_G_Y, SF._Tmp_Gryo_filer_Input_Quene_Y, SF._Tmp_Gryo_filer_Output_Quene_Y);
-	IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z);
-	SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Y / DF._flag_MPU9250_LSB) * 0.3);
-	SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_X / DF._flag_MPU9250_LSB) * 0.3);
-	SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Z / DF._flag_MPU9250_LSB) * 0.3);
+	IMUGryoFilter(SF._uORB_MPU9250_G_X, SF._uORB_MPU9250_G_Fixed_X, SF._Tmp_Gryo_filer_Input_Quene_X, SF._Tmp_Gryo_filer_Output_Quene_X, SF.IMUFilter_Type);
+	IMUGryoFilter(SF._uORB_MPU9250_G_Y, SF._uORB_MPU9250_G_Fixed_Y, SF._Tmp_Gryo_filer_Input_Quene_Y, SF._Tmp_Gryo_filer_Output_Quene_Y, SF.IMUFilter_Type);
+	IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Fixed_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z, SF.IMUFilter_Type);
+	SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB) * 0.3);
+	SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB) * 0.3);
+	SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Fixed_Z / DF._flag_MPU9250_LSB) * 0.3);
 	//ACCEL---------------------------------------------------------------------//
 	SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
 	if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
@@ -91,10 +91,10 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 	SF._uORB_Accel__Roll -= SF._flag_Accel__Roll_Cali;
 	SF._uORB_Accel_Pitch -= SF._flag_Accel_Pitch_Cali;
 	//Gryo_MIX_ACCEL------------------------------------------------------------//
-	SF._uORB_Real_Pitch += SF._uORB_MPU9250_G_X / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
-	SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Y / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
-	SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
-	SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+	SF._uORB_Real_Pitch += SF._uORB_MPU9250_G_Fixed_X / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
+	SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Fixed_Y / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
+	SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+	SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 	if (!AF._flag_MPU9250_first_StartUp)
 	{
 		SF._uORB_Real_Pitch = SF._uORB_Real_Pitch * 0.9994 + SF._uORB_Accel_Pitch * 0.0006;
@@ -480,6 +480,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	//==========================================================Device Type=======/
 	RF.RC_Type = Configdata["Type_RC"].get<int>();
 	SF.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
+	SF.IMUFilter_Type = Configdata["Type_IMUFilter"].get<int>();
 	//==========================================================Controller cofig==/
 	RF._flag_RC_ARM_PWM_Value = Configdata["_flag_RC_ARM_PWM_Value"].get<int>();
 	RF._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();
@@ -520,6 +521,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 #else
 	SF.MPU9250_Type = APMInit.MPU9250_Type;
 	RF.RC_Type = APMInit.RC_Type;
+	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
 
 	AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
 	AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
@@ -606,13 +608,26 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
 	}
 }
 
-void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv)
+void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv, int filtertype)
 {
-	xv[0] = xv[1];
-	xv[1] = xv[2];
-	xv[2] = next_input_value / SF._flag_Filter2x50_Gain;
-	yv[0] = yv[1];
-	yv[1] = yv[2];
-	yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.1958157127 * yv[0]) + (0.3695273774 * yv[1]);
-	next_output_value = yv[2];
+	if (filtertype == filterType::filter_none)
+	{
+		next_output_value = next_input_value;
+	}
+	else if (filtertype == filterType::filter_pt1)
+	{
+		xv[0] = next_input_value;
+
+		//filter->state = filter->state + filter->k * (input - filter->state);
+	}
+	else if (filtertype == filterType::filter_Butterworth)
+	{
+		xv[0] = xv[1];
+		xv[1] = xv[2];
+		xv[2] = next_input_value / SF._flag_Filter2x50_Gain;
+		yv[0] = yv[1];
+		yv[1] = yv[2];
+		yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.1958157127 * yv[0]) + (0.3695273774 * yv[1]);
+		next_output_value = yv[2];
+	}
 };
