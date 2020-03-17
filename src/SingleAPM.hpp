@@ -24,6 +24,11 @@
 #define MPUIsSpi 1
 #define RCIsIbus 0
 #define RCIsSbus 1
+#define GryoFilterType_none 0
+#define GryoFilterType_pt1 1
+#define GryoFilterType_Butterworth 2
+#define MixFilterType_complementary 0
+#define MixFilterType_Kalman 1
 
 namespace SingleAPMAPI
 {
@@ -33,6 +38,7 @@ namespace SingleAPMAPI
 		int MPU9250_Type;
 		int Update_Freqeuncy;
 		int IMUFilter_Type;
+		int IMUMixFilter_Type;
 
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
@@ -64,13 +70,6 @@ namespace SingleAPMAPI
 		int _flag_RCIsReserv__Roll;
 		int _flag_RCIsReserv_Pitch;
 		int _flag_RCIsReserv___Yaw;
-	};
-
-	enum filterType
-	{
-		filter_none,
-		filter_pt1,
-		filter_Butterworth
 	};
 
 	class RPiSingleAPM
@@ -107,6 +106,8 @@ namespace SingleAPMAPI
 		void IMUSensorsDataRead();
 
 		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv , int filtertype);
+
+		void IMUMixFilter(float next_input_value_Gryo , float next_input_value_Accel, float& next_output_value, int filtertype);
 
 		struct SafyINFO
 		{
@@ -150,6 +151,7 @@ namespace SingleAPMAPI
 			//=========================MPU9250======//
 			int MPU9250_Type;
 			int IMUFilter_Type;
+			int IMUMixFilter_Type;
 			int _Tmp_MPU9250_Buffer[14];
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
 			unsigned char _Tmp_MPU9250_SPI_Buffer[28];

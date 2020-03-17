@@ -97,8 +97,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 	SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 	if (!AF._flag_MPU9250_first_StartUp)
 	{
-		SF._uORB_Real_Pitch = SF._uORB_Real_Pitch * 0.9994 + SF._uORB_Accel_Pitch * 0.0006;
-		SF._uORB_Real__Roll = SF._uORB_Real__Roll * 0.9994 + SF._uORB_Accel__Roll * 0.0006;
+		IMUMixFilter(SF._uORB_Real_Pitch, SF._uORB_Accel_Pitch, SF._uORB_Real_Pitch, SF.IMUMixFilter_Type);
+		IMUMixFilter(SF._uORB_Real__Roll, SF._uORB_Accel__Roll, SF._uORB_Real__Roll, SF.IMUMixFilter_Type);
 	}
 	else
 	{
@@ -451,6 +451,8 @@ void SingleAPMAPI::RPiSingleAPM::ClockingTimer()
 	AF.UpdateNext_TimerStart = micros();
 }
 
+//=-----------------------------------------------------------------------------------------==//
+
 void SingleAPMAPI::RPiSingleAPM::PID_Caculate(float inputData, float& outputData,
 	float& last_I_Data, float& last_D_Data,
 	float P_Gain, float I_Gain, float D_Gain, float I_Max)
@@ -481,6 +483,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	RF.RC_Type = Configdata["Type_RC"].get<int>();
 	SF.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
 	SF.IMUFilter_Type = Configdata["Type_IMUFilter"].get<int>();
+	SF.IMUMixFilter_Type = Configdata["Type_IMUMixFilter"].get<int>();
 	//==========================================================Controller cofig==/
 	RF._flag_RC_ARM_PWM_Value = Configdata["_flag_RC_ARM_PWM_Value"].get<int>();
 	RF._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();
@@ -522,6 +525,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF.MPU9250_Type = APMInit.MPU9250_Type;
 	RF.RC_Type = APMInit.RC_Type;
 	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
+	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
 
 	AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
 	AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
@@ -610,17 +614,15 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
 
 void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv, int filtertype)
 {
-	if (filtertype == filterType::filter_none)
+	if (filtertype == GryoFilterType_none)
 	{
 		next_output_value = next_input_value;
 	}
-	else if (filtertype == filterType::filter_pt1)
+	else if (filtertype == GryoFilterType_pt1)
 	{
-		xv[0] = next_input_value;
 
-		//filter->state = filter->state + filter->k * (input - filter->state);
 	}
-	else if (filtertype == filterType::filter_Butterworth)
+	else if (filtertype == GryoFilterType_Butterworth)
 	{
 		xv[0] = xv[1];
 		xv[1] = xv[2];
@@ -631,3 +633,16 @@ void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next
 		next_output_value = yv[2];
 	}
 };
+
+void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(float next_input_value_Gryo, float next_input_value_Accel, float& next_output_value, int filtertype)
+{
+	if (filtertype == MixFilterType_complementary)
+	{
+		next_output_value = next_input_value_Gryo * 0.9994 + next_input_value_Accel * 0.0006;
+	}
+	else if (filtertype == MixFilterType_Kalman)
+	{
+
+	}
+}
+
