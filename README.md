@@ -21,8 +21,14 @@ at least you need :
  - MPU6050 to use for Auto-Leveing the copter
 
  - Remote receiver now support IBUS , in future will fully support SBUS , you can use IBUS perfect
-
+ 
+## Build Test Need
+ - install nlohamnnJSON
+ - using cmake build the code
+ - move APMconfig.json to /etc/
+ - cd build and run ./SingleAPM -r
+ 
+*\* check RC value and change value at /etc/APMconfig.json , IBUS value is diffrent from SBUS , if no ckeck , it won armed
 
 ### Other
-
-*\* Althought the code now can fly , but now I have no time to write more , about 2020-1 will be well done*
+ none
