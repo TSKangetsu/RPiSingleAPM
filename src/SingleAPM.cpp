@@ -79,6 +79,11 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 	IMUGryoFilter(SF._uORB_MPU9250_G_X, SF._uORB_MPU9250_G_Fixed_X, SF._Tmp_Gryo_filer_Input_Quene_X, SF._Tmp_Gryo_filer_Output_Quene_X, SF.IMUFilter_Type);
 	IMUGryoFilter(SF._uORB_MPU9250_G_Y, SF._uORB_MPU9250_G_Fixed_Y, SF._Tmp_Gryo_filer_Input_Quene_Y, SF._Tmp_Gryo_filer_Output_Quene_Y, SF.IMUFilter_Type);
 	IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Fixed_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z, SF.IMUFilter_Type);
+	SF._Tmp_Gryo_RTSpeed_Pitch = (SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB) / AF.Update_Freqeuncy;
+	SF._Tmp_Gryo_RTSpeed__Roll = (SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB) / AF.Update_Freqeuncy;
+	SF._uORB_Real_Pitch += SF._Tmp_Gryo_RTSpeed_Pitch;
+	SF._uORB_Real__Roll += SF._Tmp_Gryo_RTSpeed__Roll;
+	//GryoTrue------------------------------------------------------------------//
 	SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB) * 0.3);
 	SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB) * 0.3);
 	SF._uORB_Gryo___Yaw = (SF._uORB_Gryo___Yaw * 0.7) + ((SF._uORB_MPU9250_G_Fixed_Z / DF._flag_MPU9250_LSB) * 0.3);
@@ -91,14 +96,10 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 	SF._uORB_Accel__Roll -= SF._flag_Accel__Roll_Cali;
 	SF._uORB_Accel_Pitch -= SF._flag_Accel_Pitch_Cali;
 	//Gryo_MIX_ACCEL------------------------------------------------------------//
-	SF._uORB_Real_Pitch += SF._uORB_MPU9250_G_Fixed_X / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
-	SF._uORB_Real__Roll += SF._uORB_MPU9250_G_Fixed_Y / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB;
-	SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
-	SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 	if (!AF._flag_MPU9250_first_StartUp)
 	{
-		IMUMixFilter(SF._uORB_Real_Pitch, SF._uORB_Accel_Pitch, SF._uORB_Real_Pitch, SF.IMUMixFilter_Type);
-		IMUMixFilter(SF._uORB_Real__Roll, SF._uORB_Accel__Roll, SF._uORB_Real__Roll, SF.IMUMixFilter_Type);
+		IMUMixFilter(SF._uORB_Real_Pitch, SF._uORB_Accel_Pitch, SF._uORB_Real_Pitch, SF._Tmp_Gryo_RTSpeed_Pitch, SF.IMUMixFilter_Type);
+		IMUMixFilter(SF._uORB_Real__Roll, SF._uORB_Accel__Roll, SF._Tmp_Gryo_RTSpeed__Roll, SF._uORB_Real__Roll, SF.IMUMixFilter_Type);
 	}
 	else
 	{
@@ -106,6 +107,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 		SF._uORB_Real__Roll = SF._uORB_Accel__Roll;
 		AF._flag_MPU9250_first_StartUp = false;
 	}
+	SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+	SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 }
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsParse()
@@ -314,7 +317,7 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 	if (AF._flag_ForceFailed_Safe == true)
 	{
 		AF._flag_MS5611_firstStartUp = true;
-		AF._flag_MPU9250_first_StartUp = true;
+		//AF._flag_MPU9250_first_StartUp = true;
 		PF._uORB_PID_D_Last_Value__Roll = 0;
 		PF._uORB_PID_D_Last_Value_Pitch = 0;
 		PF._uORB_PID_D_Last_Value___Yaw = 0;
@@ -634,15 +637,60 @@ void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next
 	}
 };
 
-void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(float next_input_value_Gryo, float next_input_value_Accel, float& next_output_value, int filtertype)
+void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(float next_input_value_Gryo, float next_input_value_Accel,
+	float next_input_value_speed, float& next_output_value, int filtertype)
 {
-	if (filtertype == MixFilterType_complementary)
+	if (filtertype == MixFilterType_traditional)
 	{
-		next_output_value = next_input_value_Gryo * 0.9994 + next_input_value_Accel * 0.0006;
+		next_output_value = next_input_value_Gryo * 0.9996 + next_input_value_Accel * 0.0004;
 	}
 	else if (filtertype == MixFilterType_Kalman)
 	{
+		//------------------------------
+		static float angle, angle_dot;
+		const float Q_angle = 0.000001, Q_gyro = 0.0001, R_angle = 0.5, dt = 0.004;
+		static float P[2][2] = {
+						   { 1, 0 },
+						   { 0, 1 }
+		};
+		static float Pdot[4] = { 0, 0, 0, 0 };
+		const uint8_t C_0 = 1;
+		static float q_bias, angle_err, PCt_0, PCt_1, E, K_0, K_1, t_0, t_1;
+		//------------------------------
+		angle += (next_input_value_speed - q_bias) * dt;
 
+		Pdot[0] = Q_angle - P[0][1] - P[1][0];
+		Pdot[1] = -P[1][1];
+		Pdot[2] = -P[1][1];
+		Pdot[3] = Q_gyro;
+
+		P[0][0] += Pdot[0] * dt;
+		P[0][1] += Pdot[1] * dt;
+		P[1][0] += Pdot[2] * dt;
+		P[1][1] += Pdot[3] * dt;
+
+		angle_err = next_input_value_Accel - angle;
+
+		PCt_0 = C_0 * P[0][0];
+		PCt_1 = C_0 * P[1][0];
+
+		E = R_angle + C_0 * PCt_0;
+
+		K_0 = PCt_0 / E;
+		K_1 = PCt_1 / E;
+
+		t_0 = PCt_0;
+		t_1 = C_0 * P[0][1];
+
+		P[0][0] -= K_0 * t_0;
+		P[0][1] -= K_0 * t_1;
+		P[1][0] -= K_1 * t_0;
+		P[1][1] -= K_1 * t_1;
+
+		angle += K_0 * angle_err;
+		q_bias += K_1 * angle_err;
+		angle_dot = next_input_value_speed - q_bias;
+
+		next_output_value = angle;
 	}
 }
-

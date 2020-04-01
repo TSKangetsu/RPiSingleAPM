@@ -27,7 +27,7 @@
 #define GryoFilterType_none 0
 #define GryoFilterType_pt1 1
 #define GryoFilterType_Butterworth 2
-#define MixFilterType_complementary 0
+#define MixFilterType_traditional 0
 #define MixFilterType_Kalman 1
 
 namespace SingleAPMAPI
@@ -105,9 +105,9 @@ namespace SingleAPMAPI
 
 		void IMUSensorsDataRead();
 
-		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv , int filtertype);
+		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv, int filtertype);
 
-		void IMUMixFilter(float next_input_value_Gryo , float next_input_value_Accel, float& next_output_value, int filtertype);
+		void IMUMixFilter(float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float& next_output_value, int filtertype);
 
 		struct SafyINFO
 		{
@@ -174,6 +174,8 @@ namespace SingleAPMAPI
 			float _uORB_Real_Pitch = 0;
 			float _uORB_Real__Roll = 0;
 
+			float _Tmp_Gryo_RTSpeed__Roll;
+			float _Tmp_Gryo_RTSpeed_Pitch;
 			unsigned long _Tmp_MPU9250_G_X;
 			unsigned long _Tmp_MPU9250_G_Y;
 			unsigned long _Tmp_MPU9250_G_Z;
@@ -205,7 +207,6 @@ namespace SingleAPMAPI
 			long _Tmp_Acce_filer_Output_Quene_Z[5] = { 0, 0, 0, 0, 0 };
 
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
-			float _flag_Filter4x25_Gain = 2.072820954e+02;
 			//=========================MS5611======//
 			double _flag_MS5611_StartUp_Pressure;
 			uint8_t _Tmp_MS5611_Data[3] = { 0, 0, 0 };
