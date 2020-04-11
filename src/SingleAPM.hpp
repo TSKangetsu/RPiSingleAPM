@@ -13,6 +13,7 @@
 #include <math.h>
 #include <linux/i2c-dev.h>
 #include "../_thirdparty/pca9685.h"
+#include "../_thirdparty/Kalman.h"
 #include "../_thirdparty/Sbus/src/RPiSbus.h"
 #include "../_thirdparty/Ibus/src/RPiIBus.h"
 
@@ -96,6 +97,8 @@ namespace SingleAPMAPI
 	protected:
 		Sbus* SbusInit;
 		Ibus* IbusInit;
+		Kalman* Kal_Pitch;
+		Kalman* Kal__Roll;
 
 		void PID_Caculate(float inputData, float& outputData,
 			float& last_I_Data, float& last_D_Data,
@@ -107,7 +110,7 @@ namespace SingleAPMAPI
 
 		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv, int filtertype);
 
-		void IMUMixFilter(float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float& next_output_value, int filtertype);
+		void IMUMixFilter(Kalman* kal, float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float& next_output_value, int filtertype);
 
 		struct SafyINFO
 		{
