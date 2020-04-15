@@ -13,6 +13,7 @@
 #include <math.h>
 #include <linux/i2c-dev.h>
 #include "../_thirdparty/pca9685.h"
+#include "../_thirdparty/Kalman.h"
 #include "../_thirdparty/Sbus/src/RPiSbus.h"
 #include "../_thirdparty/Ibus/src/RPiIBus.h"
 
@@ -24,6 +25,11 @@
 #define MPUIsSpi 1
 #define RCIsIbus 0
 #define RCIsSbus 1
+#define GryoFilterType_none 0
+#define GryoFilterType_pt1 1
+#define GryoFilterType_Butterworth 2
+#define MixFilterType_traditional 0
+#define MixFilterType_Kalman 1
 
 namespace SingleAPMAPI
 {
@@ -32,6 +38,8 @@ namespace SingleAPMAPI
 		int RC_Type;
 		int MPU9250_Type;
 		int Update_Freqeuncy;
+		int IMUFilter_Type;
+		int IMUMixFilter_Type;
 
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
@@ -89,6 +97,8 @@ namespace SingleAPMAPI
 	protected:
 		Sbus* SbusInit;
 		Ibus* IbusInit;
+		Kalman* Kal_Pitch;
+		Kalman* Kal__Roll;
 
 		void PID_Caculate(float inputData, float& outputData,
 			float& last_I_Data, float& last_D_Data,
@@ -98,7 +108,9 @@ namespace SingleAPMAPI
 
 		void IMUSensorsDataRead();
 
-		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv);
+		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv, int filtertype);
+
+		void IMUMixFilter(Kalman* kal, float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float& next_output_value, int filtertype);
 
 		struct SafyINFO
 		{
@@ -141,6 +153,8 @@ namespace SingleAPMAPI
 		{
 			//=========================MPU9250======//
 			int MPU9250_Type;
+			int IMUFilter_Type;
+			int IMUMixFilter_Type;
 			int _Tmp_MPU9250_Buffer[14];
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
 			unsigned char _Tmp_MPU9250_SPI_Buffer[28];
@@ -151,6 +165,9 @@ namespace SingleAPMAPI
 			long _uORB_MPU9250_G_X;
 			long _uORB_MPU9250_G_Y;
 			long _uORB_MPU9250_G_Z;
+			long _uORB_MPU9250_G_Fixed_X;
+			long _uORB_MPU9250_G_Fixed_Y;
+			long _uORB_MPU9250_G_Fixed_Z;
 
 			float _uORB_Accel__Roll = 0;
 			float _uORB_Accel_Pitch = 0;
@@ -160,6 +177,8 @@ namespace SingleAPMAPI
 			float _uORB_Real_Pitch = 0;
 			float _uORB_Real__Roll = 0;
 
+			float _Tmp_Gryo_RTSpeed__Roll;
+			float _Tmp_Gryo_RTSpeed_Pitch;
 			unsigned long _Tmp_MPU9250_G_X;
 			unsigned long _Tmp_MPU9250_G_Y;
 			unsigned long _Tmp_MPU9250_G_Z;
@@ -191,7 +210,6 @@ namespace SingleAPMAPI
 			long _Tmp_Acce_filer_Output_Quene_Z[5] = { 0, 0, 0, 0, 0 };
 
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
-			float _flag_Filter4x25_Gain = 2.072820954e+02;
 			//=========================MS5611======//
 			double _flag_MS5611_StartUp_Pressure;
 			uint8_t _Tmp_MS5611_Data[3] = { 0, 0, 0 };

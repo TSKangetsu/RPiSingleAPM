@@ -27,7 +27,7 @@ at least you need :
  - using cmake build the code
  - move APMconfig.json to /etc/
  - cd build and run ./SingleAPM -r
- 
+
 *\* check RC value and change value at /etc/APMconfig.json , IBUS value is diffrent from SBUS , if no ckeck , it won armed*
 
 ### Other
