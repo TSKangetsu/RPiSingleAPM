@@ -328,7 +328,7 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 	if (AF._flag_ForceFailed_Safe == true)
 	{
 		AF._flag_MS5611_firstStartUp = true;
-		//AF._flag_MPU9250_first_StartUp = true;
+		AF._flag_MPU9250_first_StartUp = true;
 		PF._uORB_PID_D_Last_Value__Roll = 0;
 		PF._uORB_PID_D_Last_Value_Pitch = 0;
 		PF._uORB_PID_D_Last_Value___Yaw = 0;
@@ -657,6 +657,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman* kal, float next_input_valu
 	}
 	else if (filtertype == MixFilterType_Kalman)
 	{
-		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 0.004);
+		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 1.f/(float)AF.Update_Freqeuncy);
 	}
 }

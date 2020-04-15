@@ -16,54 +16,6 @@ int main(int argc, char* argv[])
 			break;
 		case 't':
 		{
-			RPiSingleAPM APM_Settle;
-			APM_Settle.RPiSingleAPMInit(setting);
-			std::thread GryoUpdate([&] {
-				while (true)
-				{
-					APM_Settle.IMUSensorsParse();
-					APM_Settle.SaftyChecking();
-					APM_Settle.ClockingTimer();
-				}
-				});
-			std::thread ESCUpdate([&] {
-				while (true)
-				{
-					APM_Settle.ESCUpdate();
-					usleep(6000);
-				}
-				});				
-			std::thread ControlUpdate([&] {
-				while (true)
-				{
-					APM_Settle.ControlParse();
-					APM_Settle.AttitudeUpdate();
-					usleep(6000);
-				}
-				});
-			std::thread OutputUpdate([&] {
-				while (true)
-				{
-					APM_Settle.DebugOutPut();
-					usleep(8000);
-				}
-				});
-			std::thread AltHoldUpdate([&] {
-				while (true)
-				{
-					APM_Settle.AltholdSensorsParse();
-					usleep(4000);
-				}
-				});
-			cpu_set_t cpuset;
-			CPU_ZERO(&cpuset);
-			CPU_SET(3, &cpuset);
-			int rc1 = pthread_setaffinity_np(GryoUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
-			int rc2 = pthread_setaffinity_np(ESCUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
-			int rc3 = pthread_setaffinity_np(OutputUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
-			int rc4 = pthread_setaffinity_np(AltHoldUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
-			int rc5 = pthread_setaffinity_np(ControlUpdate.native_handle(), sizeof(cpu_set_t), &cpuset);
-			GryoUpdate.join();
 		}
 		break;
 		case 'r':
