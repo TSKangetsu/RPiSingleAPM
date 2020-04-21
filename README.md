@@ -70,10 +70,8 @@ Move SingleAPM executable file within build in /usr/bin/, and set the permission
 ## 2.Configuration instructions of TestModule:
 ![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/TestModule%E7%9A%84%E9%A3%9E%E8%A1%8C%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E.png?raw=true)
 1.	Type_MPU9250: 
-如果连接树莓派的mpu9250 或mpu6000系传感器是SPI连接，则选择1，I2C为0
 If the mpu9250 or mpu6000 sensor connected to raspberry PI is an SPI connection, select 1, 
 Otherwise(I2C) select 0.
-**注意**：树莓派的I2C配置需要更改为高速模式）
 **Attention**：the I2C configuration of raspberry pie needs to be changed to high-speed mode）
 
 **Changing the default I2C Speed**
