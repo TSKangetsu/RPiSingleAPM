@@ -67,7 +67,7 @@ move APMconfig.json within the project to /etc
 Move SingleAPM executable file within build in /usr/bin/, and set the permission as 755
 - **execute SingleAPM -r**
 
-## 2.Configuration instructions of TestModule:
+## Configuration instructions of TestModule:
 ![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/TestModule%E7%9A%84%E9%A3%9E%E8%A1%8C%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E.png?raw=true)
 1.	Type_MPU9250: 
 If the mpu9250 or mpu6000 sensor connected to raspberry PI is an SPI connection, select 1, 
