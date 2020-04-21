@@ -94,12 +94,14 @@ It can't be changed now，If you change this item, you may cause a personal acci
 _flag_Accel__Roll_Cali:
 飞行器加速度传感器的水平修正值，需自行调整
 Horizontal correction of aircraft acceleration sensor，it needs to be adjusted
-8. PID相关：Pitch roll yaw的PID相关数值，需要自行调试至稳定，不建议更改max__value和level_Max
-PID related：The PID values of Pitch roll yaw need to be adjusted to be stable. It is not recommended to change the max_arbitration value and level_Max
+8.
 ![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/PID%E7%9B%B8%E5%85%B3.png?raw=true)
+PID相关：Pitch roll yaw的PID相关数值，需要自行调试至稳定，不建议更改max__value和level_Max
+PID related：The PID values of Pitch roll yaw need to be adjusted to be stable. It is not recommended to change the max_arbitration value and level_Max
 
-9. 遥控器相关The remote control related：
+9. 
 ![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/%E9%81%A5%E6%8E%A7%E5%99%A8%E7%9B%B8%E5%85%B3.png?raw=true)
+遥控器相关The remote control related：
 **注意事项Matters needing attention：**
 ibus和sbus的pwm值有许不同，需要自行调整，否则无法飞行或者失控危及人身安全，解锁飞控的通道在遥控器5通道，请自行调整。Reserv代表遥控方向反转 ，只能是1和-1 ，若更改为其他数值则会危及人身安全，需要注意。
 The PWM values of ibus and sbus have some different, it need to be adjusted by yourself, otherwise they cannot fly or lose control and put Personal safety at risk. The channel of flight control is unlocked in channel 5 of the remote control, please adjust by yourself
