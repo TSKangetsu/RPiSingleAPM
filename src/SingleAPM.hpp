@@ -33,6 +33,7 @@
 
 namespace SingleAPMAPI
 {
+	//if you do not use json,you must full all the APMSettings with correct data, like APMconfig.json,and disable 'add_definitions(-DUSINGJSON)' in cmakelists.txt
 	struct APMSettinngs
 	{
 		int RC_Type;
@@ -76,22 +77,31 @@ namespace SingleAPMAPI
 	class RPiSingleAPM
 	{
 	public:
+		//Using for init all device,please init at after esc shutoff,also caust groy recalibrating
 		void RPiSingleAPMInit(APMSettinngs APMInit);
 
+		//Reading and filter IMUSensor,Data is at SensorsINFO(SF),should notice AF.Update_Freq_Time and AF.Update_Freqeuncy *after this must run void ClockingTimer();
 		void IMUSensorsParse();
 
+		//AltholdSensors in this branch only for look now,can't run this in sensors thread!
 		void AltholdSensorsParse();
 
+		//Read and Parse RC recivcer,Data is at RCINFO(RF)
 		void ControlParse();
 
+		//This is untested function,only for show data,do not put in to IMUSensor thread
 		void AttitudeUpdate();
 
+		//Check RC and IMUsensor data is comfirm,and controll the esc up and dowm
 		void SaftyChecking();
 
+		//write pwm signal to esc
 		void ESCUpdate();
 
+		//display status data on console
 		void DebugOutPut();
 
+		//ClockingTimer must run every IMUSensorsParse() times
 		void ClockingTimer();
 
 	protected:
