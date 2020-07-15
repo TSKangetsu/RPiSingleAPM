@@ -8,7 +8,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	AF.RC_Lose_Clocking = 0;
 	AF._flag_MPU9250_first_StartUp = true;
 	AF._flag_MS5611_firstStartUp = true;
-	AF._flag_ForceFailed_Safe = true;
+	AF._flag_ESC_ARMED = true;
 	ConfigReader(APMInit);
 
 	if (DF.PCA9658_fd == -1)
@@ -190,8 +190,28 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsParse()
 	SF._uORB_MS5611_Altitude = 44330.0f * (1.0f - pow((double)SF._uORB_MS5611_Pressure / (double)SF._flag_MS5611_StartUp_Pressure, 0.1902949f)) * 100.0;
 }
 
+void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserControlInputType UserInput)
+{
+	AF._flag_UserInput_Enable = EnableUserInput;
+	if (UserInput._Pitch_Raw_Pre > 0)
+		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Pitch_Raw_Pre / 2 * RF._flag_RCIsReserv_Pitch;
+	else if (UserInput._Pitch_Raw_Pre <= 0)
+		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Pitch_Raw_Pre / 2 * RF._flag_RCIsReserv_Pitch;
+
+	if (UserInput._Roll_Raw__Pre > 0)
+		RF._uORB_RC_Out__Roll = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Roll_Raw__Pre / 2 * RF._flag_RCIsReserv__Roll;
+	else if (UserInput._Roll_Raw__Pre <= 0)
+		RF._uORB_RC_Out__Roll = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Roll_Raw__Pre / 2 * RF._flag_RCIsReserv__Roll;
+
+	if (UserInput._Yaw_Raw___Pre > 0)
+		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Yaw_Raw___Pre / 2 * RF._flag_RCIsReserv___Yaw;
+	else if (UserInput._Yaw_Raw___Pre <= 0)
+		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Yaw_Raw___Pre / 2 * RF._flag_RCIsReserv___Yaw;
+}
+
 void SingleAPMAPI::RPiSingleAPM::ControlParse()
 {
+
 	if (RF.RC_Type == RCIsSbus)
 	{
 		if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
@@ -223,24 +243,27 @@ void SingleAPMAPI::RPiSingleAPM::ControlParse()
 		}
 	}
 
-	if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
-		RF._uORB_RC_Out__Roll = 0;
-	else
-		RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
-	//
-	if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
-		RF._uORB_RC_Out_Pitch = 0;
-	else
-		RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * -1 * RF._flag_RCIsReserv_Pitch;
-	//
-	RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
-	//
-	if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
-		RF._uORB_RC_Out___Yaw = 0;
-	else
-		RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
-	//
-	RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+	if (!AF._flag_UserInput_Enable)
+	{
+		if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+			RF._uORB_RC_Out__Roll = 0;
+		else
+			RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
+		//
+		if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
+			RF._uORB_RC_Out_Pitch = 0;
+		else
+			RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * -1 * RF._flag_RCIsReserv_Pitch;
+		//
+		RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
+		//
+		if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
+			RF._uORB_RC_Out___Yaw = 0;
+		else
+			RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
+		//
+		RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
@@ -296,26 +319,26 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 			{
 				if (AF._flag_StartUP_Protect == false)
 				{
-					AF._flag_ForceFailed_Safe = false;
+					AF._flag_ESC_ARMED = false;
 				}
 			}
 			else
 			{
-				AF._flag_ForceFailed_Safe = true;
+				AF._flag_ESC_ARMED = true;
 			}
 		}
 	}
 	else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
 	{
 		AF._flag_StartUP_Protect = false;
-		AF._flag_ForceFailed_Safe = true;
+		AF._flag_ESC_ARMED = true;
 		AF._flag_Error = false;
 	}
 	else if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 20)
 	{
 		if (AF._flag_Error == true)
 		{
-			AF._flag_ForceFailed_Safe = true;
+			AF._flag_ESC_ARMED = true;
 		}
 	}
 	if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
@@ -325,7 +348,7 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 			AF._flag_StartUP_Protect = true;
 		}
 	}
-	if (AF._flag_ForceFailed_Safe == true)
+	if (AF._flag_ESC_ARMED == true)
 	{
 		AF._flag_MS5611_firstStartUp = true;
 		AF._flag_MPU9250_first_StartUp = true;
@@ -372,14 +395,14 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 
 void SingleAPMAPI::RPiSingleAPM::ESCUpdate()
 {
-	if (AF._flag_ForceFailed_Safe)
+	if (AF._flag_ESC_ARMED)
 	{
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
 	}
-	if (!AF._flag_ForceFailed_Safe)
+	if (!AF._flag_ESC_ARMED)
 	{
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0,
 			EF._uORB_A1_Speed);
@@ -449,7 +472,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		<< "    \n";
 	std::cout << " Update_loopTime:" << AF.Update_loopTime << "         \n";
 	std::cout << " UpdateNext_loopTime:" << AF.UpdateNext_loopTime << "         \n";
-	std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ForceFailed_Safe << "               \n";
+	std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
@@ -657,6 +680,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman* kal, float next_input_valu
 	}
 	else if (filtertype == MixFilterType_Kalman)
 	{
-		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 1.f/(float)AF.Update_Freqeuncy);
+		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 1.f / (float)AF.Update_Freqeuncy);
 	}
 }

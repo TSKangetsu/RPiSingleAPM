@@ -6,6 +6,7 @@ int main(int argc, char* argv[])
 	system("clear");
 	int argvs;
 	APMSettinngs setting;
+	UserControlInputType UserInput;
 	while ((argvs = getopt(argc, argv, "vtcrh")) != -1)
 	{
 		switch (argvs)
@@ -21,6 +22,9 @@ int main(int argc, char* argv[])
 		case 'r':
 		{
 			RPiSingleAPM APM_Settle;
+			UserInput._Pitch_Raw_Pre = 1;
+			UserInput._Roll_Raw__Pre = -1;
+			UserInput._Yaw_Raw___Pre = 0;
 			APM_Settle.RPiSingleAPMInit(setting);
 			std::thread AltHoldModeMain([&] {
 				while (true)
@@ -32,6 +36,7 @@ int main(int argc, char* argv[])
 				while (true)
 				{
 					APM_Settle.IMUSensorsParse();
+					APM_Settle.ControlUserInput(false, UserInput);
 					APM_Settle.ControlParse();
 					APM_Settle.AttitudeUpdate();
 					APM_Settle.SaftyChecking();

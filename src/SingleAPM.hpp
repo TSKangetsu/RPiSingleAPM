@@ -74,6 +74,15 @@ namespace SingleAPMAPI
 		int _flag_RCIsReserv___Yaw;
 	};
 
+	struct UserControlInputType
+	{
+		bool  _ESC_ARMED;
+		float _Yaw_Raw___Pre;
+		float _Roll_Raw__Pre;
+		float _Pitch_Raw_Pre;
+		float _Alttitude_Set;
+	};
+
 	class RPiSingleAPM
 	{
 	public:
@@ -85,6 +94,9 @@ namespace SingleAPMAPI
 
 		//AltholdSensors in this branch only for look now,can't run this in sensors thread!
 		void AltholdSensorsParse();
+
+		//
+		void ControlUserInput(bool EnableUserInput, UserControlInputType UserInput);
 
 		//Read and Parse RC recivcer,Data is at RCINFO(RF)
 		void ControlParse();
@@ -138,8 +150,9 @@ namespace SingleAPMAPI
 			bool _flag_MPU9250_first_StartUp;
 			bool _flag_MS5611_firstStartUp;
 			bool _flag_RC_Disconnected;
-			bool _flag_ForceFailed_Safe;
+			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
+			bool _flag_UserInput_Enable;
 		} AF;
 
 		struct DeviceINFO
