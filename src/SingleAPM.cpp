@@ -124,89 +124,26 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsParse()
 {
-	if (AF._flag_MS5611_firstStartUp)
-	{
-		char Reset = 0x1E;
-		DF.MS5611_fd = open("/dev/i2c-1", O_RDWR);
-		ioctl(DF.MS5611_fd, I2C_SLAVE, DF.MS5611_ADDR);
-		write(DF.MS5611_fd, &Reset, 1);
-		usleep(10000);
-		for (size_t i = 0; i < 7; i++)
-		{
-			char PROMRead = (0xA0 + (i * 2));
-			write(DF.MS5611_fd, &PROMRead, 1);
-			read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 2);
-			SF._flag_MS5611_PromData[i] = (unsigned int)(SF._Tmp_MS5611_Data[0] * 256 + SF._Tmp_MS5611_Data[1]);
-			usleep(1000);
-		};
-	}
-	char ZERO = 0x0;
-	char DA = 0x48;
-	char DB = 0x58;
-	//======================================================//
-	write(DF.MS5611_fd, &DA, 1);
-	usleep(10000);
-	write(DF.MS5611_fd, &ZERO, 1);
-	read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
-	SF._uORB_MS5611_Data[0] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
-	//======================================================//
-	write(DF.MS5611_fd, &DB, 1);
-	usleep(10000);
-	write(DF.MS5611_fd, &ZERO, 1);
-	read(DF.MS5611_fd, SF._Tmp_MS5611_Data, 3);
-	SF._uORB_MS5611_Data[1] = SF._Tmp_MS5611_Data[0] * (unsigned long)65536 + SF._Tmp_MS5611_Data[1] * (unsigned long)256 + SF._Tmp_MS5611_Data[2];
-	//======================================================//
-	SF._Tmp_MS5611_dT = SF._uORB_MS5611_Data[1] - (uint32_t)SF._flag_MS5611_PromData[5] * pow(2, 8);
-	SF._Tmp_MS5611_Temprture = (2000 + (SF._Tmp_MS5611_dT * (int64_t)SF._flag_MS5611_PromData[5] / pow(2, 23)));
 
-	SF._Tmp_MS5611_Offset = (int64_t)SF._flag_MS5611_PromData[2] * pow(2, 16) + (SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[4]) / pow(2, 7);
-	SF._Tmp_MS5611_Sensitfy = (int32_t)SF._flag_MS5611_PromData[1] * pow(2, 15) + SF._Tmp_MS5611_dT * SF._flag_MS5611_PromData[3] / pow(2, 8);
-	if (SF._Tmp_MS5611_Temprture < 2000)
-	{
-		int32_t T1 = 0;
-		int64_t OFF1 = 0;
-		int64_t SENS1 = 0;
-		T1 = pow((double)SF._Tmp_MS5611_dT, 2) / 2147483648;
-		OFF1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 2;
-		SENS1 = 5 * pow(((double)SF._Tmp_MS5611_Temprture - 2000), 2) / 4;
-		if (SF._Tmp_MS5611_Temprture < -1500)
-		{
-			OFF1 = OFF1 + 7 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2);
-			SENS1 = SENS1 + 11 * pow(((double)SF._Tmp_MS5611_Temprture + 1500), 2) / 2;
-		}
-		SF._Tmp_MS5611_Temprture -= T1;
-		SF._Tmp_MS5611_Offset -= OFF1;
-		SF._Tmp_MS5611_Sensitfy -= SENS1;
-	}
-	SF._Tmp_MS5611_Presure = ((((int64_t)SF._uORB_MS5611_Data[0] * SF._Tmp_MS5611_Sensitfy) / pow(2, 21) - SF._Tmp_MS5611_Offset) / pow(2, 15));
-
-	SF._uORB_MS5611_Pressure = (double)SF._Tmp_MS5611_Presure / (double)100.0;
-	SF._uORB_MS5611_Temprture = (double)SF._Tmp_MS5611_Temprture / 100.0;
-	if (AF._flag_MS5611_firstStartUp)
-	{
-		SF._flag_MS5611_StartUp_Pressure = SF._uORB_MS5611_Pressure;
-		AF._flag_MS5611_firstStartUp = false;
-	}
-	SF._uORB_MS5611_Altitude = 44330.0f * (1.0f - pow((double)SF._uORB_MS5611_Pressure / (double)SF._flag_MS5611_StartUp_Pressure, 0.1902949f)) * 100.0;
 }
 
 void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserControlInputType UserInput)
 {
 	AF._flag_UserInput_Enable = EnableUserInput;
-	if (UserInput._Pitch_Raw_Pre > 0)
-		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Pitch_Raw_Pre / 2 * RF._flag_RCIsReserv_Pitch;
-	else if (UserInput._Pitch_Raw_Pre <= 0)
-		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Pitch_Raw_Pre / 2 * RF._flag_RCIsReserv_Pitch;
+	if (UserInput._RawPre__Roll > 0)
+		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
+	else if (UserInput._RawPre__Roll <= 0)
+		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
 
-	if (UserInput._Roll_Raw__Pre > 0)
-		RF._uORB_RC_Out__Roll = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Roll_Raw__Pre / 2 * RF._flag_RCIsReserv__Roll;
-	else if (UserInput._Roll_Raw__Pre <= 0)
-		RF._uORB_RC_Out__Roll = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Roll_Raw__Pre / 2 * RF._flag_RCIsReserv__Roll;
+	if (UserInput._RawPre_Pitch > 0)
+		RF._uORB_RC_Out__Roll = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
+	else if (UserInput._RawPre_Pitch <= 0)
+		RF._uORB_RC_Out__Roll = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
 
-	if (UserInput._Yaw_Raw___Pre > 0)
-		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Yaw_Raw___Pre / 2 * RF._flag_RCIsReserv___Yaw;
-	else if (UserInput._Yaw_Raw___Pre <= 0)
-		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._Yaw_Raw___Pre / 2 * RF._flag_RCIsReserv___Yaw;
+	if (UserInput._RawPre___Yaw > 0)
+		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
+	else if (UserInput._RawPre___Yaw <= 0)
+		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
 }
 
 void SingleAPMAPI::RPiSingleAPM::ControlParse()
@@ -253,17 +190,17 @@ void SingleAPMAPI::RPiSingleAPM::ControlParse()
 		if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
 			RF._uORB_RC_Out_Pitch = 0;
 		else
-			RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * -1 * RF._flag_RCIsReserv_Pitch;
-		//
-		RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
+			RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv_Pitch;
 		//
 		if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
 			RF._uORB_RC_Out___Yaw = 0;
 		else
 			RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
-		//
-		RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
 	}
+	//
+	RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
+	//
+	RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
@@ -443,11 +380,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		<< " RealRoll: " << (int)SF._uORB_Real__Roll
 		<< "                        "
 		<< "\n\n";
-
-	std::cout << "Alttitude: " << SF._uORB_MS5611_Altitude << "                                 \n";
-	std::cout << "Presure: " << SF._uORB_MS5611_Pressure << "                                   \n";
-	std::cout << "Temprture: " << SF._uORB_MS5611_Temprture << "                                \n";
-	std::cout << "MS5611Data:" << SF._uORB_MS5611_Data[0] << " " << SF._uORB_MS5611_Data[1] << "                             \n\n";
 
 	std::cout << "RCOutPUTINFO:   "
 		<< "\n";

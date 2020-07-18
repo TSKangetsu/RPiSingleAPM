@@ -76,44 +76,34 @@ namespace SingleAPMAPI
 
 	struct UserControlInputType
 	{
-		bool  _ESC_ARMED;
-		float _Yaw_Raw___Pre;
-		float _Roll_Raw__Pre;
-		float _Pitch_Raw_Pre;
+		bool  _ESC_Self_ARMED;
+		float _RawPre___Yaw;
+		float _RawPre_Pitch;
+		float _RawPre__Roll;
 		float _Alttitude_Set;
 	};
 
 	class RPiSingleAPM
 	{
 	public:
-		//Using for init all device,please init at after esc shutoff,also caust groy recalibrating
 		void RPiSingleAPMInit(APMSettinngs APMInit);
 
-		//Reading and filter IMUSensor,Data is at SensorsINFO(SF),should notice AF.Update_Freq_Time and AF.Update_Freqeuncy *after this must run void ClockingTimer();
 		void IMUSensorsParse();
 
-		//AltholdSensors in this branch only for look now,can't run this in sensors thread!
 		void AltholdSensorsParse();
 
-		//
 		void ControlUserInput(bool EnableUserInput, UserControlInputType UserInput);
 
-		//Read and Parse RC recivcer,Data is at RCINFO(RF)
 		void ControlParse();
 
-		//This is untested function,only for show data,do not put in to IMUSensor thread
 		void AttitudeUpdate();
 
-		//Check RC and IMUsensor data is comfirm,and controll the esc up and dowm
 		void SaftyChecking();
 
-		//write pwm signal to esc
 		void ESCUpdate();
 
-		//display status data on console
 		void DebugOutPut();
 
-		//ClockingTimer must run every IMUSensorsParse() times
 		void ClockingTimer();
 
 	protected:
@@ -233,21 +223,6 @@ namespace SingleAPMAPI
 			long _Tmp_Acce_filer_Output_Quene_Z[5] = { 0, 0, 0, 0, 0 };
 
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
-			//=========================MS5611======//
-			double _flag_MS5611_StartUp_Pressure;
-			uint8_t _Tmp_MS5611_Data[3] = { 0, 0, 0 };
-			uint16_t _flag_MS5611_PromData[7];
-			uint32_t _uORB_MS5611_Data[2];
-			int64_t _Tmp_MS5611_dT;
-			int32_t _Tmp_MS5611_Temprture;
-			int64_t _Tmp_MS5611_Offset;
-			int64_t _Tmp_MS5611_Sensitfy;
-			int32_t _Tmp_MS5611_Presure;
-			double _uORB_MS5611_Pressure;
-			double _uORB_MS5611_Temprture;
-			double _uORB_MS5611_Altitude;
-			double _Tmp_MS5611_filter_Queue_IN[3] = { 0, 0, 0 };
-			double _Tmp_MS5611_filter_Queue_OUT[3] = { 0, 0, 0 };
 		} SF;
 
 		struct PIDINFO

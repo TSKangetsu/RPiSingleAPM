@@ -22,9 +22,9 @@ int main(int argc, char* argv[])
 		case 'r':
 		{
 			RPiSingleAPM APM_Settle;
-			UserInput._Pitch_Raw_Pre = 1;
-			UserInput._Roll_Raw__Pre = -1;
-			UserInput._Yaw_Raw___Pre = 0;
+			UserInput._RawPre__Roll = 1;
+			UserInput._RawPre_Pitch = -1;
+			UserInput._RawPre___Yaw = 0;
 			APM_Settle.RPiSingleAPMInit(setting);
 			std::thread AltHoldModeMain([&] {
 				while (true)
