@@ -136,6 +136,7 @@ namespace SingleAPMAPI
 			int Update_loopTime;
 
 			bool _flag_Error;
+			bool _flag_ClockingTime_Error;
 			bool _flag_StartUP_Protect;
 			bool _flag_MPU9250_first_StartUp;
 			bool _flag_MS5611_firstStartUp;

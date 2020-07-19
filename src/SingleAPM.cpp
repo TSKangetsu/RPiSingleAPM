@@ -9,6 +9,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	AF._flag_MPU9250_first_StartUp = true;
 	AF._flag_MS5611_firstStartUp = true;
 	AF._flag_ESC_ARMED = true;
+	AF._flag_ClockingTime_Error = false;
 	ConfigReader(APMInit);
 
 	if (DF.PCA9658_fd == -1)
@@ -75,8 +76,6 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 {
-	AF.Update_TimerStart = micros();
-	AF.UpdateNext_loopTime = AF.Update_TimerStart - AF.UpdateNext_TimerStart;
 	IMUSensorsDataRead();
 	//Gryo----------------------------------------------------------------------//
 	SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
@@ -267,9 +266,13 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 	}
 	else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
 	{
-		AF._flag_StartUP_Protect = false;
-		AF._flag_ESC_ARMED = true;
-		AF._flag_Error = false;
+		if (RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_Max_PWM_Value + 50)
+		{
+			AF._flag_StartUP_Protect = false;
+			AF._flag_ESC_ARMED = true;
+			AF._flag_Error = false;
+			AF._flag_ClockingTime_Error = false;
+		}
 	}
 	else if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 20)
 	{
@@ -313,7 +316,6 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 	{
 		AF._flag_RC_Disconnected = true;
 	}
-
 	//RC_LOSE_Detect
 	if (AF._flag_RC_Disconnected == true)
 	{
@@ -408,6 +410,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
+	if (AF._flag_ClockingTime_Error)
+	{
+		std::cout << "ClockSYS ERROR !!!!!!!!!!!!!!!!!!!!!!!!\n";
+	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::ClockingTimer()
@@ -415,9 +421,15 @@ void SingleAPMAPI::RPiSingleAPM::ClockingTimer()
 	AF.Update_TimerEnd = micros();
 	AF.Update_loopTime = AF.Update_TimerEnd - AF.Update_TimerStart;
 	if (AF.Update_loopTime > AF.Update_Freq_Time)
+	{
 		AF.Update_loopTime *= -1;
+		AF._flag_ClockingTime_Error = true;
+	}
 	usleep(AF.Update_Freq_Time - AF.Update_loopTime);
 	AF.UpdateNext_TimerStart = micros();
+
+	AF.Update_TimerStart = micros();
+	AF.UpdateNext_loopTime = AF.Update_TimerStart - AF.UpdateNext_TimerStart;
 }
 
 //=-----------------------------------------------------------------------------------------==//
