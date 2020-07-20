@@ -128,26 +128,25 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsParse()
 
 void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserControlInputType UserInput)
 {
-	AF._flag_UserInput_Enable = EnableUserInput;
 	if (UserInput._RawPre__Roll > 0)
-		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
+		RF._Tmp_UserInput__Roll = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
 	else if (UserInput._RawPre__Roll <= 0)
-		RF._uORB_RC_Out_Pitch = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
+		RF._Tmp_UserInput__Roll = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
 
 	if (UserInput._RawPre_Pitch > 0)
-		RF._uORB_RC_Out__Roll = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
+		RF._Tmp_UserInput_Pitch = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
 	else if (UserInput._RawPre_Pitch <= 0)
-		RF._uORB_RC_Out__Roll = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
+		RF._Tmp_UserInput_Pitch = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
 
 	if (UserInput._RawPre___Yaw > 0)
-		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
+		RF._Tmp_UserInput___Yaw = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
 	else if (UserInput._RawPre___Yaw <= 0)
-		RF._uORB_RC_Out___Yaw = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
+		RF._Tmp_UserInput___Yaw = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
+	AF._flag_UserInput_Enable = EnableUserInput;
 }
 
 void SingleAPMAPI::RPiSingleAPM::ControlParse()
 {
-
 	if (RF.RC_Type == RCIsSbus)
 	{
 		if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
@@ -195,6 +194,13 @@ void SingleAPMAPI::RPiSingleAPM::ControlParse()
 			RF._uORB_RC_Out___Yaw = 0;
 		else
 			RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
+	}
+	else
+	{
+		RF._uORB_RC_Out_Pitch = RF._Tmp_UserInput_Pitch;
+		RF._uORB_RC_Out__Roll = RF._Tmp_UserInput__Roll;
+		RF._uORB_RC_Out___Yaw = RF._Tmp_UserInput___Yaw;
+		AF._flag_UserInput_Enable = false;
 	}
 	//
 	RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];

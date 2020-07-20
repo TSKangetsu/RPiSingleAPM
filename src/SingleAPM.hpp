@@ -280,6 +280,10 @@ namespace SingleAPMAPI
 			int _flag_RCIsReserv__Roll = 1;
 			int _flag_RCIsReserv_Pitch = 1;
 			int _flag_RCIsReserv___Yaw = 1;
+			
+			int _Tmp_UserInput__Roll;
+			int _Tmp_UserInput_Pitch;
+			int _Tmp_UserInput___Yaw;
 		} RF;
 
 		struct ESCINFO
