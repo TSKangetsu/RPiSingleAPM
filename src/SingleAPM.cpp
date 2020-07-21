@@ -55,6 +55,10 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
 	}
 
+	MS5611S = new MS5611();
+	MS5611S->MS5611Init();
+	MS5611S->LocalPressureSetter(SF._flag_MS5611_LocalPressure);
+
 	//GryoCali()
 	{
 		SF._flag_MPU9250_G_X_Cali = 0;
@@ -123,7 +127,11 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsParse()
 {
-
+	AF.UpdateMS5611_Start = micros();
+	MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
+	SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
+	SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
+	AF.UpdateMS5611_Time = micros() - AF.UpdateMS5611_Start;
 }
 
 void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserControlInputType UserInput)
@@ -255,6 +263,7 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 	//ECSLockCheck
 	if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 	{
+		AF._flag_IsLockCleanerEnable = false;
 		if (AF._flag_Device_setupFailed == false)
 		{
 			if (AF._flag_Error == false)
@@ -274,6 +283,7 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 	{
 		if (RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_Max_PWM_Value + 50)
 		{
+			AF._flag_IsLockCleanerEnable = true;
 			AF._flag_StartUP_Protect = false;
 			AF._flag_ESC_ARMED = true;
 			AF._flag_Error = false;
@@ -389,6 +399,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		<< "                        "
 		<< "\n\n";
 
+	std::cout << "MS5611ParseDataINFO:" << "\n";
+	std::cout << "Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
+	std::cout << "altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << "AltUpdateFreq:" << AF.UpdateMS5611_Time << "            \n";
+	std::cout << "\n";
+
 	std::cout << "RCOutPUTINFO:   "
 		<< "\n";
 	std::cout << " ChannelRoll  "
@@ -414,12 +430,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " UpdateNext_loopTime:" << AF.UpdateNext_loopTime << "         \n";
 	std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
+	std::cout << " Flag_IsLockEnable:" << AF._flag_IsLockCleanerEnable << "         \n";
+	std::cout << " Flag_ClockingTime_Error:" << AF._flag_ClockingTime_Error << "         \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
-	if (AF._flag_ClockingTime_Error)
-	{
-		std::cout << "ClockSYS ERROR !!!!!!!!!!!!!!!!!!!!!!!!\n";
-	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::ClockingTimer()

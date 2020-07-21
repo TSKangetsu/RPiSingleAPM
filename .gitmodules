@@ -4,3 +4,6 @@
 [submodule "_thirdparty/Ibus"]
 	path = _thirdparty/Ibus
 	url = https://github.com/TSKangetsu/Raspberry_IBUS
+[submodule "_thirdparty/MS5611"]
+	path = _thirdparty/MS5611
+	url = https://github.com/TSKangetsu/RPiMS5611LIB

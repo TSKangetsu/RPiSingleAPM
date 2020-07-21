@@ -14,6 +14,7 @@
 #include <linux/i2c-dev.h>
 #include "../_thirdparty/pca9685.h"
 #include "../_thirdparty/Kalman.h"
+#include "../_thirdparty/MS5611/src/MS5611LIB.h"
 #include "../_thirdparty/Sbus/src/RPiSbus.h"
 #include "../_thirdparty/Ibus/src/RPiIBus.h"
 
@@ -111,6 +112,7 @@ namespace SingleAPMAPI
 		Ibus* IbusInit;
 		Kalman* Kal_Pitch;
 		Kalman* Kal__Roll;
+		MS5611* MS5611S;
 
 		void PID_Caculate(float inputData, float& outputData,
 			float& last_I_Data, float& last_D_Data,
@@ -133,8 +135,11 @@ namespace SingleAPMAPI
 			long int Update_TimerEnd;
 			long int UpdateNext_TimerStart;
 			long int UpdateNext_loopTime;
+			long int UpdateMS5611_Start;
+			long int UpdateMS5611_Time;
 			int Update_loopTime;
 
+			bool _flag_IsLockCleanerEnable;
 			bool _flag_Error;
 			bool _flag_ClockingTime_Error;
 			bool _flag_StartUP_Protect;
@@ -224,6 +229,12 @@ namespace SingleAPMAPI
 			long _Tmp_Acce_filer_Output_Quene_Z[5] = { 0, 0, 0, 0, 0 };
 
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
+			//=========================MS5611======//
+			double _Tmp_MS5611_Data[2];
+			double _uORB_MS5611_Pressure;
+			double _uORB_MS5611_AltMeter;
+			double _flag_MS5611_LocalPressure = 1023;
+			double _uORB_MS5611_ThrottleFIXUP;
 		} SF;
 
 		struct PIDINFO
