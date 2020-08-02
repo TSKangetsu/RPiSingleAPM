@@ -32,6 +32,7 @@ At least you need :
 
 ## PCB Dependence
 ![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/PI-PCB/PI-PCB.png?raw=true)
+
 **P5:RX TX 5v gnd**
 **P6、P7、P8:SCL SDA GND 3.3V**
 This PCB provides connection support for PCA9685, MPU9250, MS5611 and more sensor extension interfaces for convenient. you can get more information on file.
