@@ -3,8 +3,7 @@
 
 
 RPiSingleAPM is a c++ API for RaspberryPi , it was tested on RaspberryPi3B , 3B+ , 4B , using RPiSingleAPM can make RaspberryPi using
-PCA9685 and MPU9250(MPU6050 , and MS5611) to build a Auto-Leveling quadCotper ，it means that you can easily using RaspberryPi with OpenVINO to make a 
-computer-vision-base quadCotper
+PCA9685 and MPU9250(MPU6050 , and MS5611) to build a Auto-Leveling quadCotper ，it means that you can easily using RaspberryPi with OpenVINO to make a computer-vision-base quadCotper
 
 *\*This project is using GPL linsense*
 
@@ -16,7 +15,7 @@ computer-vision-base quadCotper
 - all of them need to build and install at Raspbain
 
 ## Hardware Dependence
-at least you need :
+At least you need :
  - PCA9685 to drive 4 Electronic-Speed-Control , 
 
  - MPU6050 to use for Auto-Leveing the copter
@@ -31,6 +30,16 @@ at least you need :
 
 *\* check RC value and change value at /etc/APMconfig.json , IBUS value is diffrent from SBUS , if no ckeck , it won armed*
 
+## PCB Dependence
+![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/PI-PCB/PI-PCB.png?raw=true)
+**P5:RX TX 5v gnd**
+**P6、P7、P8:SCL SDA GND 3.3V**
+This PCB provides connection support for PCA9685, MPU9250, MS5611 and more sensor extension interfaces for convenient. you can get more information on file.
+
+## Video display
+
+**Being updated，please wait**
+
 
 ## The way to use TestMdule
 
@@ -39,7 +48,7 @@ at least you need :
 
 - **cd /clone file directory/**. 
 
-- **git checkout v3.7.0** 切换到指定版本分支 Switch to the specified version branch
+- **git checkout v3.7.0** Switch to the specified version branch
 
 - **cd build**
 
@@ -112,3 +121,5 @@ Horizontal correction of aircraft acceleration sensor，it needs to be adjusted
 The PWM values of ibus and sbus have some different, it need to be adjusted by yourself, otherwise they cannot fly or lose control and put Personal safety at risk. The channel of flight control is unlocked in channel 5 of the remote control, please adjust by yourself
 Reserv represents the reverse direction of the remote control and can only be 1 and -1. Changing to other values will endanger people's safety  
 ![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/%E9%81%A5%E6%8E%A7%E5%99%A8%E7%9B%B8%E5%85%B3.png?raw=true)
+
+****
