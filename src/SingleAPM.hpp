@@ -77,7 +77,7 @@ namespace SingleAPMAPI
 
 	struct UserControlInputType
 	{
-		bool  _ESC_Self_ARMED;
+		bool _ESC_Self_ARMED;
 		float _RawPre___Yaw;
 		float _RawPre_Pitch;
 		float _RawPre__Roll;
@@ -108,23 +108,23 @@ namespace SingleAPMAPI
 		void ClockingTimer();
 
 	protected:
-		Sbus* SbusInit;
-		Ibus* IbusInit;
-		Kalman* Kal_Pitch;
-		Kalman* Kal__Roll;
-		MS5611* MS5611S;
+		Sbus *SbusInit;
+		Ibus *IbusInit;
+		Kalman *Kal_Pitch;
+		Kalman *Kal__Roll;
+		MS5611 *MS5611S;
 
-		void PID_Caculate(float inputData, float& outputData,
-			float& last_I_Data, float& last_D_Data,
-			float P_Gain, float I_Gain, float D_Gain, float I_Max);
+		void PID_Caculate(float inputData, float &outputData,
+						  float &last_I_Data, float &last_D_Data,
+						  float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
 		void ConfigReader(APMSettinngs APMInit);
 
 		void IMUSensorsDataRead();
 
-		void IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv, int filtertype);
+		void IMUGryoFilter(long next_input_value, long &next_output_value, long *xv, long *yv, int filtertype);
 
-		void IMUMixFilter(Kalman* kal, float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float& next_output_value, int filtertype);
+		void IMUMixFilter(Kalman *kal, float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float &next_output_value, int filtertype);
 
 		struct SafyINFO
 		{
@@ -214,19 +214,19 @@ namespace SingleAPMAPI
 			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
 
-			long _Tmp_Gryo_filer_Input_Quene_X[3] = { 0, 0, 0 };
-			long _Tmp_Gryo_filer_Output_Quene_X[3] = { 0, 0, 0 };
-			long _Tmp_Gryo_filer_Input_Quene_Y[3] = { 0, 0, 0 };
-			long _Tmp_Gryo_filer_Output_Quene_Y[3] = { 0, 0, 0 };
-			long _Tmp_Gryo_filer_Input_Quene_Z[3] = { 0, 0, 0 };
-			long _Tmp_Gryo_filer_Output_Quene_Z[3] = { 0, 0, 0 };
+			long _Tmp_Gryo_filer_Input_Quene_X[3] = {0, 0, 0};
+			long _Tmp_Gryo_filer_Output_Quene_X[3] = {0, 0, 0};
+			long _Tmp_Gryo_filer_Input_Quene_Y[3] = {0, 0, 0};
+			long _Tmp_Gryo_filer_Output_Quene_Y[3] = {0, 0, 0};
+			long _Tmp_Gryo_filer_Input_Quene_Z[3] = {0, 0, 0};
+			long _Tmp_Gryo_filer_Output_Quene_Z[3] = {0, 0, 0};
 
-			long _Tmp_Acce_filer_Input_Quene_X[5] = { 0, 0, 0, 0, 0 };
-			long _Tmp_Acce_filer_Output_Quene_X[5] = { 0, 0, 0, 0, 0 };
-			long _Tmp_Acce_filer_Input_Quene_Y[5] = { 0, 0, 0, 0, 0 };
-			long _Tmp_Acce_filer_Output_Quene_Y[5] = { 0, 0, 0, 0, 0 };
-			long _Tmp_Acce_filer_Input_Quene_Z[5] = { 0, 0, 0, 0, 0 };
-			long _Tmp_Acce_filer_Output_Quene_Z[5] = { 0, 0, 0, 0, 0 };
+			long _Tmp_Acce_filer_Input_Quene_X[5] = {0, 0, 0, 0, 0};
+			long _Tmp_Acce_filer_Output_Quene_X[5] = {0, 0, 0, 0, 0};
+			long _Tmp_Acce_filer_Input_Quene_Y[5] = {0, 0, 0, 0, 0};
+			long _Tmp_Acce_filer_Output_Quene_Y[5] = {0, 0, 0, 0, 0};
+			long _Tmp_Acce_filer_Input_Quene_Z[5] = {0, 0, 0, 0, 0};
+			long _Tmp_Acce_filer_Output_Quene_Z[5] = {0, 0, 0, 0, 0};
 
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
 			//=========================MS5611======//
@@ -275,8 +275,8 @@ namespace SingleAPMAPI
 		struct RCINFO
 		{
 			int RC_Type;
-			int _Tmp_RC_Data[36] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-			int _uORB_RC_Channel_PWM[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			int _Tmp_RC_Data[36] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _uORB_RC_Channel_PWM[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _flag_RC_Max_PWM_Value;
 			int _flag_RC_Mid_PWM_Value;
 			int _flag_RC_Min_PWM_Value;
@@ -291,7 +291,7 @@ namespace SingleAPMAPI
 			int _flag_RCIsReserv__Roll = 1;
 			int _flag_RCIsReserv_Pitch = 1;
 			int _flag_RCIsReserv___Yaw = 1;
-			
+
 			int _Tmp_UserInput__Roll;
 			int _Tmp_UserInput_Pitch;
 			int _Tmp_UserInput___Yaw;
@@ -315,4 +315,4 @@ namespace SingleAPMAPI
 			const int _Flag_Lock_Throttle = 2200;
 		} EF;
 	};
-}
+} // namespace SingleAPMAPI

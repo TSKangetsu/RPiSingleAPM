@@ -19,9 +19,9 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
 		wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
-		wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);  //Accel
-		wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);  //Gryo
-		wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);  //config
+		wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);	//Accel
+		wiringPiI2CWriteReg8(DF.MPU9250_fd, 27, 0x08);	//Gryo
+		wiringPiI2CWriteReg8(DF.MPU9250_fd, 26, 0x03);	//config
 	}
 	else if (SF.MPU9250_Type == MPUIsSpi)
 	{
@@ -221,8 +221,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 	//Roll PID Mix
 	PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
 	PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
-		PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
-		PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
+				 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
+				 PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
 	if (PF._uORB_Leveling__Roll > PF._flag_PID_Level_Max)
 		PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max;
 	if (PF._uORB_Leveling__Roll < PF._flag_PID_Level_Max * -1)
@@ -231,8 +231,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 	//Pitch PID Mix
 	PF._uORB_PID_Pitch_Input = SF._uORB_Gryo_Pitch + SF._uORB_Real_Pitch * 15 - RF._uORB_RC_Out_Pitch;
 	PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
-		PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
-		PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
+				 PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
+				 PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
 	if (PF._uORB_Leveling_Pitch > PF._flag_PID_Level_Max)
 		PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max;
 	if (PF._uORB_Leveling_Pitch < PF._flag_PID_Level_Max * -1)
@@ -240,8 +240,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 
 	//Yaw PID Mix
 	PID_Caculate(SF._uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
-		PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
-		PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
+				 PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
+				 PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
 	if (PF._uORB_Leveling___Yaw > PF._flag_PID_Level_Max)
 		PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
 	if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
@@ -360,13 +360,13 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdate()
 	if (!AF._flag_ESC_ARMED)
 	{
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0,
-			EF._uORB_A1_Speed);
+						EF._uORB_A1_Speed);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0,
-			EF._uORB_A2_Speed);
+						EF._uORB_A2_Speed);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0,
-			EF._uORB_B1_Speed);
+						EF._uORB_B1_Speed);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0,
-			EF._uORB_B2_Speed);
+						EF._uORB_B2_Speed);
 	}
 }
 
@@ -375,49 +375,50 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << "\033[150A";
 	std::cout << "\033[K";
 	std::cout << "ESCSpeedOutput:"
-		<< " \n";
+			  << " \n";
 	std::cout << " A1 " << EF._uORB_A1_Speed << "    "
-		<< " A2 " << EF._uORB_A2_Speed << "                        "
-		<< "\n";
+			  << " A2 " << EF._uORB_A2_Speed << "                        "
+			  << "\n";
 	std::cout << " B1 " << EF._uORB_B1_Speed << "    "
-		<< " B2 " << EF._uORB_B2_Speed << "                        "
-		<< "\n\n";
+			  << " B2 " << EF._uORB_B2_Speed << "                        "
+			  << "\n\n";
 
 	std::cout << "IMUSenorData: "
-		<< " \n";
+			  << " \n";
 	std::cout << " GryoPitch: " << (int)SF._uORB_Gryo_Pitch << "    "
-		<< " GryoRoll: " << (int)SF._uORB_Gryo__Roll << "    "
-		<< " GryoYaw: " << (int)SF._uORB_Gryo___Yaw
-		<< "                        "
-		<< "\n";
+			  << " GryoRoll: " << (int)SF._uORB_Gryo__Roll << "    "
+			  << " GryoYaw: " << (int)SF._uORB_Gryo___Yaw
+			  << "                        "
+			  << "\n";
 	std::cout << " AccePitch: " << (int)SF._uORB_Accel_Pitch << "    "
-		<< " AcceRoll: " << (int)SF._uORB_Accel__Roll
-		<< "                        "
-		<< "\n";
+			  << " AcceRoll: " << (int)SF._uORB_Accel__Roll
+			  << "                        "
+			  << "\n";
 	std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    "
-		<< " RealRoll: " << (int)SF._uORB_Real__Roll
-		<< "                        "
-		<< "\n\n";
+			  << " RealRoll: " << (int)SF._uORB_Real__Roll
+			  << "                        "
+			  << "\n\n";
 
-	std::cout << "MS5611ParseDataINFO:" << "\n";
+	std::cout << "MS5611ParseDataINFO:"
+			  << "\n";
 	std::cout << "Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
 	std::cout << "altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
 	std::cout << "AltUpdateFreq:" << AF.UpdateMS5611_Time << "            \n";
 	std::cout << "\n";
 
 	std::cout << "RCOutPUTINFO:   "
-		<< "\n";
+			  << "\n";
 	std::cout << " ChannelRoll  "
-		<< ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
+			  << ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
 	std::cout << " ChannelPitch "
-		<< ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
+			  << ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
 	std::cout << " ChannelThrot "
-		<< ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
+			  << ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
 	std::cout << " ChannelYaw   "
-		<< ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
+			  << ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
 
 	std::cout << "ChannelINFO: "
-		<< " \n";
+			  << " \n";
 	for (size_t i = 0; i < 16; i++)
 	{
 		std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
@@ -425,7 +426,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " \n\n";
 
 	std::cout << "SystemINFO:"
-		<< "    \n";
+			  << "    \n";
 	std::cout << " Update_loopTime:" << AF.Update_loopTime << "         \n";
 	std::cout << " UpdateNext_loopTime:" << AF.UpdateNext_loopTime << "         \n";
 	std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ESC_ARMED << "               \n";
@@ -454,9 +455,9 @@ void SingleAPMAPI::RPiSingleAPM::ClockingTimer()
 
 //=-----------------------------------------------------------------------------------------==//
 
-void SingleAPMAPI::RPiSingleAPM::PID_Caculate(float inputData, float& outputData,
-	float& last_I_Data, float& last_D_Data,
-	float P_Gain, float I_Gain, float D_Gain, float I_Max)
+void SingleAPMAPI::RPiSingleAPM::PID_Caculate(float inputData, float &outputData,
+											  float &last_I_Data, float &last_D_Data,
+											  float P_Gain, float I_Gain, float D_Gain, float I_Max)
 {
 	//P caculate
 	outputData = P_Gain * inputData;
@@ -478,7 +479,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 #ifdef USINGJSON
 	std::ifstream config(DF.configDir);
 	std::string content((std::istreambuf_iterator<char>(config)),
-		(std::istreambuf_iterator<char>()));
+						(std::istreambuf_iterator<char>()));
 	nlohmann::json Configdata = nlohmann::json::parse(content);
 	//==========================================================Device Type=======/
 	RF.RC_Type = Configdata["Type_RC"].get<int>();
@@ -613,7 +614,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
 	}
 }
 
-void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next_output_value, long* xv, long* yv, int filtertype)
+void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long &next_output_value, long *xv, long *yv, int filtertype)
 {
 	if (filtertype == GryoFilterType_none)
 	{
@@ -621,7 +622,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next
 	}
 	else if (filtertype == GryoFilterType_pt1)
 	{
-
 	}
 	else if (filtertype == GryoFilterType_Butterworth)
 	{
@@ -635,8 +635,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long& next
 	}
 };
 
-void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman* kal, float next_input_value_Gryo, float next_input_value_Accel,
-	float next_input_value_speed, float& next_output_value, int filtertype)
+void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman *kal, float next_input_value_Gryo, float next_input_value_Accel,
+											  float next_input_value_speed, float &next_output_value, int filtertype)
 {
 	if (filtertype == MixFilterType_traditional)
 	{
