@@ -149,6 +149,7 @@ namespace SingleAPMAPI
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
 			bool _flag_UserInput_Enable;
+			bool _flag_AlthHold_Enable;
 		} AF;
 
 		struct DeviceINFO
@@ -234,6 +235,7 @@ namespace SingleAPMAPI
 			double _uORB_MS5611_Pressure;
 			double _uORB_MS5611_AltMeter;
 			double _flag_MS5611_LocalPressure = 1023;
+			double _uORB_MS5611_Last_Value_AltMeter;
 			double _uORB_MS5611_ThrottleFIXUP;
 		} SF;
 
@@ -270,6 +272,14 @@ namespace SingleAPMAPI
 			float _flag_PID_D___Yaw_Gain;
 
 			float _flag_PID_Level_Max;
+			//===============AltHoldPID=========//
+			float _uORB_PID_D_Last_Value_Alt = 0;
+			float _uORB_PID_I_Last_Value_Alt = 0;
+			float _uORB_Leveling_Throttle;
+			float _flag_PID_P_Alt_Gain = 5;
+			float _flag_PID_I_Alt_Gain = 0.01;
+			float _flag_PID_D_Alt_Gain = 4;
+			float _flag_PID_Alt_Level_Max;
 		} PF;
 
 		struct RCINFO

@@ -10,6 +10,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	AF._flag_MS5611_firstStartUp = true;
 	AF._flag_ESC_ARMED = true;
 	AF._flag_ClockingTime_Error = false;
+	AF._flag_AlthHold_Enable = false;
 	ConfigReader(APMInit);
 
 	if (DF.PCA9658_fd == -1)
@@ -128,6 +129,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsParse()
 {
 	AF.UpdateMS5611_Start = micros();
+	SF._uORB_MS5611_Last_Value_AltMeter = SF._uORB_MS5611_AltMeter;
 	MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 	SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
 	SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
@@ -246,11 +248,19 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 		PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
 	if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 		PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
-
-	EF._Tmp_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-	EF._Tmp_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-	EF._Tmp_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-	EF._Tmp_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+	if (AF._flag_AlthHold_Enable)
+	{
+		PID_Caculate(SF._uORB_MS5611_Last_Value_AltMeter * 500 - SF._uORB_MS5611_AltMeter * 500, PF._uORB_Leveling_Throttle,
+					 PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Last_Value_Alt,
+					 PF._flag_PID_P_Alt_Gain, PF._flag_PID_I_Alt_Gain, PF._flag_PID_D_Alt_Gain, PF._flag_PID_Alt_Level_Max);
+	}
+	else
+	{
+		EF._Tmp_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+		EF._Tmp_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		EF._Tmp_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+		EF._Tmp_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+	}
 
 	EF._uORB_A1_Speed = (700 * (((float)EF._Tmp_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
 	EF._uORB_A2_Speed = (700 * (((float)EF._Tmp_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
@@ -401,9 +411,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
-	std::cout << "Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
-	std::cout << "altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
-	std::cout << "AltUpdateFreq:" << AF.UpdateMS5611_Time << "            \n";
+	std::cout << " Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
+	std::cout << " altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " AltUpdateFreq:" << AF.UpdateMS5611_Time << "            \n";
+	std::cout << " Leveling_Throttle:" << PF._uORB_Leveling_Throttle << "            \n";
+	std::cout << " MS5611ValueSettle:" << SF._uORB_MS5611_Last_Value_AltMeter << "            \n";
 	std::cout << "\n";
 
 	std::cout << "RCOutPUTINFO:   "
