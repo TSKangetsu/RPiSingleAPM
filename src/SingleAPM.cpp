@@ -11,6 +11,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	AF._flag_ESC_ARMED = true;
 	AF._flag_ClockingTime_Error = false;
 	AF._flag_AlthHold_Enable = false;
+	AF.Update_TimerStart = micros();
 	ConfigReader(APMInit);
 
 	if (DF.PCA9658_fd == -1)
@@ -81,6 +82,9 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 {
+#ifdef DEBUG
+	int start = micros();
+#endif
 	IMUSensorsDataRead();
 	//Gryo----------------------------------------------------------------------//
 	SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
@@ -124,6 +128,13 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsParse()
 	}
 	SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 	SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+#ifdef DEBUG
+	int end = micros();
+	if ((end - start) > DE._Debug_MPU9000)
+	{
+		DE._Debug_MPU9000 = end - start;
+	}
+#endif
 }
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsParse()
@@ -157,6 +168,9 @@ void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserCont
 
 void SingleAPMAPI::RPiSingleAPM::ControlParse()
 {
+#ifdef DEBUG
+	int start = micros();
+#endif
 	if (RF.RC_Type == RCIsSbus)
 	{
 		if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
@@ -216,6 +230,13 @@ void SingleAPMAPI::RPiSingleAPM::ControlParse()
 	RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
 	//
 	RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+#ifdef DEBUG
+	int end = micros();
+	if ((end - start) > DE._Debug_RECV)
+	{
+		DE._Debug_RECV = end - start;
+	}
+#endif
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
@@ -360,6 +381,9 @@ void SingleAPMAPI::RPiSingleAPM::SaftyChecking()
 
 void SingleAPMAPI::RPiSingleAPM::ESCUpdate()
 {
+#ifdef DEBUG
+	int start = micros();
+#endif
 	if (AF._flag_ESC_ARMED)
 	{
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
@@ -378,6 +402,13 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdate()
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0,
 						EF._uORB_B2_Speed);
 	}
+#ifdef DEBUG
+	int end = micros();
+	if ((end - start) > DE._Debug_PCA9650)
+	{
+		DE._Debug_PCA9650 = end - start;
+	}
+#endif
 }
 
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
@@ -441,6 +472,13 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << "    \n";
 	std::cout << " Update_loopTime:" << AF.Update_loopTime << "         \n";
 	std::cout << " UpdateNext_loopTime:" << AF.UpdateNext_loopTime << "         \n";
+#ifdef DEBUG
+	std::cout << " ERROR_CHECK_DEBUG: \n"
+			  << "    RECVMaxError:" << DE._Debug_RECV << "          \n"
+			  << "    PCA9650MaxEr:" << DE._Debug_PCA9650 << "          \n"
+			  << "    MPU9000MaxER:" << DE._Debug_MPU9000 << "          \n"
+			  << "    UpdateMaxErr:" << DE._Debug_UpdateError << "          \n";
+#endif
 	std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 	std::cout << " Flag_IsLockEnable:" << AF._flag_IsLockCleanerEnable << "         \n";
@@ -457,6 +495,9 @@ void SingleAPMAPI::RPiSingleAPM::ClockingTimer()
 	{
 		AF.Update_loopTime *= -1;
 		AF._flag_ClockingTime_Error = true;
+#ifdef DEBUG
+		DE._Debug_UpdateError = AF.Update_loopTime;
+#endif
 	}
 	usleep(AF.Update_Freq_Time - AF.Update_loopTime);
 	AF.UpdateNext_TimerStart = micros();

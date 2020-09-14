@@ -324,5 +324,14 @@ namespace SingleAPMAPI
 			const int _Flag_Lazy_Throttle = 2300;
 			const int _Flag_Lock_Throttle = 2200;
 		} EF;
+#ifdef DEBUG
+		struct DEBUGINFO
+		{
+			int _Debug_UpdateError = 0;
+			int _Debug_PCA9650 = 0;
+			int _Debug_RECV = 0;
+			int _Debug_MPU9000 = 0;
+		} DE;
+#endif
 	};
 } // namespace SingleAPMAPI
