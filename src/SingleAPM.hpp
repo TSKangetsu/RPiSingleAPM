@@ -11,6 +11,7 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
+#include <thread>
 #include <linux/i2c-dev.h>
 #include "../_thirdparty/pca9685.h"
 #include "../_thirdparty/Kalman.h"
@@ -89,23 +90,21 @@ namespace SingleAPMAPI
 	public:
 		void RPiSingleAPMInit(APMSettinngs APMInit);
 
-		void IMUSensorsParse();
+		void IMUSensorsTaskReg();
 
-		void AltholdSensorsParse();
+		void AltholdSensorsTaskReg();
 
 		void ControlUserInput(bool EnableUserInput, UserControlInputType UserInput);
 
-		void ControlParse();
+		void ControllerTaskReg();
 
-		void AttitudeUpdate();
+		void AttitudeTaskReg();
 
-		void SaftyChecking();
+		void SaftyCheckTaskReg();
 
-		void ESCUpdate();
+		void ESCUpdateTaskReg();
 
 		void DebugOutPut();
-
-		void ClockingTimer();
 
 	protected:
 		Sbus *SbusInit;
@@ -130,14 +129,8 @@ namespace SingleAPMAPI
 		{
 			long int RC_Lose_Clocking;
 			int Update_Freqeuncy;
-			int Update_Freq_Time;
-			long int Update_TimerStart;
-			long int Update_TimerEnd;
-			long int UpdateNext_TimerStart;
-			long int UpdateNext_loopTime;
 			long int UpdateMS5611_Start;
 			long int UpdateMS5611_Time;
-			int Update_loopTime;
 
 			bool _flag_IsLockCleanerEnable;
 			bool _flag_Error;
@@ -324,14 +317,29 @@ namespace SingleAPMAPI
 			const int _Flag_Lazy_Throttle = 2300;
 			const int _Flag_Lock_Throttle = 2200;
 		} EF;
-#ifdef DEBUG
-		struct DEBUGINFO
+
+		struct TaskThread
 		{
-			int _Debug_UpdateError = 0;
-			int _Debug_PCA9650 = 0;
-			int _Debug_RECV = 0;
-			int _Debug_MPU9000 = 0;
-		} DE;
-#endif
+			int IMUThreadTimeStart;
+			int IMUThreadTimeEnd;
+			int IMUThreadTimeNext;
+			int IMUThreadTimeLoop;
+			int IMUThreadTimeMax = 4000;
+			std::thread *IMUTask;
+			int RXThreadTimeStart;
+			int RXThreadTimeEnd;
+			int RXThreadTimeNext;
+			int RXThreadTimeLoop;
+			int RXThreadTimeMax = 4000;
+			std::thread *RXTask;
+			std::thread *AttitudeTask;
+			std::thread *saftyTask;
+			int ESCThreadTimeStart;
+			int ESCThreadTimeEnd;
+			int ESCThreadTimeNext;
+			int ESCThreadTimeLoop;
+			int ESCThreadTimeMax = 4000;
+			std::thread *ESCTask;
+		} TF;
 	};
 } // namespace SingleAPMAPI
