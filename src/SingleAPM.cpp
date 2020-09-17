@@ -139,8 +139,13 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF.IMUThreadTimeLoop = 0;
 			}
 			usleep(TF.IMUThreadTimeMax - TF.IMUThreadTimeLoop - TF.IMUThreadTimeNext);
+			TF.IMUThreadTimeEnd = micros();
 		}
 	});
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
+	int rc = pthread_setaffinity_np(TF.IMUTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
@@ -248,8 +253,13 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				TF.RXThreadTimeLoop = 0;
 			}
 			usleep(TF.RXThreadTimeMax - TF.RXThreadTimeLoop - TF.RXThreadTimeNext);
+			TF.RXThreadTimeEnd = micros();
 		}
 	});
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
+	int rc = pthread_setaffinity_np(TF.RXTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeTaskReg()
@@ -395,6 +405,8 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 			TF.ESCThreadTimeStart = micros();
 			TF.ESCThreadTimeNext = TF.ESCThreadTimeStart - TF.ESCThreadTimeEnd;
 
+			AttitudeTaskReg();
+
 			if (AF._flag_ESC_ARMED)
 			{
 				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
@@ -422,8 +434,13 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 				TF.ESCThreadTimeLoop = 0;
 			}
 			usleep(TF.ESCThreadTimeMax - TF.ESCThreadTimeLoop - TF.ESCThreadTimeNext);
+			TF.ESCThreadTimeEnd = micros();
 		}
 	});
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
+	int rc = pthread_setaffinity_np(TF.ESCTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
@@ -483,22 +500,26 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	}
 	std::cout << " \n\n";
 
-	std::cout << "SystemINFO:"
-			  << "    \n";
-
-#ifdef DEBUG
-	std::cout << " ERROR_CHECK_DEBUG: \n"
-			  << "    RECVMaxError:" << DE._Debug_RECV << "          \n"
-			  << "    PCA9650MaxEr:" << DE._Debug_PCA9650 << "          \n"
-			  << "    MPU9000MaxER:" << DE._Debug_MPU9000 << "          \n"
-			  << "    UpdateMaxErr:" << DE._Debug_UpdateError << "          \n";
-#endif
 	std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 	std::cout << " Flag_IsLockEnable:" << AF._flag_IsLockCleanerEnable << "         \n";
 	std::cout << " Flag_ClockingTime_Error:" << AF._flag_ClockingTime_Error << "         \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
+
+	std::cout << " IMULoopTime: " << TF.IMUThreadTimeLoop << "                IMUNextTime: " << TF.IMUThreadTimeNext << "                                    \n";
+	std::cout << " RXLoopTime: " << TF.RXThreadTimeLoop << "                RXNextTime: " << TF.RXThreadTimeNext << "                                    \n";
+	std::cout << " ESCLoopTime: " << TF.ESCThreadTimeLoop << "                ESCNextTime: " << TF.ESCThreadTimeNext << "                                    \n";
+}
+
+void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
+{
+	while (true)
+	{
+		DebugOutPut();
+		SaftyCheckTaskReg();
+		usleep(200000);
+	}
 }
 
 //=-----------------------------------------------------------------------------------------==//

@@ -98,13 +98,11 @@ namespace SingleAPMAPI
 
 		void ControllerTaskReg();
 
-		void AttitudeTaskReg();
-
-		void SaftyCheckTaskReg();
-
 		void ESCUpdateTaskReg();
 
 		void DebugOutPut();
+
+		void TaskThreadBlock();
 
 	protected:
 		Sbus *SbusInit;
@@ -112,6 +110,10 @@ namespace SingleAPMAPI
 		Kalman *Kal_Pitch;
 		Kalman *Kal__Roll;
 		MS5611 *MS5611S;
+
+		void AttitudeTaskReg();
+
+		void SaftyCheckTaskReg();
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
@@ -320,25 +322,23 @@ namespace SingleAPMAPI
 
 		struct TaskThread
 		{
-			int IMUThreadTimeStart;
-			int IMUThreadTimeEnd;
-			int IMUThreadTimeNext;
-			int IMUThreadTimeLoop;
-			int IMUThreadTimeMax = 4000;
+			unsigned int IMUThreadTimeStart;
+			unsigned int IMUThreadTimeEnd;
+			unsigned int IMUThreadTimeNext;
+			unsigned int IMUThreadTimeLoop;
+			unsigned int IMUThreadTimeMax = 4000;
 			std::thread *IMUTask;
-			int RXThreadTimeStart;
-			int RXThreadTimeEnd;
-			int RXThreadTimeNext;
-			int RXThreadTimeLoop;
-			int RXThreadTimeMax = 4000;
+			unsigned int RXThreadTimeStart;
+			unsigned int RXThreadTimeEnd;
+			unsigned int RXThreadTimeNext;
+			unsigned int RXThreadTimeLoop;
+			unsigned int RXThreadTimeMax = 4000;
 			std::thread *RXTask;
-			std::thread *AttitudeTask;
-			std::thread *saftyTask;
-			int ESCThreadTimeStart;
-			int ESCThreadTimeEnd;
-			int ESCThreadTimeNext;
-			int ESCThreadTimeLoop;
-			int ESCThreadTimeMax = 4000;
+			unsigned int ESCThreadTimeStart;
+			unsigned int ESCThreadTimeEnd;
+			unsigned int ESCThreadTimeNext;
+			unsigned int ESCThreadTimeLoop;
+			unsigned int ESCThreadTimeMax = 4000;
 			std::thread *ESCTask;
 		} TF;
 	};

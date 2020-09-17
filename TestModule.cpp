@@ -22,6 +22,11 @@ int main(int argc, char *argv[])
 			UserInput._RawPre_Pitch = -1;
 			UserInput._RawPre___Yaw = 0;
 			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.IMUSensorsTaskReg();
+			APM_Settle.ControllerTaskReg();
+			APM_Settle.ESCUpdateTaskReg();
+			APM_Settle.AltholdSensorsTaskReg();
+			APM_Settle.TaskThreadBlock();
 		}
 		break;
 		//--------------------------------------------------------------------------------//
