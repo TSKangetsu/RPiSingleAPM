@@ -322,23 +322,26 @@ namespace SingleAPMAPI
 
 		struct TaskThread
 		{
-			unsigned int IMUThreadTimeStart;
-			unsigned int IMUThreadTimeEnd;
-			unsigned int IMUThreadTimeNext;
-			unsigned int IMUThreadTimeLoop;
-			unsigned int IMUThreadTimeMax = 4000;
+			int _Tmp_IMUThreadTimeStart;
+			int _Tmp_IMUThreadTimeEnd;
+			int _Tmp_IMUThreadTimeNext;
+			int _Tmp_IMUThreadTimeLoop;
+			int _Tmp_IMUThreadError = 0;
+			int _flag_IMUThreadTimeMax = 4000;
 			std::thread *IMUTask;
-			unsigned int RXThreadTimeStart;
-			unsigned int RXThreadTimeEnd;
-			unsigned int RXThreadTimeNext;
-			unsigned int RXThreadTimeLoop;
-			unsigned int RXThreadTimeMax = 4000;
+			int _Tmp_RXTThreadTimeStart;
+			int _Tmp_RXTThreadTimeEnd;
+			int _Tmp_RXTThreadTimeNext;
+			int _Tmp_RXTThreadTimeLoop;
+			int _Tmp_RXTThreadError = 0;
+			int _flag_RXTThreadTimeMax = 4000;
 			std::thread *RXTask;
-			unsigned int ESCThreadTimeStart;
-			unsigned int ESCThreadTimeEnd;
-			unsigned int ESCThreadTimeNext;
-			unsigned int ESCThreadTimeLoop;
-			unsigned int ESCThreadTimeMax = 4000;
+			int _Tmp_ESCThreadTimeStart;
+			int _Tmp_ESCThreadTimeEnd;
+			int _Tmp_ESCThreadTimeNext;
+			int _Tmp_ESCThreadTimeLoop;
+			int _Tmp_ESCThreadError = 0;
+			int _flag_ESCThreadTimeMax = 4000;
 			std::thread *ESCTask;
 		} TF;
 	};

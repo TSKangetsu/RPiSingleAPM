@@ -84,8 +84,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 	TF.IMUTask = new std::thread([&] {
 		while (true)
 		{
-			TF.IMUThreadTimeStart = micros();
-			TF.IMUThreadTimeNext = TF.IMUThreadTimeStart - TF.IMUThreadTimeEnd;
+			TF._Tmp_IMUThreadTimeStart = micros();
+			TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
 			IMUSensorsDataRead();
 			//Gryo----------------------------------------------------------------------//
@@ -131,15 +131,22 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 			SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
 
-			TF.IMUThreadTimeEnd = micros();
-			TF.IMUThreadTimeLoop = TF.IMUThreadTimeEnd - TF.IMUThreadTimeStart;
-			if (TF.IMUThreadTimeLoop + TF.IMUThreadTimeNext > TF.IMUThreadTimeMax)
+			TF._Tmp_IMUThreadTimeEnd = micros();
+			TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
+			if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
 			{
-				TF.IMUThreadTimeNext = TF.IMUThreadTimeMax;
-				TF.IMUThreadTimeLoop = 0;
+				usleep(50);
+				AF._flag_ClockingTime_Error = true;
 			}
-			usleep(TF.IMUThreadTimeMax - TF.IMUThreadTimeLoop - TF.IMUThreadTimeNext);
-			TF.IMUThreadTimeEnd = micros();
+			else
+			{
+				usleep(TF._flag_IMUThreadTimeMax - TF._Tmp_IMUThreadTimeLoop - TF._Tmp_IMUThreadTimeNext);
+			}
+			if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_IMUThreadTimeNext > TF._Tmp_IMUThreadError)
+			{
+				TF._Tmp_IMUThreadError = TF._Tmp_IMUThreadTimeLoop;
+			}
+			TF._Tmp_IMUThreadTimeEnd = micros();
 		}
 	});
 	cpu_set_t cpuset;
@@ -150,12 +157,21 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 {
-	AF.UpdateMS5611_Start = micros();
-	SF._uORB_MS5611_Last_Value_AltMeter = SF._uORB_MS5611_AltMeter;
-	MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
-	SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
-	SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
-	AF.UpdateMS5611_Time = micros() - AF.UpdateMS5611_Start;
+	TF.RXTask = new std::thread([&] {
+		while (true)
+		{
+			AF.UpdateMS5611_Start = micros();
+			SF._uORB_MS5611_Last_Value_AltMeter = SF._uORB_MS5611_AltMeter;
+			MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
+			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
+			SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
+			AF.UpdateMS5611_Time = micros() - AF.UpdateMS5611_Start;
+		}
+	});
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
+	int rc = pthread_setaffinity_np(TF.RXTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserControlInputType UserInput)
@@ -182,8 +198,8 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 	TF.RXTask = new std::thread([&] {
 		while (true)
 		{
-			TF.RXThreadTimeStart = micros();
-			TF.RXThreadTimeNext = TF.RXThreadTimeStart - TF.RXThreadTimeEnd;
+			TF._Tmp_RXTThreadTimeStart = micros();
+			TF._Tmp_RXTThreadTimeNext = TF._Tmp_RXTThreadTimeStart - TF._Tmp_RXTThreadTimeEnd;
 
 			if (RF.RC_Type == RCIsSbus)
 			{
@@ -245,15 +261,22 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			//
 			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
 
-			TF.RXThreadTimeEnd = micros();
-			TF.RXThreadTimeLoop = TF.RXThreadTimeEnd - TF.RXThreadTimeStart;
-			if (TF.RXThreadTimeLoop + TF.RXThreadTimeNext > TF.RXThreadTimeMax)
+			TF._Tmp_RXTThreadTimeEnd = micros();
+			TF._Tmp_RXTThreadTimeLoop = TF._Tmp_RXTThreadTimeEnd - TF._Tmp_RXTThreadTimeStart;
+			if (TF._Tmp_RXTThreadTimeLoop + TF._Tmp_RXTThreadTimeNext > TF._flag_RXTThreadTimeMax | TF._Tmp_RXTThreadTimeNext < 0)
 			{
-				TF.RXThreadTimeNext = TF.RXThreadTimeMax;
-				TF.RXThreadTimeLoop = 0;
+				usleep(50);
+				AF._flag_ClockingTime_Error = true;
 			}
-			usleep(TF.RXThreadTimeMax - TF.RXThreadTimeLoop - TF.RXThreadTimeNext);
-			TF.RXThreadTimeEnd = micros();
+			else
+			{
+				usleep(TF._flag_RXTThreadTimeMax - TF._Tmp_RXTThreadTimeLoop - TF._Tmp_RXTThreadTimeNext);
+			}
+			if (TF._Tmp_RXTThreadTimeLoop + TF._Tmp_RXTThreadTimeNext > TF._Tmp_RXTThreadError)
+			{
+				TF._Tmp_RXTThreadError = TF._Tmp_RXTThreadTimeLoop;
+			}
+			TF._Tmp_RXTThreadTimeEnd = micros();
 		}
 	});
 	cpu_set_t cpuset;
@@ -402,8 +425,8 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 	TF.ESCTask = new std::thread([&] {
 		while (true)
 		{
-			TF.ESCThreadTimeStart = micros();
-			TF.ESCThreadTimeNext = TF.ESCThreadTimeStart - TF.ESCThreadTimeEnd;
+			TF._Tmp_ESCThreadTimeStart = micros();
+			TF._Tmp_ESCThreadTimeNext = TF._Tmp_ESCThreadTimeStart - TF._Tmp_ESCThreadTimeEnd;
 
 			AttitudeTaskReg();
 
@@ -426,15 +449,22 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 								EF._uORB_B2_Speed);
 			}
 
-			TF.ESCThreadTimeEnd = micros();
-			TF.ESCThreadTimeLoop = TF.ESCThreadTimeEnd - TF.ESCThreadTimeStart;
-			if (TF.ESCThreadTimeLoop + TF.ESCThreadTimeNext > TF.ESCThreadTimeMax)
+			TF._Tmp_ESCThreadTimeEnd = micros();
+			TF._Tmp_ESCThreadTimeLoop = TF._Tmp_ESCThreadTimeEnd - TF._Tmp_ESCThreadTimeStart;
+			if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._flag_ESCThreadTimeMax | TF._Tmp_ESCThreadTimeNext < 0)
 			{
-				TF.ESCThreadTimeNext = TF.ESCThreadTimeMax;
-				TF.ESCThreadTimeLoop = 0;
+				usleep(50);
+				AF._flag_ClockingTime_Error = true;
 			}
-			usleep(TF.ESCThreadTimeMax - TF.ESCThreadTimeLoop - TF.ESCThreadTimeNext);
-			TF.ESCThreadTimeEnd = micros();
+			else
+			{
+				usleep(TF._flag_ESCThreadTimeMax - TF._Tmp_ESCThreadTimeLoop - TF._Tmp_ESCThreadTimeNext);
+			}
+			if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._Tmp_ESCThreadError)
+			{
+				TF._Tmp_ESCThreadError = TF._Tmp_ESCThreadTimeLoop;
+			}
+			TF._Tmp_ESCThreadTimeEnd = micros();
 		}
 	});
 	cpu_set_t cpuset;
@@ -500,16 +530,22 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	}
 	std::cout << " \n\n";
 
-	std::cout << " Flag_ForceFailed_Safe:" << AF._flag_ESC_ARMED << "               \n";
+	std::cout << " Flag_ESC_ARMED:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 	std::cout << " Flag_IsLockEnable:" << AF._flag_IsLockCleanerEnable << "         \n";
 	std::cout << " Flag_ClockingTime_Error:" << AF._flag_ClockingTime_Error << "         \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
 
-	std::cout << " IMULoopTime: " << TF.IMUThreadTimeLoop << "                IMUNextTime: " << TF.IMUThreadTimeNext << "                                    \n";
-	std::cout << " RXLoopTime: " << TF.RXThreadTimeLoop << "                RXNextTime: " << TF.RXThreadTimeNext << "                                    \n";
-	std::cout << " ESCLoopTime: " << TF.ESCThreadTimeLoop << "                ESCNextTime: " << TF.ESCThreadTimeNext << "                                    \n";
+	std::cout << " IMULoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeLoop;
+	std::cout << " IMUNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeNext;
+	std::cout << " IMUMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadError << "    \n";
+	std::cout << " RXTLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadTimeLoop;
+	std::cout << " RXTNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadTimeNext;
+	std::cout << " RXTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadError << "    \n";
+	std::cout << " ESCLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadTimeLoop;
+	std::cout << " ESCNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadTimeNext;
+	std::cout << " ESCMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadError << "    \n";
 }
 
 void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
