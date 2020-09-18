@@ -97,8 +97,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Fixed_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z, SF.IMUFilter_Type);
 			SF._Tmp_Gryo_RTSpeed_Pitch = (SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB);
 			SF._Tmp_Gryo_RTSpeed__Roll = (SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB);
-			SF._uORB_Real_Pitch += SF._Tmp_Gryo_RTSpeed_Pitch / AF.Update_Freqeuncy;
-			SF._uORB_Real__Roll += SF._Tmp_Gryo_RTSpeed__Roll / AF.Update_Freqeuncy;
+			SF._uORB_Real_Pitch += SF._Tmp_Gryo_RTSpeed_Pitch / TF._flag_IMUThreadFreq;
+			SF._uORB_Real__Roll += SF._Tmp_Gryo_RTSpeed__Roll / TF._flag_IMUThreadFreq;
 			//GryoTrue------------------------------------------------------------------//
 			SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB) * 0.3);
@@ -128,12 +128,12 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				SF._uORB_Real__Roll = SF._uORB_Accel__Roll;
 				AF._flag_MPU9250_first_StartUp = false;
 			}
-			SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
-			SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / AF.Update_Freqeuncy / DF._flag_MPU9250_LSB) * (3.14 / 180));
+			SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
+			SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
 
 			TF._Tmp_IMUThreadTimeEnd = micros();
 			TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
-			if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
+			if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_IMUThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
 			{
 				usleep(50);
 				AF._flag_ClockingTime_Error = true;
@@ -629,7 +629,12 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
 	SF._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
 	//===============================================================Update cofig==/
-	AF.Update_Freqeuncy = Configdata["Update_Freqeucy"].get<int>();
+	TF._flag_IMUThreadFreq = Configdata["IMU_Freqeucy"].get<int>();
+	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
+	TF._flag_RXTThreadFreq = Configdata["RXT_Freqeucy"].get<int>();
+	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
+	TF._flag_ESCThreadFreq = Configdata["ESC_Freqeucy"].get<int>();
+	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
 #else
 	SF.MPU9250_Type = APMInit.MPU9250_Type;
 	RF.RC_Type = APMInit.RC_Type;
@@ -637,6 +642,12 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
 
 	// AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
+	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
+	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
+	TF._flag_RXTThreadFreq = APMInit.RXT_Freqeuncy;
+	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
+	TF._flag_ESCThreadFreq = APMInit.ESC_Freqeuncy;
+	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
 
 	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
@@ -750,6 +761,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman *kal, float next_input_valu
 	}
 	else if (filtertype == MixFilterType_Kalman)
 	{
-		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 1.f / (float)AF.Update_Freqeuncy);
+		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 1.f / (float)TF._flag_IMUThreadFreq);
 	}
 }

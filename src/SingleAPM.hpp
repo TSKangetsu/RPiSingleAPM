@@ -40,7 +40,9 @@ namespace SingleAPMAPI
 	{
 		int RC_Type;
 		int MPU9250_Type;
-		int Update_Freqeuncy;
+		int IMU_Freqeuncy;
+		int RXT_Freqeuncy;
+		int ESC_Freqeuncy;
 		int IMUFilter_Type;
 		int IMUMixFilter_Type;
 
@@ -130,9 +132,6 @@ namespace SingleAPMAPI
 		struct SafyINFO
 		{
 			long int RC_Lose_Clocking;
-			int Update_Freqeuncy;
-			;
-
 			bool _flag_IsLockCleanerEnable;
 			bool _flag_Error;
 			bool _flag_ClockingTime_Error;
@@ -326,21 +325,24 @@ namespace SingleAPMAPI
 			int _Tmp_IMUThreadTimeNext;
 			int _Tmp_IMUThreadTimeLoop;
 			int _Tmp_IMUThreadError = 0;
-			int _flag_IMUThreadTimeMax = 4000;
+			int _flag_IMUThreadTimeMax;
+			int _flag_IMUThreadFreq;
 			std::thread *IMUTask;
 			int _Tmp_RXTThreadTimeStart;
 			int _Tmp_RXTThreadTimeEnd;
 			int _Tmp_RXTThreadTimeNext;
 			int _Tmp_RXTThreadTimeLoop;
 			int _Tmp_RXTThreadError = 0;
-			int _flag_RXTThreadTimeMax = 4000;
+			int _flag_RXTThreadTimeMax;
+			int _flag_RXTThreadFreq;
 			std::thread *RXTask;
 			int _Tmp_ESCThreadTimeStart;
 			int _Tmp_ESCThreadTimeEnd;
 			int _Tmp_ESCThreadTimeNext;
 			int _Tmp_ESCThreadTimeLoop;
 			int _Tmp_ESCThreadError = 0;
-			int _flag_ESCThreadTimeMax = 4000;
+			int _flag_ESCThreadTimeMax;
+			int _flag_ESCThreadFreq;
 			std::thread *ESCTask;
 			int _Tmp_ALTThreadTimeStart;
 			int _Tmp_ALTThreadTimeEnd;
