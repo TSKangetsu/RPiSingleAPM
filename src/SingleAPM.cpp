@@ -147,6 +147,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadError = TF._Tmp_IMUThreadTimeLoop;
 			}
 			TF._Tmp_IMUThreadTimeEnd = micros();
+
+			AttitudeUpdateTask();
 		}
 	});
 	cpu_set_t cpuset;
@@ -289,7 +291,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 	int rc = pthread_setaffinity_np(TF.RXTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
-void SingleAPMAPI::RPiSingleAPM::AttitudeTaskReg()
+void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 {
 	//Roll PID Mix
 	PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
@@ -431,8 +433,6 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 		{
 			TF._Tmp_ESCThreadTimeStart = micros();
 			TF._Tmp_ESCThreadTimeNext = TF._Tmp_ESCThreadTimeStart - TF._Tmp_ESCThreadTimeEnd;
-
-			AttitudeTaskReg();
 
 			if (AF._flag_ESC_ARMED)
 			{

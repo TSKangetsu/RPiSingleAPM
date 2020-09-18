@@ -113,7 +113,7 @@ namespace SingleAPMAPI
 		Kalman *Kal__Roll;
 		MS5611 *MS5611S;
 
-		void AttitudeTaskReg();
+		void AttitudeUpdateTask();
 
 		void SaftyCheckTaskReg();
 
