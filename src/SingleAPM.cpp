@@ -641,7 +641,6 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
 	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
 
-	// AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
 	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
 	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
 	TF._flag_RXTThreadFreq = APMInit.RXT_Freqeuncy;
