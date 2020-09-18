@@ -131,8 +131,7 @@ namespace SingleAPMAPI
 		{
 			long int RC_Lose_Clocking;
 			int Update_Freqeuncy;
-			long int UpdateMS5611_Start;
-			long int UpdateMS5611_Time;
+			;
 
 			bool _flag_IsLockCleanerEnable;
 			bool _flag_Error;
@@ -343,6 +342,11 @@ namespace SingleAPMAPI
 			int _Tmp_ESCThreadError = 0;
 			int _flag_ESCThreadTimeMax = 4000;
 			std::thread *ESCTask;
+			int _Tmp_ALTThreadTimeStart;
+			int _Tmp_ALTThreadTimeEnd;
+			int _Tmp_ALTThreadTimeNext;
+			int _Tmp_ALTThreadTimeLoop;
+			std::thread *ALTTask;
 		} TF;
 	};
 } // namespace SingleAPMAPI

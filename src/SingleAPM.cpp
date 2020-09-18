@@ -157,21 +157,25 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 {
-	TF.RXTask = new std::thread([&] {
+	TF.ALTTask = new std::thread([&] {
 		while (true)
 		{
-			AF.UpdateMS5611_Start = micros();
+			TF._Tmp_ALTThreadTimeStart = micros();
+			TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
+
 			SF._uORB_MS5611_Last_Value_AltMeter = SF._uORB_MS5611_AltMeter;
 			MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
 			SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
-			AF.UpdateMS5611_Time = micros() - AF.UpdateMS5611_Start;
+
+			TF._Tmp_ALTThreadTimeEnd = micros();
+			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
 		}
 	});
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
 	CPU_SET(3, &cpuset);
-	int rc = pthread_setaffinity_np(TF.RXTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+	int rc = pthread_setaffinity_np(TF.ALTTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserControlInputType UserInput)
@@ -506,7 +510,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << "\n";
 	std::cout << " Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
 	std::cout << " altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
-	std::cout << " AltUpdateFreq:" << AF.UpdateMS5611_Time << "            \n";
 	std::cout << " Leveling_Throttle:" << PF._uORB_Leveling_Throttle << "            \n";
 	std::cout << " MS5611ValueSettle:" << SF._uORB_MS5611_Last_Value_AltMeter << "            \n";
 	std::cout << "\n";
@@ -633,8 +636,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
 	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
 
-	AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
-	AF.Update_Freq_Time = (float)1 / AF.Update_Freqeuncy * 1000000;
+	// AF.Update_Freqeuncy = APMInit.Update_Freqeuncy;
 
 	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
