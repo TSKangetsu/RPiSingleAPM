@@ -16,8 +16,8 @@
 #include "../_thirdparty/pca9685.h"
 #include "../_thirdparty/Kalman.h"
 #include "../_thirdparty/MS5611/src/MS5611LIB.h"
-#include "../_thirdparty/Sbus/src/RPiSbus.h"
-#include "../_thirdparty/Ibus/src/RPiIBus.h"
+#include "../_thirdparty/RCLib/RPiIBus/RPiIBus.hpp"
+#include "../_thirdparty/RCLib/RPiSBus/RPiSBus.hpp"
 
 #ifdef USINGJSON
 #include <nlohmann/json.hpp>

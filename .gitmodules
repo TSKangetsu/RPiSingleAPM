@@ -1,3 +1,6 @@
 [submodule "_thirdparty/MS5611"]
 	path = _thirdparty/MS5611
 	url = https://github.com/TSKangetsu/RPiMS5611LIB
+[submodule "_thirdparty/RCLib"]
+	path = _thirdparty/RCLib
+	url = https://github.com/TSKangetsu/RaspberryPiRC

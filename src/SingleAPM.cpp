@@ -53,7 +53,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	else if (RF.RC_Type == RCIsSbus)
 	{
-		SbusInit = new Sbus("/dev/ttyS0", SbusMode::Normal);
+		SbusInit = new Sbus("/dev/ttyAMA0", SbusMode::Normal);
 	}
 
 	MS5611S = new MS5611();
