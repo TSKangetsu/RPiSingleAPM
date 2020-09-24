@@ -49,7 +49,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 	if (RF.RC_Type == RCIsIbus)
 	{
-		IbusInit = new Ibus("/dev/ttyS0");
+		IbusInit = new Ibus("/dev/ttyAMA0");
 	}
 	else if (RF.RC_Type == RCIsSbus)
 	{
