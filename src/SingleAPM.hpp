@@ -230,6 +230,7 @@ namespace SingleAPMAPI
 			double _flag_MS5611_LocalPressure = 1023;
 			double _uORB_MS5611_Last_Value_AltMeter;
 			double _uORB_MS5611_ThrottleFIXUP;
+			double _uORB_MS5611_ClimbeRate;
 		} SF;
 
 		struct PIDINFO
@@ -348,6 +349,7 @@ namespace SingleAPMAPI
 			int _Tmp_ALTThreadTimeEnd;
 			int _Tmp_ALTThreadTimeNext;
 			int _Tmp_ALTThreadTimeLoop;
+			int _Tmp_ALTThreadError = 0;
 			std::thread *ALTTask;
 		} TF;
 	};

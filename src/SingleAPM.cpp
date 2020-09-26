@@ -169,9 +169,16 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
 			SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
+			// SF._uORB_MS5611_ClimbeRate =
+			// 	((SF._uORB_MS5611_AltMeter - SF._uORB_MS5611_Last_Value_AltMeter) * ((double)TF._Tmp_ALTThreadTimeLoop / 1000000.f));
+			SF._uORB_MS5611_ClimbeRate = (int)(100000 * (SF._uORB_MS5611_AltMeter - SF._uORB_MS5611_Last_Value_AltMeter) / TF._Tmp_ALTThreadTimeLoop);
 
 			TF._Tmp_ALTThreadTimeEnd = micros();
 			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
+			if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._Tmp_ALTThreadError)
+			{
+				TF._Tmp_ALTThreadError = TF._Tmp_ALTThreadTimeLoop;
+			}
 		}
 	});
 	cpu_set_t cpuset;
@@ -510,6 +517,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << "\n";
 	std::cout << " Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
 	std::cout << " altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " ClimbeRate:" << SF._uORB_MS5611_ClimbeRate << "            \n";
 	std::cout << " Leveling_Throttle:" << PF._uORB_Leveling_Throttle << "            \n";
 	std::cout << " MS5611ValueSettle:" << SF._uORB_MS5611_Last_Value_AltMeter << "            \n";
 	std::cout << "\n";
@@ -549,6 +557,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ESCLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadTimeLoop;
 	std::cout << " ESCNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadTimeNext;
 	std::cout << " ESCMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadError << "    \n";
+	std::cout << " ALTLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeLoop;
+	std::cout << " ALTNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeNext;
+	std::cout << " ALTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadError << "    \n";
 }
 
 void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
@@ -557,7 +568,7 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 	{
 		DebugOutPut();
 		SaftyCheckTaskReg();
-		usleep(200000);
+		usleep(20000);
 	}
 }
 
