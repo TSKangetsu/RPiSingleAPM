@@ -227,10 +227,12 @@ namespace SingleAPMAPI
 			double _Tmp_MS5611_Data[2];
 			double _uORB_MS5611_Pressure;
 			double _uORB_MS5611_AltMeter;
+			double _uORB_MS5611_AltMeterFill;
 			double _flag_MS5611_LocalPressure = 1023;
+			double _flag_MS5611_FilterAlpha = 0.98;
 			double _uORB_MS5611_Last_Value_AltMeter;
 			double _uORB_MS5611_ThrottleFIXUP;
-			double _uORB_MS5611_ClimbeRate;
+			int _uORB_MS5611_ClimbeRate;
 		} SF;
 
 		struct PIDINFO

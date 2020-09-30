@@ -58,7 +58,10 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 	MS5611S = new MS5611();
 	MS5611S->MS5611Init();
-	MS5611S->LocalPressureSetter(SF._flag_MS5611_LocalPressure);
+	MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
+	SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
+	SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
+	MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[0]);
 
 	//GryoCali()
 	{
@@ -165,13 +168,16 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			TF._Tmp_ALTThreadTimeStart = micros();
 			TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-			SF._uORB_MS5611_Last_Value_AltMeter = SF._uORB_MS5611_AltMeter;
+			SF._uORB_MS5611_Last_Value_AltMeter = SF._uORB_MS5611_AltMeterFill;
 			MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
 			SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
-			// SF._uORB_MS5611_ClimbeRate =
-			// 	((SF._uORB_MS5611_AltMeter - SF._uORB_MS5611_Last_Value_AltMeter) * ((double)TF._Tmp_ALTThreadTimeLoop / 1000000.f));
-			SF._uORB_MS5611_ClimbeRate = (int)(100000 * (SF._uORB_MS5611_AltMeter - SF._uORB_MS5611_Last_Value_AltMeter) / TF._Tmp_ALTThreadTimeLoop);
+			int Tmp = SF._uORB_MS5611_AltMeter * 100;
+			SF._uORB_MS5611_AltMeter = (float)Tmp / 100.f;
+			SF._uORB_MS5611_AltMeterFill = SF._flag_MS5611_FilterAlpha * SF._uORB_MS5611_AltMeterFill + (1 - SF._flag_MS5611_FilterAlpha) * SF._uORB_MS5611_AltMeter;
+			Tmp = SF._uORB_MS5611_AltMeterFill * 100;
+			SF._uORB_MS5611_AltMeterFill = (float)Tmp / 100.f;
+			SF._uORB_MS5611_ClimbeRate = (int)(100 * ((double)SF._uORB_MS5611_AltMeterFill - (double)SF._uORB_MS5611_Last_Value_AltMeter)) * (double)((double)1000000 / (double)TF._Tmp_ALTThreadTimeLoop);
 
 			TF._Tmp_ALTThreadTimeEnd = micros();
 			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
@@ -516,7 +522,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
 	std::cout << " Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
-	std::cout << " altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " Altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " FilterAltitude :" << SF._uORB_MS5611_AltMeterFill << "            \n";
 	std::cout << " ClimbeRate:" << SF._uORB_MS5611_ClimbeRate << "            \n";
 	std::cout << " Leveling_Throttle:" << PF._uORB_Leveling_Throttle << "            \n";
 	std::cout << " MS5611ValueSettle:" << SF._uORB_MS5611_Last_Value_AltMeter << "            \n";
