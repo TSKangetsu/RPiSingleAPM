@@ -172,6 +172,9 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
 			SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
+
+			SF._uORB_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * SF._uORB_MS5611_PressureFill + (1 - SF._flag_MS5611_FilterAlpha) * SF._uORB_MS5611_Pressure;
+
 			int Tmp = SF._uORB_MS5611_AltMeter * 100;
 			SF._uORB_MS5611_AltMeter = (float)Tmp / 100.f;
 			SF._uORB_MS5611_AltMeterFill = SF._flag_MS5611_FilterAlpha * SF._uORB_MS5611_AltMeterFill + (1 - SF._flag_MS5611_FilterAlpha) * SF._uORB_MS5611_AltMeter;
@@ -522,6 +525,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
 	std::cout << " Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
+	std::cout << " FilterPressure :" << SF._uORB_MS5611_PressureFill << "            \n";
 	std::cout << " Altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
 	std::cout << " FilterAltitude :" << SF._uORB_MS5611_AltMeterFill << "            \n";
 	std::cout << " ClimbeRate:" << SF._uORB_MS5611_ClimbeRate << "            \n";
