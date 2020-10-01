@@ -147,7 +147,6 @@ namespace SingleAPMAPI
 
 		struct DeviceINFO
 		{
-			int RCReader_fd;
 			int PCA9658_fd = -1;
 			const int PWM_Freq = 400;
 			const int PCA9685_PinBase = 65;

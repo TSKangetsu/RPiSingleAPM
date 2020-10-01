@@ -33,7 +33,6 @@ int main(int argc, char *argv[])
 		case 'h':
 		{
 			std::cout << "using ArgeMent: \n"
-					  << " -c : starting calibration \n"
 					  << " -r : starting AirController \n";
 		}
 		break;

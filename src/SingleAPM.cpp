@@ -577,7 +577,9 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 {
 	while (true)
 	{
+#ifdef DEBUG
 		DebugOutPut();
+#endif
 		SaftyCheckTaskReg();
 		usleep(20000);
 	}
