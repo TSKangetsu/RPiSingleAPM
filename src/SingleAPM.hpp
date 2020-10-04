@@ -137,12 +137,11 @@ namespace SingleAPMAPI
 			bool _flag_ClockingTime_Error;
 			bool _flag_StartUP_Protect;
 			bool _flag_MPU9250_first_StartUp;
-			bool _flag_MS5611_firstStartUp;
+			bool _flag_MS5611_AltHoldEnable;
 			bool _flag_RC_Disconnected;
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
 			bool _flag_UserInput_Enable;
-			bool _flag_AlthHold_Enable;
 		} AF;
 
 		struct DeviceINFO
@@ -229,10 +228,11 @@ namespace SingleAPMAPI
 			double _uORB_MS5611_AltMeter;
 			double _uORB_MS5611_AltMeterFill;
 			double _flag_MS5611_LocalPressure = 1023;
-			double _flag_MS5611_FilterAlpha = 0.98;
+			double _flag_MS5611_FilterAlpha = 0.94;
 			double _uORB_MS5611_Last_Value_AltMeter;
 			double _uORB_MS5611_ThrottleFIXUP;
 			int _uORB_MS5611_ClimbeRate;
+			int _uORB_MS5611_AltHoldTarget;
 		} SF;
 
 		struct PIDINFO

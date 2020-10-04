@@ -7,10 +7,10 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 	AF.RC_Lose_Clocking = 0;
 	AF._flag_MPU9250_first_StartUp = true;
-	AF._flag_MS5611_firstStartUp = true;
+	AF._flag_MS5611_AltHoldEnable = false;
 	AF._flag_ESC_ARMED = true;
 	AF._flag_ClockingTime_Error = false;
-	AF._flag_AlthHold_Enable = false;
+	AF._flag_MS5611_AltHoldEnable = false;
 	ConfigReader(APMInit);
 
 	if (DF.PCA9658_fd == -1)
@@ -182,6 +182,11 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			SF._uORB_MS5611_AltMeterFill = (float)Tmp / 100.f;
 			SF._uORB_MS5611_ClimbeRate = (int)(100 * ((double)SF._uORB_MS5611_AltMeterFill - (double)SF._uORB_MS5611_Last_Value_AltMeter)) * (double)((double)1000000 / (double)TF._Tmp_ALTThreadTimeLoop);
 
+			if (AF._flag_MS5611_AltHoldEnable)
+			{
+				SF._uORB_MS5611_AltHoldTarget = SF._uORB_MS5611_AltMeterFill;
+			}
+
 			TF._Tmp_ALTThreadTimeEnd = micros();
 			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
 			if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._Tmp_ALTThreadError)
@@ -337,10 +342,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
 	if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 		PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
-	if (AF._flag_AlthHold_Enable)
+	if (AF._flag_MS5611_AltHoldEnable)
 	{
-		PID_Caculate(SF._uORB_MS5611_Last_Value_AltMeter * 500 - SF._uORB_MS5611_AltMeter * 500, PF._uORB_Leveling_Throttle,
-					 PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Last_Value_Alt,
+		PID_Caculate((SF._uORB_MS5611_AltHoldTarget - SF._uORB_MS5611_AltMeterFill),
+					 PF._uORB_Leveling_Throttle, PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Last_Value_Alt,
 					 PF._flag_PID_P_Alt_Gain, PF._flag_PID_I_Alt_Gain, PF._flag_PID_D_Alt_Gain, PF._flag_PID_Alt_Level_Max);
 	}
 	else
@@ -405,7 +410,7 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 	}
 	if (AF._flag_ESC_ARMED == true)
 	{
-		AF._flag_MS5611_firstStartUp = true;
+		AF._flag_MS5611_AltHoldEnable = false;
 		AF._flag_MPU9250_first_StartUp = true;
 		PF._uORB_PID_D_Last_Value__Roll = 0;
 		PF._uORB_PID_D_Last_Value_Pitch = 0;
