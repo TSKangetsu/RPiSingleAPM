@@ -7,10 +7,11 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 	AF.RC_Lose_Clocking = 0;
 	AF._flag_MPU9250_first_StartUp = true;
-	AF._flag_MS5611_AltHoldEnable = false;
+	AF._flag_MS5611_AltHoldSet = false;
 	AF._flag_ESC_ARMED = true;
 	AF._flag_ClockingTime_Error = false;
-	AF._flag_MS5611_AltHoldEnable = false;
+	AF._flag_MS5611_AltHoldSet = false;
+	AF.AutoPilotMode = APModeINFO::AutoStable;
 	ConfigReader(APMInit);
 
 	if (DF.PCA9658_fd == -1)
@@ -49,11 +50,11 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 	if (RF.RC_Type == RCIsIbus)
 	{
-		IbusInit = new Ibus("/dev/ttyAMA0");
+		IbusInit = new Ibus(DF.RCDevice);
 	}
 	else if (RF.RC_Type == RCIsSbus)
 	{
-		SbusInit = new Sbus("/dev/ttyAMA0", SbusMode::Normal);
+		SbusInit = new Sbus(DF.RCDevice, SbusMode::Normal);
 	}
 
 	MS5611S = new MS5611();
@@ -182,9 +183,13 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			SF._uORB_MS5611_AltMeterFill = (float)Tmp / 100.f;
 			SF._uORB_MS5611_ClimbeRate = (int)(100 * ((double)SF._uORB_MS5611_AltMeterFill - (double)SF._uORB_MS5611_Last_Value_AltMeter)) * (double)((double)1000000 / (double)TF._Tmp_ALTThreadTimeLoop);
 
-			if (AF._flag_MS5611_AltHoldEnable)
+			if (AF._flag_MS5611_AltHoldSet)
 			{
 				SF._uORB_MS5611_AltHoldTarget = SF._uORB_MS5611_AltMeterFill;
+				AF._flag_MS5611_AltHoldSet = false;
+			}
+			if (AF.AutoPilotMode == APModeINFO::AltHold)
+			{
 			}
 
 			TF._Tmp_ALTThreadTimeEnd = micros();
@@ -314,47 +319,57 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 {
-	//Roll PID Mix
-	PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
-	PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
-				 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
-				 PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
-	if (PF._uORB_Leveling__Roll > PF._flag_PID_Level_Max)
-		PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max;
-	if (PF._uORB_Leveling__Roll < PF._flag_PID_Level_Max * -1)
-		PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max * -1;
-
-	//Pitch PID Mix
-	PF._uORB_PID_Pitch_Input = SF._uORB_Gryo_Pitch + SF._uORB_Real_Pitch * 15 - RF._uORB_RC_Out_Pitch;
-	PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
-				 PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
-				 PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
-	if (PF._uORB_Leveling_Pitch > PF._flag_PID_Level_Max)
-		PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max;
-	if (PF._uORB_Leveling_Pitch < PF._flag_PID_Level_Max * -1)
-		PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
-
-	//Yaw PID Mix
-	PID_Caculate(SF._uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
-				 PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
-				 PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
-	if (PF._uORB_Leveling___Yaw > PF._flag_PID_Level_Max)
-		PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
-	if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
-		PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
-	if (AF._flag_MS5611_AltHoldEnable)
+	if (AF.AutoPilotMode == APModeINFO::AltHold ||
+		AF.AutoPilotMode == APModeINFO::AutoStable ||
+		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		PID_Caculate((SF._uORB_MS5611_AltHoldTarget - SF._uORB_MS5611_AltMeterFill),
-					 PF._uORB_Leveling_Throttle, PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Last_Value_Alt,
-					 PF._flag_PID_P_Alt_Gain, PF._flag_PID_I_Alt_Gain, PF._flag_PID_D_Alt_Gain, PF._flag_PID_Alt_Level_Max);
+		//Roll PID Mix
+		PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 - RF._uORB_RC_Out__Roll;
+		PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
+					 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
+					 PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
+		if (PF._uORB_Leveling__Roll > PF._flag_PID_Level_Max)
+			PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max;
+		if (PF._uORB_Leveling__Roll < PF._flag_PID_Level_Max * -1)
+			PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max * -1;
+
+		//Pitch PID Mix
+		PF._uORB_PID_Pitch_Input = SF._uORB_Gryo_Pitch + SF._uORB_Real_Pitch * 15 - RF._uORB_RC_Out_Pitch;
+		PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
+					 PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
+					 PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
+		if (PF._uORB_Leveling_Pitch > PF._flag_PID_Level_Max)
+			PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max;
+		if (PF._uORB_Leveling_Pitch < PF._flag_PID_Level_Max * -1)
+			PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
+
+		//Yaw PID Mix
+		PID_Caculate(SF._uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
+					 PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
+					 PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
+		if (PF._uORB_Leveling___Yaw > PF._flag_PID_Level_Max)
+			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
+		if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
+			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
+		if (AF.AutoPilotMode == APModeINFO::AltHold)
+		{
+			PID_Caculate((SF._uORB_MS5611_AltHoldTarget - SF._uORB_MS5611_AltMeterFill + SF._uORB_MS5611_ClimbeRate * 15),
+						 PF._uORB_Leveling_Throttle, PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Last_Value_Alt,
+						 PF._flag_PID_P_Alt_Gain, PF._flag_PID_I_Alt_Gain, PF._flag_PID_D_Alt_Gain, PF._flag_PID_Alt_Level_Max);
+			if (PF._uORB_Leveling_Throttle > PF._flag_PID_Alt_Level_Max)
+				PF._uORB_Leveling_Throttle = PF._flag_PID_Alt_Level_Max;
+			if (PF._uORB_Leveling_Throttle < PF._flag_PID_Alt_Level_Max * -1)
+				PF._uORB_Leveling_Throttle = PF._flag_PID_Alt_Level_Max * -1;
+		}
+		if (AF.AutoPilotMode == APModeINFO::PositionHold)
+		{
+		}
 	}
-	else
-	{
-		EF._Tmp_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-		EF._Tmp_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-	}
+
+	EF._Tmp_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+	EF._Tmp_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+	EF._Tmp_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+	EF._Tmp_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
 
 	EF._uORB_A1_Speed = (700 * (((float)EF._Tmp_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
 	EF._uORB_A2_Speed = (700 * (((float)EF._Tmp_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
@@ -410,7 +425,7 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 	}
 	if (AF._flag_ESC_ARMED == true)
 	{
-		AF._flag_MS5611_AltHoldEnable = false;
+		AF._flag_MS5611_AltHoldSet = false;
 		AF._flag_MPU9250_first_StartUp = true;
 		PF._uORB_PID_D_Last_Value__Roll = 0;
 		PF._uORB_PID_D_Last_Value_Pitch = 0;

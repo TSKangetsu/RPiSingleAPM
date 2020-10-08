@@ -129,15 +129,24 @@ namespace SingleAPMAPI
 
 		void IMUMixFilter(Kalman *kal, float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float &next_output_value, int filtertype);
 
+		enum APModeINFO
+		{
+			ManuallHold,
+			AltHold,
+			AutoStable,
+			PositionHold,
+		};
+
 		struct SafyINFO
 		{
+			APModeINFO AutoPilotMode;
 			long int RC_Lose_Clocking;
 			bool _flag_IsLockCleanerEnable;
 			bool _flag_Error;
 			bool _flag_ClockingTime_Error;
 			bool _flag_StartUP_Protect;
 			bool _flag_MPU9250_first_StartUp;
-			bool _flag_MS5611_AltHoldEnable;
+			bool _flag_MS5611_AltHoldSet;
 			bool _flag_RC_Disconnected;
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
@@ -157,6 +166,8 @@ namespace SingleAPMAPI
 			int MPU9250_SPI_Freq = 1000000;
 			int MS5611_fd;
 			const int MS5611_ADDR = 0x77;
+			char RCDevice[20] = "/dev/ttyAMA0";
+			char GPSDevice[20] = "/dev/ttyAMA1";
 			char configDir[20] = "/etc/APMconfig.json";
 		} DF;
 
@@ -275,7 +286,7 @@ namespace SingleAPMAPI
 			float _flag_PID_P_Alt_Gain = 5;
 			float _flag_PID_I_Alt_Gain = 0.01;
 			float _flag_PID_D_Alt_Gain = 4;
-			float _flag_PID_Alt_Level_Max;
+			float _flag_PID_Alt_Level_Max = 500;
 		} PF;
 
 		struct RCINFO
