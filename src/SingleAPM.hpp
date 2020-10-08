@@ -146,7 +146,6 @@ namespace SingleAPMAPI
 			bool _flag_ClockingTime_Error;
 			bool _flag_StartUP_Protect;
 			bool _flag_MPU9250_first_StartUp;
-			bool _flag_MS5611_AltHoldSet;
 			bool _flag_RC_Disconnected;
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
@@ -243,7 +242,7 @@ namespace SingleAPMAPI
 			double _uORB_MS5611_Last_Value_AltMeter;
 			double _uORB_MS5611_ThrottleFIXUP;
 			int _uORB_MS5611_ClimbeRate;
-			int _uORB_MS5611_AltHoldTarget;
+			int _uORB_MS5611_AltHoldTarget = 100;
 		} SF;
 
 		struct PIDINFO
@@ -258,6 +257,7 @@ namespace SingleAPMAPI
 
 			float _uORB_PID__Roll_Input = 0;
 			float _uORB_PID_Pitch_Input = 0;
+			float _uORB_PID_Alt_Input = 100;
 
 			float _uORB_Leveling__Roll;
 			float _uORB_Leveling_Pitch;
@@ -284,8 +284,8 @@ namespace SingleAPMAPI
 			float _uORB_PID_I_Last_Value_Alt = 0;
 			float _uORB_Leveling_Throttle;
 			float _flag_PID_P_Alt_Gain = 5;
-			float _flag_PID_I_Alt_Gain = 0.01;
-			float _flag_PID_D_Alt_Gain = 4;
+			float _flag_PID_I_Alt_Gain = 0;
+			float _flag_PID_D_Alt_Gain = 30;
 			float _flag_PID_Alt_Level_Max = 500;
 		} PF;
 
