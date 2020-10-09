@@ -25,6 +25,7 @@
 
 #define MPUIsI2c 0
 #define MPUIsSpi 1
+#define MPUCompassEnable 1
 #define RCIsIbus 0
 #define RCIsSbus 1
 #define GryoFilterType_none 0
@@ -174,18 +175,22 @@ namespace SingleAPMAPI
 		{
 			//=========================MPU9250======//
 			int MPU9250_Type;
+			int MPUCompassSupport = 1;
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
 			int _Tmp_MPU9250_Buffer[14];
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
-			unsigned char _Tmp_MPU9250_SPI_Buffer[28];
-
+			unsigned char _Tmp_MPU9250_SPI_Buffer[22];
+			unsigned char _Tmp_MPU9250_SPI_Compass_Buffer[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 			long _uORB_MPU9250_A_X;
 			long _uORB_MPU9250_A_Y;
 			long _uORB_MPU9250_A_Z;
 			long _uORB_MPU9250_G_X;
 			long _uORB_MPU9250_G_Y;
 			long _uORB_MPU9250_G_Z;
+			long _uORB_MPU9250_C_X;
+			long _uORB_MPU9250_C_Y;
+			long _uORB_MPU9250_C_Z;
 			long _uORB_MPU9250_G_Fixed_X;
 			long _uORB_MPU9250_G_Fixed_Y;
 			long _uORB_MPU9250_G_Fixed_Z;
@@ -206,6 +211,9 @@ namespace SingleAPMAPI
 			unsigned long _Tmp_MPU9250_A_X;
 			unsigned long _Tmp_MPU9250_A_Y;
 			unsigned long _Tmp_MPU9250_A_Z;
+			unsigned long _Tmp_MPU9250_C_X;
+			unsigned long _Tmp_MPU9250_C_Y;
+			unsigned long _Tmp_MPU9250_C_Z;
 
 			long _flag_MPU9250_G_X_Cali;
 			long _flag_MPU9250_G_Y_Cali;

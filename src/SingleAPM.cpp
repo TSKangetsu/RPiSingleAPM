@@ -25,19 +25,57 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	else if (SF.MPU9250_Type == MPUIsSpi)
 	{
+
 		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
+		SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x6B;
+		SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x80;
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2); //ResetPower
+		usleep(500000);
+		SF._Tmp_MPU9250_SPI_Config[0] = 0x75;
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //WHOAMI
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x00;
-		wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //reset
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //reset
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x1c;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-		wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); // Accel
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x1b;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x08;
-		wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); // Gryo
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
-		wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Config, 2); //config
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //config
+	}
+	if (SF.MPUCompassSupport == MPUCompassEnable)
+	{
+		{
+			//Set Slave Mode and Speed
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x6A;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x20;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(5000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x24;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x0D;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(5000);
+			//Read WHOAMI
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x25;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x0C | 0x80;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(5000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x26;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x00;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(5000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x27;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x81;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(5000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x49 | 0x80;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x00;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(5000);
+		}
 	}
 
 	if (SF.IMUMixFilter_Type == MixFilterType_Kalman)
@@ -340,6 +378,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 		if (AF.AutoPilotMode == APModeINFO::AltHold)
 		{
+			//Alt throttle PID Mix
 			PF._uORB_PID_Alt_Input = (SF._uORB_MS5611_AltHoldTarget - SF._uORB_MS5611_AltMeterFill + SF._uORB_MS5611_ClimbeRate);
 			PID_Caculate(PF._uORB_PID_Alt_Input, PF._uORB_Leveling_Throttle,
 						 PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Last_Value_Alt,
@@ -527,6 +566,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << "\n";
 	std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    "
 			  << " RealRoll: " << (int)SF._uORB_Real__Roll
+			  << "                        "
+			  << "\n";
+	std::cout << " CompassX:  " << (int)SF._uORB_MPU9250_C_X << "    "
+			  << " CompassY: " << (int)SF._uORB_MPU9250_C_Y << "    "
+			  << " CompassZ:" << (int)SF._uORB_MPU9250_C_Z
 			  << "                        "
 			  << "\n\n";
 
@@ -745,7 +789,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
 	else if (SF.MPU9250_Type == MPUIsSpi)
 	{
 		SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
-		wiringPiSPIDataRW(1, SF._Tmp_MPU9250_SPI_Buffer, 20);
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Buffer, 22);
 		SF._Tmp_MPU9250_A_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[1] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[2]);
 		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
 		SF._Tmp_MPU9250_A_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[3] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[4]);
@@ -759,6 +803,9 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
 		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
 		SF._Tmp_MPU9250_G_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[14]);
 		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
+		if (SF.MPUCompassSupport == MPUCompassEnable)
+		{
+		}
 	}
 }
 
