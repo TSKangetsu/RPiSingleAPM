@@ -9,7 +9,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	AF._flag_MPU9250_first_StartUp = true;
 	AF._flag_ESC_ARMED = true;
 	AF._flag_ClockingTime_Error = false;
-	AF.AutoPilotMode = APModeINFO::AltHold;
+	AF.AutoPilotMode = APModeINFO::AutoStable;
 	ConfigReader(APMInit);
 
 	if (DF.PCA9658_fd == -1)
@@ -25,7 +25,6 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	else if (SF.MPU9250_Type == MPUIsSpi)
 	{
-
 		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
 		SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x6B;
 		SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x80;
@@ -45,37 +44,6 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
 		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //config
-	}
-	if (SF.MPUCompassSupport == MPUCompassEnable)
-	{
-		{
-			//Set Slave Mode and Speed
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x6A;
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x20;
-			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
-			usleep(5000);
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x24;
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x0D;
-			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
-			usleep(5000);
-			//Read WHOAMI
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x25;
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x0C | 0x80;
-			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
-			usleep(5000);
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x26;
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x00;
-			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
-			usleep(5000);
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x27;
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x81;
-			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
-			usleep(5000);
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x49 | 0x80;
-			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x00;
-			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
-			usleep(5000);
-		}
 	}
 
 	if (SF.IMUMixFilter_Type == MixFilterType_Kalman)
@@ -803,9 +771,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
 		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
 		SF._Tmp_MPU9250_G_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[14]);
 		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
-		if (SF.MPUCompassSupport == MPUCompassEnable)
-		{
-		}
 	}
 }
 
