@@ -188,9 +188,9 @@ namespace SingleAPMAPI
 			long _uORB_MPU9250_G_X;
 			long _uORB_MPU9250_G_Y;
 			long _uORB_MPU9250_G_Z;
-			long _uORB_MPU9250_C_X;
-			long _uORB_MPU9250_C_Y;
-			long _uORB_MPU9250_C_Z;
+			long _uORB_MPU9250_M_X;
+			long _uORB_MPU9250_M_Y;
+			long _uORB_MPU9250_M_Z;
 			long _uORB_MPU9250_G_Fixed_X;
 			long _uORB_MPU9250_G_Fixed_Y;
 			long _uORB_MPU9250_G_Fixed_Z;
@@ -211,15 +211,18 @@ namespace SingleAPMAPI
 			unsigned long _Tmp_MPU9250_A_X;
 			unsigned long _Tmp_MPU9250_A_Y;
 			unsigned long _Tmp_MPU9250_A_Z;
-			unsigned long _Tmp_MPU9250_C_X;
-			unsigned long _Tmp_MPU9250_C_Y;
-			unsigned long _Tmp_MPU9250_C_Z;
+			unsigned long _Tmp_MPU9250_M_X;
+			unsigned long _Tmp_MPU9250_M_Y;
+			unsigned long _Tmp_MPU9250_M_Z;
 
 			long _flag_MPU9250_G_X_Cali;
 			long _flag_MPU9250_G_Y_Cali;
 			long _flag_MPU9250_G_Z_Cali;
 			double _flag_Accel__Roll_Cali;
 			double _flag_Accel_Pitch_Cali;
+			double _flag_MPU9250_M_X_Cali;
+			double _flag_MPU9250_M_Y_Cali;
+			double _flag_MPU9250_M_Z_Cali;
 
 			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
