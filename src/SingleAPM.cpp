@@ -44,6 +44,39 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
 		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //config
+
+		if (SF.MPUCompassSupport == MPUCompassEnable)
+		{
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x37;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x30; //INT_PIN_CFG : Important!
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(100000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x24;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x5D;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(100000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x6A;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x20;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(100000);
+			//
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x25;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x0C | 0x80;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(100000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x26;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x00;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(100000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x27;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x81;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(100000);
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x49 | 0x80;
+			SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x00;
+			wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2);
+			usleep(100000);
+		}
 	}
 
 	if (SF.IMUMixFilter_Type == MixFilterType_Kalman)
