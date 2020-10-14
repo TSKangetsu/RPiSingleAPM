@@ -44,54 +44,45 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
 		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //config
-
-		if (SF.MPUCompassSupport == MPUCompassEnable)
+		// MPU9250-AK8963 Slave settle
 		{
-			unsigned char CompassConfig[40][4] = {
+			unsigned char CompassConfig[35][4] = {
 				{0x37, 0x30}, // INT_PIN_CFG
 				{0x24, 0x5D}, // I2C_MST_CTRL
 				{0x6A, 0x20}, // USER_CTRL
-
 				{0x25, 0x0C | 0x80},
 				{0x26, 0x00},
 				{0x27, 0x81},
 				{0x49 | 0x80, 0x00}, // Read the WHO_AM_I byte,line is 6
-
 				{0x25, 0x0C},
 				{0x26, 0x0B},
 				{0x63, 0x01}, // Reset AK8963
 				{0x27, 0x81},
-
 				{0x25, 0x0C},
 				{0x26, 0x0A},
 				{0x63, 0x00}, // Power down magnetometer
 				{0x27, 0x81},
-
 				{0x25, 0x0C},
 				{0x26, 0x0A},
 				{0x63, 0x0F}, // Enter fuze mode
 				{0x27, 0x81},
-
 				{0x25, 0x0C | 0x80},
 				{0x26, 0x10},
 				{0x27, 0x83},
 				{0x49 | 0x80}, // Read the x-, y-, and z-axis calibration values ,line is 22
-
 				{0x25, 0x0C},
 				{0x26, 0x0A},
 				{0x63, 0x00}, // Power down magnetometer
 				{0x27, 0x81},
-
 				{0x25, 0x0C},
 				{0x26, 0x0A},
-				{0x63, 16 | 0x06}, // Set magnetometer data resolution and sample ODR
+				{0x63, 1 << 4 | 0x06}, // Set magnetometer data resolution and sample ODR
 				{0x27, 0x81},
-
 				{0x25, 0x0C | 0x80},
 				{0x26, 0x0A},
 				{0x27, 0x81},
 			};
-			for (size_t Index = 0; Index < 40; Index++)
+			for (size_t Index = 0; Index < 35; Index++)
 			{
 				if (Index == 22)
 				{
@@ -99,6 +90,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 					SF._flag_MPU9250_M_X_Cali = (float)(CompassConfig[Index][1] - 128) / 256.0f + 1.0f;
 					SF._flag_MPU9250_M_Y_Cali = (float)(CompassConfig[Index][2] - 128) / 256.0f + 1.0f;
 					SF._flag_MPU9250_M_Z_Cali = (float)(CompassConfig[Index][3] - 128) / 256.0f + 1.0f;
+					SF._flag_MPU9250_M_MRES = 10. * 4912. / 32760.0;
 				}
 				else
 				{
@@ -106,11 +98,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				}
 				usleep(50000);
 			}
-			unsigned char CompassConfigFinal[4][2] = {
-				{0x25, 0x0C | 0x80},
-				{0x26, 0x03},
-				{0x27, 0x87},
-			};
+			unsigned char CompassConfigFinal[4][2] = {{0x25, 0x0C | 0x80}, {0x26, 0x03}, {0x27, 0x87}};
 			for (size_t Index = 0; Index < 3; Index++)
 			{
 				wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfigFinal[Index], 2);
@@ -192,6 +180,10 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				SF._uORB_Accel_Pitch = asin((float)SF._uORB_MPU9250_A_Y / SF._Tmp_IMU_Accel_Vector) * 57.296;
 			SF._uORB_Accel__Roll -= SF._flag_Accel__Roll_Cali;
 			SF._uORB_Accel_Pitch -= SF._flag_Accel_Pitch_Cali;
+			//MAG-----------------------------------------------------------------------//
+			SF._uORB_MPU9250_M_X = SF._uORB_MPU9250_M_X * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_X_Cali;
+			SF._uORB_MPU9250_M_Y = SF._uORB_MPU9250_M_Y * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Y_Cali;
+			SF._uORB_MPU9250_M_Z = SF._uORB_MPU9250_M_Z * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Z_Cali;
 			//Gryo_MIX_ACCEL------------------------------------------------------------//
 			if (!AF._flag_MPU9250_first_StartUp)
 			{
@@ -609,9 +601,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " RealRoll: " << (int)SF._uORB_Real__Roll
 			  << "                        "
 			  << "\n";
-	std::cout << " CompassX:  " << (int)SF._uORB_MPU9250_M_X << "    "
-			  << " CompassY: " << (int)SF._uORB_MPU9250_M_Y << "    "
-			  << " CompassZ:" << (int)SF._uORB_MPU9250_M_Z
+	std::cout << " CompassX:  " << SF._uORB_MPU9250_M_X << "    "
+			  << " CompassY: " << SF._uORB_MPU9250_M_Y << "    "
+			  << " CompassZ:" << SF._uORB_MPU9250_M_Z
 			  << "                        "
 			  << "\n\n";
 
@@ -830,7 +822,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
 	else if (SF.MPU9250_Type == MPUIsSpi)
 	{
 		SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
-		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Buffer, 22);
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Buffer, 21);
 		SF._Tmp_MPU9250_A_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[1] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[2]);
 		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
 		SF._Tmp_MPU9250_A_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[3] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[4]);

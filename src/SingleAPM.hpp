@@ -188,9 +188,9 @@ namespace SingleAPMAPI
 			long _uORB_MPU9250_G_X;
 			long _uORB_MPU9250_G_Y;
 			long _uORB_MPU9250_G_Z;
-			long _uORB_MPU9250_M_X;
-			long _uORB_MPU9250_M_Y;
-			long _uORB_MPU9250_M_Z;
+			float _uORB_MPU9250_M_X;
+			float _uORB_MPU9250_M_Y;
+			float _uORB_MPU9250_M_Z;
 			long _uORB_MPU9250_G_Fixed_X;
 			long _uORB_MPU9250_G_Fixed_Y;
 			long _uORB_MPU9250_G_Fixed_Z;
@@ -220,6 +220,7 @@ namespace SingleAPMAPI
 			long _flag_MPU9250_G_Z_Cali;
 			double _flag_Accel__Roll_Cali;
 			double _flag_Accel_Pitch_Cali;
+			double _flag_MPU9250_M_MRES;
 			double _flag_MPU9250_M_X_Cali;
 			double _flag_MPU9250_M_Y_Cali;
 			double _flag_MPU9250_M_Z_Cali;
