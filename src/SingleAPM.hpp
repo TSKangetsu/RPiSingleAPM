@@ -232,15 +232,17 @@ namespace SingleAPMAPI
 
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
 			//=========================MS5611======//
+			int _Tmp_MS5611_AvaClock = 0;
 			double _Tmp_MS5611_Data[2];
+			double _Tmp_MS5611_AvaTotal = 0;
+			double _Tmp_MS5611_AvaData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			double _uORB_MS5611_Pressure = 0;
-			double _uORB_MS5611_PressureFill = 0;
+			int _uORB_MS5611_PressureFill = 0;
+			int _uORB_MS5611_PressureDiff = 0;
+			int _uORB_MS5611_PressureFinal = 0;
 			double _uORB_MS5611_AltMeter = 0;
-			double _uORB_MS5611_AltMeterFill = 0;
 			double _flag_MS5611_LocalPressure = 1023;
-			double _flag_MS5611_FilterAlpha = 0.96;
-			double _uORB_MS5611_Last_Value_AltMeter = 0;
-			int _uORB_MS5611_ClimbeRate = 0;
+			double _flag_MS5611_FilterAlpha = 0.985;
 		} SF;
 
 		struct PIDINFO
@@ -278,6 +280,13 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
+			float _flag_PID_P_Alt_Gain = 1.2;
+			float _flag_PID_I_Alt_Gain = 0.02;
+			float _flag_PID_D_Alt_Gain = 1.5;
+			float _flag_PID_Alt_Level_Max = 400;
+
+			float _uORB_PID_P_Alt_Extend;
+			float _uORB_PID_D_Alt_Extend;
 		} PF;
 
 		struct RCINFO
