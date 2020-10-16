@@ -79,15 +79,6 @@ namespace SingleAPMAPI
 		int _flag_RCIsReserv___Yaw;
 	};
 
-	struct UserControlInputType
-	{
-		bool _ESC_Self_ARMED;
-		float _RawPre___Yaw;
-		float _RawPre_Pitch;
-		float _RawPre__Roll;
-		float _Alttitude_Set;
-	};
-
 	class RPiSingleAPM
 	{
 	public:
@@ -96,8 +87,6 @@ namespace SingleAPMAPI
 		void IMUSensorsTaskReg();
 
 		void AltholdSensorsTaskReg();
-
-		void ControlUserInput(bool EnableUserInput, UserControlInputType UserInput);
 
 		void ControllerTaskReg();
 
@@ -150,7 +139,6 @@ namespace SingleAPMAPI
 			bool _flag_RC_Disconnected;
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
-			bool _flag_UserInput_Enable;
 		} AF;
 
 		struct DeviceINFO
@@ -252,9 +240,7 @@ namespace SingleAPMAPI
 			double _flag_MS5611_LocalPressure = 1023;
 			double _flag_MS5611_FilterAlpha = 0.94;
 			double _uORB_MS5611_Last_Value_AltMeter;
-			double _uORB_MS5611_ThrottleFIXUP;
 			int _uORB_MS5611_ClimbeRate;
-			int _uORB_MS5611_AltHoldTarget = 100;
 		} SF;
 
 		struct PIDINFO
@@ -292,20 +278,13 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
-			float _uORB_PID_D_Last_Value_Alt = 0;
-			float _uORB_PID_I_Last_Value_Alt = 0;
-			float _uORB_Leveling_Throttle;
-			float _flag_PID_P_Alt_Gain = 5;
-			float _flag_PID_I_Alt_Gain = 0;
-			float _flag_PID_D_Alt_Gain = 30;
-			float _flag_PID_Alt_Level_Max = 500;
 		} PF;
 
 		struct RCINFO
 		{
 			int RC_Type;
 			int _Tmp_RC_Data[36] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			int _uORB_RC_Channel_PWM[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1000, 1500, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _flag_RC_Max_PWM_Value;
 			int _flag_RC_Mid_PWM_Value;
 			int _flag_RC_Min_PWM_Value;

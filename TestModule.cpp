@@ -6,7 +6,6 @@ int main(int argc, char *argv[])
 	system("clear");
 	int argvs;
 	APMSettinngs setting;
-	UserControlInputType UserInput;
 	while ((argvs = getopt(argc, argv, "vtcrh")) != -1)
 	{
 		switch (argvs)
@@ -18,9 +17,6 @@ int main(int argc, char *argv[])
 		case 'r':
 		{
 			RPiSingleAPM APM_Settle;
-			UserInput._RawPre__Roll = 1;
-			UserInput._RawPre_Pitch = -1;
-			UserInput._RawPre___Yaw = 0;
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.IMUSensorsTaskReg();
 			APM_Settle.ControllerTaskReg();

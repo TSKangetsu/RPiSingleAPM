@@ -264,25 +264,6 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 	int rc = pthread_setaffinity_np(TF.ALTTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
-void SingleAPMAPI::RPiSingleAPM::ControlUserInput(bool EnableUserInput, UserControlInputType UserInput)
-{
-	if (UserInput._RawPre__Roll > 0)
-		RF._Tmp_UserInput__Roll = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
-	else if (UserInput._RawPre__Roll <= 0)
-		RF._Tmp_UserInput__Roll = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre__Roll / 2 * RF._flag_RCIsReserv_Pitch;
-
-	if (UserInput._RawPre_Pitch > 0)
-		RF._Tmp_UserInput_Pitch = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
-	else if (UserInput._RawPre_Pitch <= 0)
-		RF._Tmp_UserInput_Pitch = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre_Pitch / 2 * RF._flag_RCIsReserv__Roll;
-
-	if (UserInput._RawPre___Yaw > 0)
-		RF._Tmp_UserInput___Yaw = (RF._flag_RC_Max_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
-	else if (UserInput._RawPre___Yaw <= 0)
-		RF._Tmp_UserInput___Yaw = (RF._flag_RC_Min_PWM_Value - RF._flag_RC_Mid_PWM_Value) * UserInput._RawPre___Yaw / 2 * RF._flag_RCIsReserv___Yaw;
-	AF._flag_UserInput_Enable = EnableUserInput;
-}
-
 void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 {
 	TF.RXTask = new std::thread([&] {
@@ -322,30 +303,20 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				}
 			}
 
-			if (!AF._flag_UserInput_Enable)
-			{
-				if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
-					RF._uORB_RC_Out__Roll = 0;
-				else
-					RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
-				//
-				if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
-					RF._uORB_RC_Out_Pitch = 0;
-				else
-					RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv_Pitch;
-				//
-				if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
-					RF._uORB_RC_Out___Yaw = 0;
-				else
-					RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
-			}
+			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+				RF._uORB_RC_Out__Roll = 0;
 			else
-			{
-				RF._uORB_RC_Out_Pitch = RF._Tmp_UserInput_Pitch;
-				RF._uORB_RC_Out__Roll = RF._Tmp_UserInput__Roll;
-				RF._uORB_RC_Out___Yaw = RF._Tmp_UserInput___Yaw;
-				AF._flag_UserInput_Enable = false;
-			}
+				RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
+			//
+			if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
+				RF._uORB_RC_Out_Pitch = 0;
+			else
+				RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv_Pitch;
+			//
+			if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
+				RF._uORB_RC_Out___Yaw = 0;
+			else
+				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
 			//
 			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
 			//
@@ -411,16 +382,6 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 		if (AF.AutoPilotMode == APModeINFO::AltHold)
 		{
-			//Alt throttle PID Mix
-			PF._uORB_PID_Alt_Input = (SF._uORB_MS5611_AltHoldTarget - SF._uORB_MS5611_AltMeterFill + SF._uORB_MS5611_ClimbeRate);
-			PID_Caculate(PF._uORB_PID_Alt_Input, PF._uORB_Leveling_Throttle,
-						 PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Last_Value_Alt,
-						 PF._flag_PID_P_Alt_Gain, PF._flag_PID_I_Alt_Gain, PF._flag_PID_D_Alt_Gain, PF._flag_PID_Alt_Level_Max);
-			if (PF._uORB_Leveling_Throttle > PF._flag_PID_Alt_Level_Max)
-				PF._uORB_Leveling_Throttle = PF._flag_PID_Alt_Level_Max;
-			if (PF._uORB_Leveling_Throttle < PF._flag_PID_Alt_Level_Max * -1)
-				PF._uORB_Leveling_Throttle = PF._flag_PID_Alt_Level_Max * -1;
-
 			if (AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
 			}
@@ -588,35 +549,36 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "IMUSenorData: "
 			  << " \n";
-	std::cout << " GryoPitch: " << (int)SF._uORB_Gryo_Pitch << "    "
-			  << " GryoRoll: " << (int)SF._uORB_Gryo__Roll << "    "
-			  << " GryoYaw: " << (int)SF._uORB_Gryo___Yaw
+	std::cout << " GryoPitch: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo_Pitch << "    "
+			  << " GryoRoll: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo__Roll << "    "
+			  << " GryoYaw: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo___Yaw
 			  << "                        "
-			  << "\n";
-	std::cout << " AccePitch: " << (int)SF._uORB_Accel_Pitch << "    "
-			  << " AcceRoll: " << (int)SF._uORB_Accel__Roll
+			  << std::endl;
+	;
+	std::cout << " AccePitch: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Accel_Pitch * 100) << "    "
+			  << " AcceRoll: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Accel__Roll * 100)
 			  << "                        "
-			  << "\n";
-	std::cout << " RealPitch: " << (int)SF._uORB_Real_Pitch << "    "
-			  << " RealRoll: " << (int)SF._uORB_Real__Roll
+			  << std::endl;
+	std::cout << " RealPitch: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real_Pitch * 100) << "    "
+			  << " RealRoll: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real__Roll * 100)
 			  << "                        "
-			  << "\n";
-	std::cout << " CompassX:  " << SF._uORB_MPU9250_M_X << "    "
-			  << " CompassY: " << SF._uORB_MPU9250_M_Y << "    "
-			  << " CompassZ:" << SF._uORB_MPU9250_M_Z
+			  << std::endl;
+	std::cout << " CompassX:  " << std::setw(7) << std::setfill(' ') << SF._uORB_MPU9250_M_X << "    "
+			  << " CompassY: " << std::setw(7) << std::setfill(' ') << SF._uORB_MPU9250_M_Y << "    "
+			  << " CompassZ:" << std::setw(7) << std::setfill(' ') << SF._uORB_MPU9250_M_Z
 			  << "                        "
-			  << "\n\n";
+			  << "\n"
+			  << std::endl;
 
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
-	std::cout << " Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
-	std::cout << " FilterPressure :" << SF._uORB_MS5611_PressureFill << "            \n";
-	std::cout << " Altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
-	std::cout << " FilterAltitude :" << SF._uORB_MS5611_AltMeterFill << "            \n";
+	std::cout << " Pressure:" << (float)SF._uORB_MS5611_Pressure << "            \n";
+	std::cout << " FilterPressure :" << (float)SF._uORB_MS5611_PressureFill << "            \n";
+	std::cout << " Altitude:" << (float)SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " FilterAltitude :" << (float)SF._uORB_MS5611_AltMeterFill << "            \n";
 	std::cout << " ClimbeRate:" << SF._uORB_MS5611_ClimbeRate << "            \n";
-	std::cout << " Leveling_Throttle:" << PF._uORB_Leveling_Throttle << "            \n";
-	std::cout << " MS5611ValueSettle:" << SF._uORB_MS5611_Last_Value_AltMeter << "            \n";
-	std::cout << "\n";
+	std::cout << " MS5611ValueSettle:" << (float)SF._uORB_MS5611_Last_Value_AltMeter << "            \n";
+	std::cout << std::endl;
 
 	std::cout << "RCOutPUTINFO:   "
 			  << "\n";
@@ -655,7 +617,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ESCMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadError << "    \n";
 	std::cout << " ALTLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeLoop;
 	std::cout << " ALTNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeNext;
-	std::cout << " ALTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadError << "    \n";
+	std::cout << " ALTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadError << "    \n"
+			  << std::endl;
 }
 
 void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
