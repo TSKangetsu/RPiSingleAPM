@@ -96,7 +96,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{
 					wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfig[Index], 2);
 				}
-				usleep(50000);
+				usleep(100000);
 			}
 			unsigned char CompassConfigFinal[4][2] = {{0x25, 0x0C | 0x80}, {0x26, 0x03}, {0x27, 0x87}};
 			for (size_t Index = 0; Index < 3; Index++)
@@ -572,12 +572,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
-	std::cout << " Pressure:" << (float)SF._uORB_MS5611_Pressure << "            \n";
-	std::cout << " FilterPressure :" << (float)SF._uORB_MS5611_PressureFill << "            \n";
-	std::cout << " Altitude:" << (float)SF._uORB_MS5611_AltMeter << "            \n";
-	std::cout << " FilterAltitude :" << (float)SF._uORB_MS5611_AltMeterFill << "            \n";
+	std::cout << " Pressure:" << SF._uORB_MS5611_Pressure << "            \n";
+	std::cout << " FilterPressure :" << SF._uORB_MS5611_PressureFill << "            \n";
+	std::cout << " Altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " FilterAltitude :" << SF._uORB_MS5611_AltMeterFill << "            \n";
 	std::cout << " ClimbeRate:" << SF._uORB_MS5611_ClimbeRate << "            \n";
-	std::cout << " MS5611ValueSettle:" << (float)SF._uORB_MS5611_Last_Value_AltMeter << "            \n";
 	std::cout << std::endl;
 
 	std::cout << "RCOutPUTINFO:   "
@@ -629,7 +628,7 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 		DebugOutPut();
 #endif
 		SaftyCheckTaskReg();
-		usleep(20000);
+		usleep(50000);
 	}
 }
 

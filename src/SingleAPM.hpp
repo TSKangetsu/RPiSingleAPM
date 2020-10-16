@@ -233,14 +233,14 @@ namespace SingleAPMAPI
 			float _flag_Filter2x50_Gain = 4.840925170e+00;
 			//=========================MS5611======//
 			double _Tmp_MS5611_Data[2];
-			double _uORB_MS5611_Pressure;
-			double _uORB_MS5611_PressureFill;
-			double _uORB_MS5611_AltMeter;
-			double _uORB_MS5611_AltMeterFill;
+			double _uORB_MS5611_Pressure = 0;
+			double _uORB_MS5611_PressureFill = 0;
+			double _uORB_MS5611_AltMeter = 0;
+			double _uORB_MS5611_AltMeterFill = 0;
 			double _flag_MS5611_LocalPressure = 1023;
-			double _flag_MS5611_FilterAlpha = 0.94;
-			double _uORB_MS5611_Last_Value_AltMeter;
-			int _uORB_MS5611_ClimbeRate;
+			double _flag_MS5611_FilterAlpha = 0.96;
+			double _uORB_MS5611_Last_Value_AltMeter = 0;
+			int _uORB_MS5611_ClimbeRate = 0;
 		} SF;
 
 		struct PIDINFO
