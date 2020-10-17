@@ -314,38 +314,26 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				}
 			}
 
-			if (!AF._flag_RC_Disconnected)
-			{
-				if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
-					RF._uORB_RC_Out__Roll = 0;
-				else
-					RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
-				//
-				if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
-					RF._uORB_RC_Out_Pitch = 0;
-				else
-					RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv_Pitch;
-				//
-				if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
-					RF._uORB_RC_Out___Yaw = 0;
-				else
-					RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
-				//
-				RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
-				//
-				RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
-				//
-				RF._uORB_RC_Out_FlyMod = RF._uORB_RC_Channel_PWM[5];
-			}
-			else
-			{
+			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out__Roll = 0;
+			else
+				RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
+			//
+			if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out_Pitch = 0;
+			else
+				RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv_Pitch;
+			//
+			if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out___Yaw = 0;
-				RF._uORB_RC_Out_Throttle = RF._flag_RC_Min_PWM_Value;
-				RF._uORB_RC_Out___ARM = RF._flag_RC_Min_PWM_Value;
-				RF._uORB_RC_Out_FlyMod = RF._flag_RC_Min_PWM_Value;
-			}
+			else
+				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
+			//
+			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
+			//
+			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+			//
+			RF._uORB_RC_Out_FlyMod = RF._uORB_RC_Channel_PWM[5];
 
 			TF._Tmp_RXTThreadTimeEnd = micros();
 			TF._Tmp_RXTThreadTimeLoop = TF._Tmp_RXTThreadTimeEnd - TF._Tmp_RXTThreadTimeStart;
@@ -488,11 +476,11 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 	if (AF._flag_ESC_ARMED)
 	{
 		if (RF._flag_RC_Min_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
-			AF.AutoPilotMode == APModeINFO::AutoStable;
+			AF.AutoPilotMode = APModeINFO::AutoStable;
 		if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
-			AF.AutoPilotMode == APModeINFO::AltHold;
+			AF.AutoPilotMode = APModeINFO::AltHold;
 		if (RF._flag_RC_Max_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Max_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
-			AF.AutoPilotMode == APModeINFO::PositionHold;
+			AF.AutoPilotMode = APModeINFO::PositionHold;
 	}
 	//ErrorDetect
 	if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
