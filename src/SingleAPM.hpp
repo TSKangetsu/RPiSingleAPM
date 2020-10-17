@@ -139,6 +139,8 @@ namespace SingleAPMAPI
 			bool _flag_RC_Disconnected;
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
+			bool _flag_MS5611_Async;
+			bool _flag_MS5611_first_StartUp;
 		} AF;
 
 		struct DeviceINFO
@@ -304,6 +306,7 @@ namespace SingleAPMAPI
 			int _uORB_RC_Out_Throttle;
 			int _uORB_RC_Out___Yaw;
 			int _uORB_RC_Out___ARM;
+			int _uORB_RC_Out_FlyMod;
 
 			int _flag_RCIsReserv__Roll = 1;
 			int _flag_RCIsReserv_Pitch = 1;

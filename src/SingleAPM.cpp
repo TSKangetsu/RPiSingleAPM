@@ -122,12 +122,15 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SbusInit = new Sbus(DF.RCDevice, SbusMode::Normal);
 	}
 
-	MS5611S = new MS5611();
-	MS5611S->MS5611Init();
-	MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
-	SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
-	SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
-	MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[0]);
+	{
+		MS5611S = new MS5611();
+		MS5611S->MS5611Init();
+		MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
+		SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
+		SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
+		MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[0]);
+		SF._uORB_MS5611_PressureFill = SF._uORB_MS5611_Pressure * 100;
+	}
 
 	//GryoCali()
 	{
@@ -257,6 +260,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			if (SF._uORB_MS5611_PressureDiff > 1 || SF._uORB_MS5611_PressureDiff < -1)
 				SF._uORB_MS5611_PressureFill -= SF._uORB_MS5611_PressureDiff / 6.0;
 			SF._uORB_MS5611_PressureFinal = SF._uORB_MS5611_PressureFill;
+			AF._flag_MS5611_Async = true;
 			TF._Tmp_ALTThreadTimeEnd = micros();
 			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
 			if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._Tmp_ALTThreadError)
@@ -310,24 +314,38 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				}
 			}
 
-			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+			if (!AF._flag_RC_Disconnected)
+			{
+				if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+					RF._uORB_RC_Out__Roll = 0;
+				else
+					RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
+				//
+				if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
+					RF._uORB_RC_Out_Pitch = 0;
+				else
+					RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv_Pitch;
+				//
+				if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
+					RF._uORB_RC_Out___Yaw = 0;
+				else
+					RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
+				//
+				RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
+				//
+				RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+				//
+				RF._uORB_RC_Out_FlyMod = RF._uORB_RC_Channel_PWM[5];
+			}
+			else
+			{
 				RF._uORB_RC_Out__Roll = 0;
-			else
-				RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv__Roll;
-			//
-			if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out_Pitch = 0;
-			else
-				RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv_Pitch;
-			//
-			if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
 				RF._uORB_RC_Out___Yaw = 0;
-			else
-				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) / 2 * RF._flag_RCIsReserv___Yaw;
-			//
-			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
-			//
-			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+				RF._uORB_RC_Out_Throttle = RF._flag_RC_Min_PWM_Value;
+				RF._uORB_RC_Out___ARM = RF._flag_RC_Min_PWM_Value;
+				RF._uORB_RC_Out_FlyMod = RF._flag_RC_Min_PWM_Value;
+			}
 
 			TF._Tmp_RXTThreadTimeEnd = micros();
 			TF._Tmp_RXTThreadTimeLoop = TF._Tmp_RXTThreadTimeEnd - TF._Tmp_RXTThreadTimeStart;
@@ -389,6 +407,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 		if (AF.AutoPilotMode == APModeINFO::AltHold)
 		{
+			if (AF._flag_MS5611_Async)
+			{
+				AF._flag_MS5611_Async = false;
+			}
 			if (AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
 			}
@@ -461,6 +483,16 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 		PF._uORB_PID_I_Last_Value__Roll = 0;
 		PF._uORB_PID_I_Last_Value_Pitch = 0;
 		PF._uORB_PID_I_Last_Value___Yaw = 0;
+	}
+	//flyMode Switch
+	if (AF._flag_ESC_ARMED)
+	{
+		if (RF._flag_RC_Min_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
+			AF.AutoPilotMode == APModeINFO::AutoStable;
+		if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
+			AF.AutoPilotMode == APModeINFO::AltHold;
+		if (RF._flag_RC_Max_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Max_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
+			AF.AutoPilotMode == APModeINFO::PositionHold;
 	}
 	//ErrorDetect
 	if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
@@ -545,6 +577,20 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 {
 	std::cout << "\033[150A";
 	std::cout << "\033[K";
+	std::cout << "FlyMode:\n";
+	if (AF.AutoPilotMode == APModeINFO::AutoStable)
+	{
+		std::cout << " AutoStable";
+	}
+	else if (AF.AutoPilotMode == APModeINFO::AltHold)
+	{
+		std::cout << " AltHold";
+	}
+	else if (AF.AutoPilotMode == APModeINFO::PositionHold)
+	{
+		std::cout << " PositionHold";
+	}
+	std::cout << "\n\n";
 	std::cout << "ESCSpeedOutput:"
 			  << " \n";
 	std::cout << " A1 " << EF._uORB_A1_Speed << "    "
@@ -633,7 +679,7 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 		DebugOutPut();
 #endif
 		SaftyCheckTaskReg();
-		usleep(50000);
+		usleep(20000);
 	}
 }
 
