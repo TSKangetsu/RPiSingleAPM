@@ -433,6 +433,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				{
 					PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max;
 				}
+				else if (PF._uORB_PID_Alt_Throttle < PF._flag_PID_Alt_Level_Max * -1)
+				{
+					PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max * -1;
+				}
 				//
 				AF._flag_MS5611_Async = false;
 			}
@@ -650,9 +654,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
-	std::cout << " FilterPressure :" << SF._uORB_MS5611_PressureFill << "            \n";
+	std::cout << " FilterPressure :    " << SF._uORB_MS5611_PressureFill << "            \n";
 	std::cout << " FilterPressureFast :" << SF._uORB_MS5611_PressureFinal << "            \n";
-	std::cout << " Altitude:" << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " Altitude:           " << SF._uORB_MS5611_AltMeter << "            \n";
+	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
 	std::cout << std::endl;
 
 	std::cout << "RCOutPUTINFO:   "
