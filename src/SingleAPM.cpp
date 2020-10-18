@@ -393,10 +393,47 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
 		if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
-		if (AF.AutoPilotMode == APModeINFO::AltHold)
+
+		if (AF.AutoPilotMode == APModeINFO::AltHold ||
+			AF.AutoPilotMode == APModeINFO::PositionHold)
 		{
 			if (AF._flag_MS5611_Async)
 			{
+				//PID_P
+				PF._uORB_PID_Alt_Input = SF._uORB_MS5611_PressureFinal;
+				PF._uORB_PID_Alt_Diff = PF._uORB_PID_Alt_Input - PF._uORB_PID_AltHold_Target;
+				PF._uORB_PID_P_Alt_Extend = 0.f;
+				if (PF._uORB_PID_Alt_Diff > 10 || PF._uORB_PID_Alt_Diff > 10)
+				{
+					PF._uORB_PID_P_Alt_Extend = (abs((float)PF._uORB_PID_Alt_Diff - 10) / 20.f);
+					if (PF._uORB_PID_P_Alt_Extend > 3)
+						PF._uORB_PID_P_Alt_Extend = 3;
+				}
+				//PID_I
+				PF._uORB_PID_I_Alt_Extend += (PF._flag_PID_D_Alt_Gain / 100.0) * PF._uORB_PID_Alt_Diff;
+				if (PF._uORB_PID_I_Alt_Extend > PF._flag_PID_Alt_Level_Max)
+					PF._uORB_PID_I_Alt_Extend = PF._flag_PID_Alt_Level_Max;
+				if (PF._uORB_PID_I_Alt_Extend < PF._flag_PID_Alt_Level_Max * -1)
+					PF._uORB_PID_I_Alt_Extend = PF._flag_PID_Alt_Level_Max * -1;
+				//PID_D
+				if (AF._flag_IsAltHoldChanging)
+					PF._Tmp_PID_D_Alt_Last = PF._uORB_PID_Alt_Input * 10;
+				PF._uORB_PID_D_Alt_Extend -= PF._Tmp_PID_D_Alt_Var[PF._Tmp_PID_D_Alt_VarClock];
+				PF._Tmp_PID_D_Alt_Var[PF._Tmp_PID_D_Alt_VarClock] = PF._uORB_PID_Alt_Input * 10 - PF._Tmp_PID_D_Alt_Last;
+				PF._uORB_PID_D_Alt_Extend += PF._Tmp_PID_D_Alt_Var[PF._Tmp_PID_D_Alt_VarClock];
+				PF._Tmp_PID_D_Alt_Last = PF._uORB_PID_Alt_Input * 10;
+				PF._Tmp_PID_D_Alt_VarClock++;
+				if (PF._Tmp_PID_D_Alt_VarClock == 30)
+					PF._Tmp_PID_D_Alt_VarClock = 0;
+				//PID_Cal
+				PF._uORB_PID_Alt_Throttle = (PF._flag_PID_P_Alt_Gain + PF._uORB_PID_I_Alt_Extend) * PF._uORB_PID_Alt_Diff +
+											PF._uORB_PID_I_Alt_Extend +
+											(PF._uORB_PID_D_Alt_Extend * PF._flag_PID_D_Alt_Gain);
+				if (PF._uORB_PID_Alt_Throttle > PF._flag_PID_Alt_Level_Max)
+				{
+					PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max;
+				}
+				//
 				AF._flag_MS5611_Async = false;
 			}
 			if (AF.AutoPilotMode == APModeINFO::PositionHold)
@@ -722,10 +759,12 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
 	PF._flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();
 	PF._flag_PID_P___Yaw_Gain = Configdata["_flag_PID_P___Yaw_Gain"].get<float>();
+	PF._flag_PID_P_Alt_Gain = Configdata["_flag_PID_P_Alt_Gain"].get<float>();
 
 	PF._flag_PID_I__Roll_Gain = Configdata["_flag_PID_I__Roll_Gain"].get<float>();
 	PF._flag_PID_I_Pitch_Gain = Configdata["_flag_PID_I_Pitch_Gain"].get<float>();
 	PF._flag_PID_I___Yaw_Gain = Configdata["_flag_PID_I___Yaw_Gain"].get<float>();
+	PF._flag_PID_I_Alt_Gain = Configdata["_flag_PID_I_Alt_Gain"].get<float>();
 	PF._flag_PID_I__Roll_Max__Value = Configdata["_flag_PID_I__Roll_Max__Value"].get<float>();
 	PF._flag_PID_I_Pitch_Max__Value = Configdata["_flag_PID_I_Pitch_Max__Value"].get<float>();
 	PF._flag_PID_I___Yaw_Max__Value = Configdata["_flag_PID_I___Yaw_Max__Value"].get<float>();
@@ -733,8 +772,10 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_D__Roll_Gain = Configdata["_flag_PID_D__Roll_Gain"].get<float>();
 	PF._flag_PID_D_Pitch_Gain = Configdata["_flag_PID_D_Pitch_Gain"].get<float>();
 	PF._flag_PID_D___Yaw_Gain = Configdata["_flag_PID_D___Yaw_Gain"].get<float>();
+	PF._flag_PID_D_Alt_Gain = Configdata["_flag_PID_D_Alt_Gain"].get<float>();
 
 	PF._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
+	PF._flag_PID_Alt_Level_Max = Configdata["_flag_PID_Alt_Level_Max"].get<float>();
 	//==============================================================Sensors cofig==/
 	SF._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
 	SF._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
@@ -761,10 +802,12 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
 	PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
+	PF._flag_PID_P_Alt_Gain = APMInit._flag_PID_P_Alt_Gain;
 
 	PF._flag_PID_I__Roll_Gain = APMInit._flag_PID_I__Roll_Gain;
 	PF._flag_PID_I_Pitch_Gain = APMInit._flag_PID_I_Pitch_Gain;
 	PF._flag_PID_I___Yaw_Gain = APMInit._flag_PID_I___Yaw_Gain;
+	PF._flag_PID_I_Alt_Gain = APMInit._flag_PID_I_Alt_Gain;
 
 	PF._flag_PID_I__Roll_Max__Value = APMInit._flag_PID_I__Roll_Max__Value;
 	PF._flag_PID_I_Pitch_Max__Value = APMInit._flag_PID_I_Pitch_Max__Value;
@@ -773,7 +816,10 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_D__Roll_Gain = APMInit._flag_PID_D__Roll_Gain;
 	PF._flag_PID_D_Pitch_Gain = APMInit._flag_PID_D_Pitch_Gain;
 	PF._flag_PID_D___Yaw_Gain = APMInit._flag_PID_D___Yaw_Gain;
+	PF._flag_PID_D_Alt_Gain = APMInit._flag_PID_D_Alt_Gain;
+
 	PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
+	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
 
 	SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
 	SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;

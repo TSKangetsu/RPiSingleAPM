@@ -50,16 +50,20 @@ namespace SingleAPMAPI
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
 		float _flag_PID_P___Yaw_Gain;
+		float _flag_PID_P_Alt_Gain;
 		float _flag_PID_I__Roll_Gain;
 		float _flag_PID_I_Pitch_Gain;
 		float _flag_PID_I___Yaw_Gain;
+		float _flag_PID_I_Alt_Gain;
 		float _flag_PID_I__Roll_Max__Value;
 		float _flag_PID_I_Pitch_Max__Value;
 		float _flag_PID_I___Yaw_Max__Value;
 		float _flag_PID_D__Roll_Gain;
 		float _flag_PID_D_Pitch_Gain;
 		float _flag_PID_D___Yaw_Gain;
+		float _flag_PID_D_Alt_Gain;
 		float _flag_PID_Level_Max;
+		float _flag_PID_Alt_Level_Max;
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
@@ -141,6 +145,7 @@ namespace SingleAPMAPI
 			bool _flag_Device_setupFailed;
 			bool _flag_MS5611_Async;
 			bool _flag_MS5611_first_StartUp;
+			bool _flag_IsAltHoldChanging;
 		} AF;
 
 		struct DeviceINFO
@@ -282,13 +287,23 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
-			float _flag_PID_P_Alt_Gain = 1.2;
-			float _flag_PID_I_Alt_Gain = 0.02;
-			float _flag_PID_D_Alt_Gain = 1.5;
-			float _flag_PID_Alt_Level_Max = 400;
+			int _uORB_PID_Alt_Throttle = 0;
+			int _Tmp_PID_D_Alt_VarClock = 0;
+			float _Tmp_PID_D_Alt_Var[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			float _flag_PID_P_Alt_Gain;
+			float _flag_PID_I_Alt_Gain;
+			float _flag_PID_D_Alt_Gain;
+			float _flag_PID_Alt_Level_Max;
 
-			float _uORB_PID_P_Alt_Extend;
-			float _uORB_PID_D_Alt_Extend;
+			float _uORB_PID_P_Alt_Extend = 0;
+			float _uORB_PID_I_Alt_Extend = 0;
+			float _uORB_PID_D_Alt_Extend = 0;
+
+			float _Tmp_PID_D_Alt_Last = 0;
+
+			int _uORB_PID_AltInput = 0;
+			int _uORB_PID_Alt_Diff = 0;
+			int _uORB_PID_AltHold_Target;
 		} PF;
 
 		struct RCINFO
