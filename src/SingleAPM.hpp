@@ -144,6 +144,7 @@ namespace SingleAPMAPI
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
 			bool _flag_MS5611_Async;
+			bool _flag_IsAltHoldDisSet;
 			bool _flag_IsAltHoldChanging;
 		} AF;
 
