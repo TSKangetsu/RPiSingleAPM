@@ -244,9 +244,9 @@ namespace SingleAPMAPI
 			double _Tmp_MS5611_AvaTotal = 0;
 			double _Tmp_MS5611_AvaData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			double _uORB_MS5611_Pressure = 0;
-			int _uORB_MS5611_PressureFill = 0;
-			int _uORB_MS5611_PressureDiff = 0;
-			int _uORB_MS5611_PressureFinal = 0;
+			float _uORB_MS5611_PressureFill = 0;
+			float _uORB_MS5611_PressureDiff = 0;
+			float _uORB_MS5611_PressureFinal = 0;
 			double _uORB_MS5611_AltMeter = 0;
 			double _flag_MS5611_LocalPressure = 1023;
 			double _flag_MS5611_FilterAlpha = 0.985;
@@ -303,7 +303,7 @@ namespace SingleAPMAPI
 
 			int _uORB_PID_AltInput = 0;
 			int _uORB_PID_Alt_Diff = 0;
-			int _uORB_PID_AltHold_Target;
+			int _uORB_PID_AltHold_Target = 0;
 		} PF;
 
 		struct RCINFO

@@ -251,7 +251,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			if (SF._Tmp_MS5611_AvaClock == 20)
 				SF._Tmp_MS5611_AvaClock = 0;
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_AvaTotal / 20.f;
-			SF._uORB_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * SF._uORB_MS5611_PressureFill + (1 - SF._flag_MS5611_FilterAlpha) * SF._uORB_MS5611_Pressure;
+			SF._uORB_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * (float)SF._uORB_MS5611_PressureFill + (1.f - SF._flag_MS5611_FilterAlpha) * (float)SF._uORB_MS5611_Pressure;
 			SF._uORB_MS5611_PressureDiff = SF._uORB_MS5611_PressureFill - SF._uORB_MS5611_Pressure;
 			if (SF._uORB_MS5611_PressureDiff > 8)
 				SF._uORB_MS5611_PressureDiff = 8;
@@ -394,20 +394,21 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 
-		AF._flag_IsAltHoldChanging = true;
-		if (AF.AutoPilotMode == APModeINFO::AltHold ||
-			AF.AutoPilotMode == APModeINFO::PositionHold)
+		//AltHold Caculate
 		{
-			AF._flag_IsAltHoldChanging = false;
-			if (AF._flag_IsAltHoldDisSet)
+			AF._flag_IsAltHoldChanging = true;
+			if (AF.AutoPilotMode == APModeINFO::AltHold ||
+				AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
-				PF._uORB_PID_AltHold_Target = PF._uORB_PID_Alt_Input;
-				AF._flag_IsAltHoldDisSet = false;
+				AF._flag_IsAltHoldChanging = false;
+				if (AF._flag_IsAltHoldDisSet)
+				{
+					PF._uORB_PID_AltHold_Target = PF._uORB_PID_Alt_Input;
+					AF._flag_IsAltHoldDisSet = false;
+				}
 			}
-		}
 
-		if (AF._flag_MS5611_Async)
-		{
+			if (AF._flag_MS5611_Async)
 			{
 				//PID_P
 				PF._uORB_PID_Alt_Input = SF._uORB_MS5611_PressureFinal;
@@ -420,7 +421,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 						PF._uORB_PID_P_Alt_Extend = 3;
 				}
 				//PID_I
-				PF._uORB_PID_I_Alt_Extend += (PF._flag_PID_D_Alt_Gain / 100.0) * PF._uORB_PID_Alt_Diff;
+				PF._uORB_PID_I_Alt_Extend += (PF._flag_PID_I_Alt_Gain / 100.0) * PF._uORB_PID_Alt_Diff;
 				if (PF._uORB_PID_I_Alt_Extend > PF._flag_PID_Alt_Level_Max)
 					PF._uORB_PID_I_Alt_Extend = PF._flag_PID_Alt_Level_Max;
 				if (PF._uORB_PID_I_Alt_Extend < PF._flag_PID_Alt_Level_Max * -1)
@@ -436,19 +437,23 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				if (PF._Tmp_PID_D_Alt_VarClock == 30)
 					PF._Tmp_PID_D_Alt_VarClock = 0;
 				//PID_Cal
-				PF._uORB_PID_Alt_Throttle = (PF._flag_PID_P_Alt_Gain + PF._uORB_PID_I_Alt_Extend) * PF._uORB_PID_Alt_Diff +
-											PF._uORB_PID_I_Alt_Extend +
-											(PF._uORB_PID_D_Alt_Extend * PF._flag_PID_D_Alt_Gain);
-				if (PF._uORB_PID_Alt_Throttle > PF._flag_PID_Alt_Level_Max)
+				if (AF.AutoPilotMode == APModeINFO::AltHold ||
+					AF.AutoPilotMode == APModeINFO::PositionHold)
 				{
-					PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max;
+					PF._uORB_PID_Alt_Throttle = (PF._flag_PID_P_Alt_Gain + PF._uORB_PID_P_Alt_Extend) * PF._uORB_PID_Alt_Diff +
+												PF._uORB_PID_I_Alt_Extend +
+												(PF._uORB_PID_D_Alt_Extend * PF._flag_PID_D_Alt_Gain);
+					if (PF._uORB_PID_Alt_Throttle > PF._flag_PID_Alt_Level_Max)
+					{
+						PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max;
+					}
+					else if (PF._uORB_PID_Alt_Throttle < PF._flag_PID_Alt_Level_Max * -1)
+					{
+						PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max * -1;
+					}
 				}
-				else if (PF._uORB_PID_Alt_Throttle < PF._flag_PID_Alt_Level_Max * -1)
-				{
-					PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max * -1;
-				}
+				AF._flag_MS5611_Async = false;
 			}
-			AF._flag_MS5611_Async = false;
 		}
 	}
 
@@ -536,6 +541,9 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 		{
 			AF.AutoPilotMode = APModeINFO::AutoStable;
 			AF._flag_IsAltHoldDisSet = true;
+			PF._uORB_PID_AltHold_Target = 0;
+			PF._uORB_PID_Alt_Throttle = 0;
+			PF._uORB_PID_I_Alt_Extend = 0;
 		}
 		if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
 		{
