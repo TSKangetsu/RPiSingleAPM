@@ -132,6 +132,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._uORB_MS5611_PressureFill = SF._uORB_MS5611_Pressure * 100;
 	}
 
+	GPSInit = new GPSUart(DF.GPSDevice);
+
 	//GryoCali()
 	{
 		SF._flag_MPU9250_G_X_Cali = 0;
@@ -357,6 +359,38 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 	CPU_ZERO(&cpuset);
 	CPU_SET(3, &cpuset);
 	int rc = pthread_setaffinity_np(TF.RXTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+
+	TF.GPSTask = new std::thread([&] {
+		while (true)
+		{
+			TF._Tmp_GPSThreadTimeStart = micros();
+			TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
+
+			SF._uORB_GPS_Data = GPSInit->GPSParse();
+
+			TF._Tmp_GPSThreadTimeEnd = micros();
+			TF._Tmp_GPSThreadTimeLoop = TF._Tmp_GPSThreadTimeEnd - TF._Tmp_GPSThreadTimeStart;
+			if (TF._Tmp_GPSThreadTimeLoop + TF._Tmp_GPSThreadTimeNext > TF._flag_GPSThreadTimeMax | TF._Tmp_GPSThreadTimeNext < 0)
+			{
+				usleep(50);
+				AF._flag_ClockingTime_Error = true;
+			}
+			else
+			{
+				usleep(TF._flag_GPSThreadTimeMax - TF._Tmp_GPSThreadTimeLoop - TF._Tmp_GPSThreadTimeNext);
+			}
+			if (TF._Tmp_GPSThreadTimeLoop + TF._Tmp_GPSThreadTimeNext > TF._Tmp_GPSThreadError)
+			{
+				TF._Tmp_GPSThreadError = TF._Tmp_GPSThreadTimeLoop;
+			}
+			TF._Tmp_GPSThreadTimeEnd = micros();
+		}
+	});
+
+	cpu_set_t cpuset2;
+	CPU_ZERO(&cpuset2);
+	CPU_SET(3, &cpuset2);
+	int rc2 = pthread_setaffinity_np(TF.GPSTask->native_handle(), sizeof(cpu_set_t), &cpuset2);
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
@@ -635,7 +669,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 {
-	std::cout << "\033[150A";
+	std::cout << "\033[200A";
 	std::cout << "\033[K";
 	std::cout << "FlyMode:\n";
 	if (AF.AutoPilotMode == APModeINFO::AutoStable)
@@ -693,6 +727,13 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
 	std::cout << std::endl;
 
+	std::cout << "GPSDataINFO:"
+			  << "\n";
+	std::cout << " GPSLAT:     " << (int)SF._uORB_GPS_Data.lat << "            \n";
+	std::cout << " GPSLNG:     " << (int)SF._uORB_GPS_Data.lng << "            \n";
+	std::cout << " GPSSATCount:" << SF._uORB_GPS_Data.satillitesCount << "            \n";
+	std::cout << std::endl;
+
 	std::cout << "RCOutPUTINFO:   "
 			  << "\n";
 	std::cout << " ChannelRoll  "
@@ -731,7 +772,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ESCMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadError << "    \n";
 	std::cout << " ALTLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeLoop;
 	std::cout << " ALTNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeNext;
-	std::cout << " ALTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadError << "    \n"
+	std::cout << " ALTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadError << "    \n";
+	std::cout << " GPSLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadTimeLoop;
+	std::cout << " GPSNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadTimeNext;
+	std::cout << " GPSMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadError << "    \n"
 			  << std::endl;
 }
 

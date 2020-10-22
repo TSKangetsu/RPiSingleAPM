@@ -18,6 +18,7 @@
 #include "../_thirdparty/MS5611/src/MS5611LIB.h"
 #include "../_thirdparty/RCLib/RPiIBus/RPiIBus.hpp"
 #include "../_thirdparty/RCLib/RPiSBus/RPiSBus.hpp"
+#include "../_thirdparty/RCLib/RPiGPS/RPiGPS.hpp"
 
 #ifdef USINGJSON
 #include <nlohmann/json.hpp>
@@ -106,6 +107,7 @@ namespace SingleAPMAPI
 		Kalman *Kal_Pitch;
 		Kalman *Kal__Roll;
 		MS5611 *MS5611S;
+		GPSUart *GPSInit;
 
 		void AttitudeUpdateTask();
 
@@ -251,6 +253,8 @@ namespace SingleAPMAPI
 			double _uORB_MS5611_AltMeter = 0;
 			double _flag_MS5611_LocalPressure = 1023;
 			double _flag_MS5611_FilterAlpha = 0.985;
+			//=========================GPS=========//
+			GPSUartData _uORB_GPS_Data;
 		} SF;
 
 		struct PIDINFO
@@ -383,6 +387,13 @@ namespace SingleAPMAPI
 			int _Tmp_ALTThreadTimeLoop;
 			int _Tmp_ALTThreadError = 0;
 			std::thread *ALTTask;
+			int _Tmp_GPSThreadTimeStart;
+			int _Tmp_GPSThreadTimeEnd;
+			int _Tmp_GPSThreadTimeNext;
+			int _Tmp_GPSThreadTimeLoop;
+			int _Tmp_GPSThreadError = 0;
+			int _flag_GPSThreadTimeMax = (float)1 / 5 * 1000000;
+			std::thread *GPSTask;
 		} TF;
 	};
 } // namespace SingleAPMAPI
