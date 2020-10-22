@@ -244,6 +244,7 @@ namespace SingleAPMAPI
 			double _Tmp_MS5611_AvaTotal = 0;
 			double _Tmp_MS5611_AvaData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			double _uORB_MS5611_Pressure = 0;
+			double _uORB_MS5611_PressureFast = 0;
 			float _uORB_MS5611_PressureFill = 0;
 			float _uORB_MS5611_PressureDiff = 0;
 			float _uORB_MS5611_PressureFinal = 0;

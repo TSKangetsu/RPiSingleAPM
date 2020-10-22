@@ -250,15 +250,15 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			SF._Tmp_MS5611_AvaClock++;
 			if (SF._Tmp_MS5611_AvaClock == 20)
 				SF._Tmp_MS5611_AvaClock = 0;
-			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_AvaTotal / 20.f;
-			SF._uORB_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * (float)SF._uORB_MS5611_PressureFill + (1.f - SF._flag_MS5611_FilterAlpha) * (float)SF._uORB_MS5611_Pressure;
-			SF._uORB_MS5611_PressureDiff = SF._uORB_MS5611_PressureFill - SF._uORB_MS5611_Pressure;
+			SF._uORB_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.f;
+			SF._uORB_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * (float)SF._uORB_MS5611_PressureFill + (1.f - SF._flag_MS5611_FilterAlpha) * (float)SF._uORB_MS5611_PressureFast;
+			SF._uORB_MS5611_PressureDiff = SF._uORB_MS5611_PressureFill - SF._uORB_MS5611_PressureFast;
 			if (SF._uORB_MS5611_PressureDiff > 8)
 				SF._uORB_MS5611_PressureDiff = 8;
 			if (SF._uORB_MS5611_PressureDiff < -8)
 				SF._uORB_MS5611_PressureDiff = -8;
 			if (SF._uORB_MS5611_PressureDiff > 1 || SF._uORB_MS5611_PressureDiff < -1)
-				SF._uORB_MS5611_PressureFill -= SF._uORB_MS5611_PressureDiff / 6.0;
+				SF._uORB_MS5611_PressureFill -= SF._uORB_MS5611_PressureDiff / 2.f;
 			SF._uORB_MS5611_PressureFinal = SF._uORB_MS5611_PressureFill;
 			AF._flag_MS5611_Async = true;
 			TF._Tmp_ALTThreadTimeEnd = micros();
@@ -685,6 +685,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
+	std::cout << " FastPressure :    " << SF._uORB_MS5611_PressureFast << "            \n";
 	std::cout << " FilterPressure :    " << SF._uORB_MS5611_PressureFill << "            \n";
 	std::cout << " FilterPressureFast :" << SF._uORB_MS5611_PressureFinal << "            \n";
 	std::cout << " AltHoldTarget:      " << PF._uORB_PID_AltHold_Target << "            \n";
