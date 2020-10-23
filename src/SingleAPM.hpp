@@ -148,6 +148,7 @@ namespace SingleAPMAPI
 			bool _flag_ESC_ARMED;
 			bool _flag_Device_setupFailed;
 			bool _flag_MS5611_Async;
+			bool _flag_GPSData_Async;
 			bool _flag_IsAltHoldDisSet;
 			bool _flag_IsAltHoldChanging;
 		} AF;
@@ -257,6 +258,14 @@ namespace SingleAPMAPI
 			double _flag_MS5611_FilterAlpha = 0.985;
 			//=========================GPS=========//
 			GPSUartData _uORB_GPS_Data;
+			float _uORB_GPS_Lng_Diff = 0;
+			float _uORB_GPS_Lat_Diff = 0;
+			int _uORB_GPS_Lat_Smooth = 0;
+			int _uORB_GPS_Lng_Smooth = 0;
+			float _uOBR_GPS_Lat_Smooth_Diff = 0;
+			float _uOBR_GPS_Lng_Smooth_Diff = 0;
+			int _uORB_GPS_Lat_Last_Data = 0;
+			int _uORB_GPS_Lng_Last_Data = 0;
 		} SF;
 
 		struct PIDINFO

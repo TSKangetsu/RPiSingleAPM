@@ -133,6 +133,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 
 	GPSInit = new GPSUart(DF.GPSDevice);
+	SF._uORB_GPS_Data = GPSInit->GPSParse();
 
 	//GryoCali()
 	{
@@ -369,13 +370,41 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 			TF._Tmp_GPSThreadTimeStart = micros();
 			TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
 			TF._Tmp_GPSThreadSMooth++;
-
-			if (TF._Tmp_GPSThreadSMooth == 10)
 			{
-				SF._uORB_GPS_Data = GPSInit->GPSParse();
-				TF._Tmp_GPSThreadSMooth = 0;
-			}
 
+				if (TF._Tmp_GPSThreadSMooth == 10)
+				{
+					SF._uORB_GPS_Data = GPSInit->GPSParse();
+					TF._Tmp_GPSThreadSMooth = 0;
+					SF._uORB_GPS_Lat_Diff = (float)(SF._uORB_GPS_Data.lat - SF._uORB_GPS_Lat_Last_Data) / 10.f;
+					SF._uORB_GPS_Lng_Diff = (float)(SF._uORB_GPS_Data.lng - SF._uORB_GPS_Lng_Last_Data) / 10.f;
+					SF._uORB_GPS_Lat_Smooth = SF._uORB_GPS_Lat_Last_Data;
+					SF._uORB_GPS_Lng_Smooth = SF._uORB_GPS_Lng_Last_Data;
+					SF._uORB_GPS_Lat_Last_Data = SF._uORB_GPS_Data.lat;
+					SF._uORB_GPS_Lng_Last_Data = SF._uORB_GPS_Data.lng;
+					SF._uOBR_GPS_Lat_Smooth_Diff = 0;
+					SF._uOBR_GPS_Lng_Smooth_Diff = 0;
+				}
+				//
+				if (SF._uORB_GPS_Lat_Last_Data == 0 && SF._uORB_GPS_Lng_Last_Data == 0)
+				{
+					SF._uORB_GPS_Lat_Last_Data = SF._uORB_GPS_Data.lat;
+					SF._uORB_GPS_Lng_Last_Data = SF._uORB_GPS_Data.lng;
+				}
+				SF._uOBR_GPS_Lat_Smooth_Diff += SF._uORB_GPS_Lat_Diff;
+				if (abs(SF._uOBR_GPS_Lat_Smooth_Diff) > 1)
+				{
+					SF._uORB_GPS_Lat_Smooth += (int)SF._uOBR_GPS_Lat_Smooth_Diff;
+					SF._uOBR_GPS_Lat_Smooth_Diff -= (int)SF._uOBR_GPS_Lat_Smooth_Diff;
+				}
+				SF._uOBR_GPS_Lng_Smooth_Diff += SF._uORB_GPS_Lng_Diff;
+				if (abs(SF._uOBR_GPS_Lng_Smooth_Diff) > 1)
+				{
+					SF._uORB_GPS_Lng_Smooth += (int)SF._uOBR_GPS_Lng_Smooth_Diff;
+					SF._uOBR_GPS_Lng_Smooth_Diff -= (int)SF._uOBR_GPS_Lng_Smooth_Diff;
+				}
+				//
+			}
 			TF._Tmp_GPSThreadTimeEnd = micros();
 			TF._Tmp_GPSThreadTimeLoop = TF._Tmp_GPSThreadTimeEnd - TF._Tmp_GPSThreadTimeStart;
 			if (TF._Tmp_GPSThreadTimeLoop + TF._Tmp_GPSThreadTimeNext > TF._flag_GPSThreadTimeMax | TF._Tmp_GPSThreadTimeNext < 0)
@@ -500,6 +529,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 		//Position Caculate
 		{
+			if (AF._flag_GPSData_Async)
+			{
+				AF._flag_GPSData_Async;
+			}
 		}
 	}
 
@@ -741,8 +774,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";
-	std::cout << " GPSLAT:     " << (int)SF._uORB_GPS_Data.lat << "            \n";
-	std::cout << " GPSLNG:     " << (int)SF._uORB_GPS_Data.lng << "            \n";
+	std::cout << " GPSLAT:     " << (int)SF._uORB_GPS_Lat_Smooth << "            \n";
+	std::cout << " GPSLNG:     " << (int)SF._uORB_GPS_Lng_Smooth << "            \n";
 	std::cout << " GPSNE:      " << SF._uORB_GPS_Data.lat_North_Mode << " -> " << SF._uORB_GPS_Data.lat_East_Mode << "            \n";
 	std::cout << " GPSSATCount:" << SF._uORB_GPS_Data.satillitesCount << "            \n";
 	std::cout << std::endl;
