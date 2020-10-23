@@ -95,6 +95,8 @@ namespace SingleAPMAPI
 
 		void ControllerTaskReg();
 
+		void PositionTaskReg();
+
 		void ESCUpdateTaskReg();
 
 		void DebugOutPut();
@@ -387,12 +389,13 @@ namespace SingleAPMAPI
 			int _Tmp_ALTThreadTimeLoop;
 			int _Tmp_ALTThreadError = 0;
 			std::thread *ALTTask;
+			int _Tmp_GPSThreadSMooth = 0;
 			int _Tmp_GPSThreadTimeStart;
 			int _Tmp_GPSThreadTimeEnd;
 			int _Tmp_GPSThreadTimeNext;
 			int _Tmp_GPSThreadTimeLoop;
 			int _Tmp_GPSThreadError = 0;
-			int _flag_GPSThreadTimeMax = (float)1 / 5 * 1000000;
+			int _flag_GPSThreadTimeMax = (float)1 / 50 * 1000000;
 			std::thread *GPSTask;
 		} TF;
 	};

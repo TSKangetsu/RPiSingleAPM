@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.IMUSensorsTaskReg();
 			APM_Settle.ControllerTaskReg();
+			APM_Settle.PositionTaskReg();
 			APM_Settle.ESCUpdateTaskReg();
 			APM_Settle.AltholdSensorsTaskReg();
 			APM_Settle.TaskThreadBlock();

@@ -359,14 +359,22 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 	CPU_ZERO(&cpuset);
 	CPU_SET(3, &cpuset);
 	int rc = pthread_setaffinity_np(TF.RXTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+}
 
+void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
+{
 	TF.GPSTask = new std::thread([&] {
 		while (true)
 		{
 			TF._Tmp_GPSThreadTimeStart = micros();
 			TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
+			TF._Tmp_GPSThreadSMooth++;
 
-			SF._uORB_GPS_Data = GPSInit->GPSParse();
+			if (TF._Tmp_GPSThreadSMooth == 10)
+			{
+				SF._uORB_GPS_Data = GPSInit->GPSParse();
+				TF._Tmp_GPSThreadSMooth = 0;
+			}
 
 			TF._Tmp_GPSThreadTimeEnd = micros();
 			TF._Tmp_GPSThreadTimeLoop = TF._Tmp_GPSThreadTimeEnd - TF._Tmp_GPSThreadTimeStart;
@@ -488,6 +496,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				}
 				AF._flag_MS5611_Async = false;
 			}
+		}
+
+		//Position Caculate
+		{
 		}
 	}
 
@@ -731,6 +743,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << "\n";
 	std::cout << " GPSLAT:     " << (int)SF._uORB_GPS_Data.lat << "            \n";
 	std::cout << " GPSLNG:     " << (int)SF._uORB_GPS_Data.lng << "            \n";
+	std::cout << " GPSNE:      " << SF._uORB_GPS_Data.lat_North_Mode << " -> " << SF._uORB_GPS_Data.lat_East_Mode << "            \n";
 	std::cout << " GPSSATCount:" << SF._uORB_GPS_Data.satillitesCount << "            \n";
 	std::cout << std::endl;
 
