@@ -320,6 +320,25 @@ namespace SingleAPMAPI
 			int _uORB_PID_AltInput = 0;
 			int _uORB_PID_Alt_Diff = 0;
 			int _uORB_PID_AltHold_Target = 0;
+			//==========PositionHoldPID=========//
+			int _uORB_PID_GPS_Lat_Local_Diff = 0;
+			int _uORB_PID_GPS_Lng_Local_Diff = 0;
+			int _uORB_PID_GPS_Lat_Local_Target = 0;
+			int _uORB_PID_GPS_Lng_Local_Target = 0;
+
+			int _uORB_PID_D_GPS_Lat_Ouput;
+			int _uORB_PID_D_GPS_Lng_Ouput;
+			int _uORB_PID_D_GPS_Lat_LastValue = 0;
+			int _uORB_PID_D_GPS_Lng_LastValue = 0;
+			int _Tmp_PID_D_GPS_AvaClock = 0;
+			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _Tmp_PID_D_GPS_Lng_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+			int _flag_PID_P_GPS_Gain;
+			int _flag_PID_D_GPS_Gain;
+
+			float _uORB_PID_GPS_Lat_Ouput;
+			float _uORB_PID_GPS_Lng_Ouput;
 		} PF;
 
 		struct RCINFO

@@ -403,6 +403,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._uORB_GPS_Lng_Smooth += (int)SF._uOBR_GPS_Lng_Smooth_Diff;
 					SF._uOBR_GPS_Lng_Smooth_Diff -= (int)SF._uOBR_GPS_Lng_Smooth_Diff;
 				}
+
+				AF._flag_GPSData_Async = true;
 				//
 			}
 			TF._Tmp_GPSThreadTimeEnd = micros();
@@ -531,7 +533,31 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		{
 			if (AF._flag_GPSData_Async)
 			{
-				AF._flag_GPSData_Async;
+				if (AF.AutoPilotMode == APModeINFO::PositionHold)
+				{
+					PF._uORB_PID_GPS_Lng_Local_Diff = SF._uORB_GPS_Lng_Smooth - PF._uORB_PID_GPS_Lng_Local_Target;
+					PF._uORB_PID_GPS_Lat_Local_Diff = PF._uORB_PID_GPS_Lat_Local_Target - SF._uORB_GPS_Lat_Smooth;
+
+					PF._uORB_PID_D_GPS_Lat_Ouput -= PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+					PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lat_Local_Diff - PF._uORB_PID_D_GPS_Lat_LastValue;
+					PF._uORB_PID_D_GPS_Lat_Ouput += PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+
+					PF._uORB_PID_D_GPS_Lng_Ouput -= PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+					PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lng_Local_Diff - PF._uORB_PID_D_GPS_Lng_LastValue;
+					PF._uORB_PID_D_GPS_Lng_Ouput += PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+					PF._Tmp_PID_D_GPS_AvaClock++;
+					if (PF._Tmp_PID_D_GPS_AvaClock == 35)
+					{
+						PF._Tmp_PID_D_GPS_AvaClock = 0;
+					}
+
+					PF._uORB_PID_D_GPS_Lat_LastValue = PF._uORB_PID_GPS_Lat_Local_Diff;
+					PF._uORB_PID_D_GPS_Lng_LastValue = PF._uORB_PID_GPS_Lng_Local_Diff;
+
+					PF._uORB_PID_GPS_Lat_Ouput = (float)PF._uORB_PID_GPS_Lat_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lat_Ouput * PF._flag_PID_D_GPS_Gain;
+					PF._uORB_PID_GPS_Lng_Ouput = (float)PF._uORB_PID_GPS_Lng_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lng_Ouput * PF._flag_PID_D_GPS_Gain;
+				}
+				AF._flag_GPSData_Async = false;
 			}
 		}
 	}
