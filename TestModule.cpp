@@ -26,11 +26,19 @@ int main(int argc, char *argv[])
 			APM_Settle.TaskThreadBlock();
 		}
 		break;
+		case 'c':
+		{
+			RPiSingleAPM APM_Settle;
+			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.ESCCalibrate();
+		}
+		break;
 		//--------------------------------------------------------------------------------//
 		case 'h':
 		{
 			std::cout << "using ArgeMent: \n"
-					  << " -r : starting AirController \n";
+					  << " -r : starting AirController \n"
+					  << " -c : starting CalibrationESC \n";
 		}
 		break;
 			//--------------------------------------------------------------------------------//

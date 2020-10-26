@@ -87,7 +87,7 @@ namespace SingleAPMAPI
 	class RPiSingleAPM
 	{
 	public:
-		void RPiSingleAPMInit(APMSettinngs APMInit);
+		int RPiSingleAPMInit(APMSettinngs APMInit);
 
 		void IMUSensorsTaskReg();
 
@@ -102,6 +102,8 @@ namespace SingleAPMAPI
 		void DebugOutPut();
 
 		void TaskThreadBlock();
+
+		void ESCCalibrate();
 
 	protected:
 		Sbus *SbusInit;
@@ -383,6 +385,7 @@ namespace SingleAPMAPI
 			int _flag_B2_Pin = 3;
 			const int _Flag_Lazy_Throttle = 2300;
 			const int _Flag_Lock_Throttle = 2200;
+			const int _Flag_Max__Throttle = 3000;
 		} EF;
 
 		struct TaskThread

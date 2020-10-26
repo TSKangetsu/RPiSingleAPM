@@ -1,6 +1,6 @@
 #include "SingleAPM.hpp"
 
-void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
+int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
 	wiringPiSetupSys();
 	piHiPri(99);
@@ -12,11 +12,24 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	AF.AutoPilotMode = APModeINFO::AutoStable;
 	ConfigReader(APMInit);
 
+#ifdef DEBUG
+	std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
+#endif
 	if (DF.PCA9658_fd == -1)
 		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
+	if (DF.PCA9658_fd == -1)
+	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]ESCControllerInitFailed \n";
+#endif
+		return -1;
+	}
 
 	if (SF.MPU9250_Type == MPUIsI2c)
 	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]MPUI2CIniting \n";
+#endif
 		DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
 		wiringPiI2CWriteReg8(DF.MPU9250_fd, 107, 0x00); //reset
 		wiringPiI2CWriteReg8(DF.MPU9250_fd, 28, 0x08);	//Accel
@@ -25,6 +38,9 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	else if (SF.MPU9250_Type == MPUIsSpi)
 	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]MPUSPIIniting \n";
+#endif
 		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
 		SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x6B;
 		SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x80;
@@ -44,7 +60,11 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x1a;
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
 		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //config
-		// MPU9250-AK8963 Slave settle
+// MPU9250-AK8963 Slave settle
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]Waiting for Compass Config ... ";
+		std::cout.flush();
+#endif
 		{
 			unsigned char CompassConfig[35][4] = {
 				{0x37, 0x30}, // INT_PIN_CFG
@@ -105,6 +125,16 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 			usleep(10000);
 		}
+#ifdef DEBUG
+		std::cout << "Done!\n";
+#endif
+	}
+	if (DF.MPU9250_fd == -1)
+	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]MPU9250DeviceError \n";
+#endif
+		return -2;
 	}
 
 	if (SF.IMUMixFilter_Type == MixFilterType_Kalman)
@@ -115,26 +145,53 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 	if (RF.RC_Type == RCIsIbus)
 	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]Controller Ibus config comfirm\n";
+#endif
 		IbusInit = new Ibus(DF.RCDevice);
 	}
 	else if (RF.RC_Type == RCIsSbus)
 	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]Controller Sbus config comfirm\n";
+#endif
 		SbusInit = new Sbus(DF.RCDevice, SbusMode::Normal);
 	}
 
 	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]Checking MS5611 ... ";
+		std::cout.flush();
+#endif
 		MS5611S = new MS5611();
-		MS5611S->MS5611Init();
+		if (!MS5611S->MS5611Init())
+		{
+#ifdef DEBUG
+			std::cout << "[RPiSingleAPM]MS5611InitError \n";
+#endif
+		}
 		MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 		SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
 		SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
 		MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[0]);
 		SF._uORB_MS5611_PressureFill = SF._uORB_MS5611_Pressure * 100;
+#ifdef DEBUG
+		std::cout << "Done! LocalPressure Is: " << SF._uORB_MS5611_PressureFill << "\n";
+#endif
 	}
 
+#ifdef DEBUG
+	std::cout << "[RPiSingleAPM]Waiting for GPS Data ... ";
+	std::cout.flush();
+#endif
 	GPSInit = new GPSUart(DF.GPSDevice);
 	SF._uORB_GPS_Data = GPSInit->GPSParse();
-
+#ifdef DEBUG
+	std::cout << "Done \n";
+#endif
+#ifdef DEBUG
+	std::cout << "Calibrating Gryo , Dont Move!! ...";
+#endif
 	//GryoCali()
 	{
 		SF._flag_MPU9250_G_X_Cali = 0;
@@ -152,6 +209,10 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
 		SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
 	}
+#ifdef DEBUG
+	std::cout << "Done \n";
+	system("clear");
+#endif
 }
 
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
@@ -582,6 +643,24 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	EF._uORB_A2_Speed = (700 * (((float)EF._Tmp_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
 	EF._uORB_B1_Speed = (700 * (((float)EF._Tmp_B1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
 	EF._uORB_B2_Speed = (700 * (((float)EF._Tmp_B2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
+
+	if (EF._uORB_A1_Speed < EF._Flag_Lazy_Throttle)
+		EF._uORB_A1_Speed = EF._Flag_Lazy_Throttle;
+	if (EF._uORB_A2_Speed < EF._Flag_Lazy_Throttle)
+		EF._uORB_A2_Speed = EF._Flag_Lazy_Throttle;
+	if (EF._uORB_B1_Speed < EF._Flag_Lazy_Throttle)
+		EF._uORB_B1_Speed = EF._Flag_Lazy_Throttle;
+	if (EF._uORB_B2_Speed < EF._Flag_Lazy_Throttle)
+		EF._uORB_B2_Speed = EF._Flag_Lazy_Throttle;
+
+	if (EF._uORB_A1_Speed > EF._Flag_Max__Throttle)
+		EF._uORB_A1_Speed = EF._Flag_Max__Throttle;
+	if (EF._uORB_A2_Speed > EF._Flag_Max__Throttle)
+		EF._uORB_A2_Speed = EF._Flag_Max__Throttle;
+	if (EF._uORB_B1_Speed > EF._Flag_Max__Throttle)
+		EF._uORB_B1_Speed = EF._Flag_Max__Throttle;
+	if (EF._uORB_B2_Speed > EF._Flag_Max__Throttle)
+		EF._uORB_B2_Speed = EF._Flag_Max__Throttle;
 }
 
 void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
@@ -755,7 +834,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	{
 		std::cout << " PositionHold      ";
 	}
-	std::cout << "\n\n";
+	std::cout << "\n";
 	std::cout << "ESCSpeedOutput:"
 			  << " \n";
 	std::cout << " A1 " << EF._uORB_A1_Speed << "    "
@@ -763,7 +842,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << "\n";
 	std::cout << " B1 " << EF._uORB_B1_Speed << "    "
 			  << " B2 " << EF._uORB_B2_Speed << "                        "
-			  << "\n\n";
+			  << "\n";
 
 	std::cout << "IMUSenorData: "
 			  << " \n";
@@ -785,7 +864,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " CompassY: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Y << "    "
 			  << " CompassZ:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Z
 			  << "                        "
-			  << "\n"
 			  << std::endl;
 
 	std::cout << "MS5611ParseDataINFO:"
@@ -796,7 +874,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " AltHoldTarget:      " << PF._uORB_PID_AltHold_Target << "            \n";
 	std::cout << " Altitude:           " << SF._uORB_MS5611_AltMeter << "            \n";
 	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
-	std::cout << std::endl;
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";
@@ -804,7 +881,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " GPSLNG:     " << (int)SF._uORB_GPS_Lng_Smooth << "            \n";
 	std::cout << " GPSNE:      " << SF._uORB_GPS_Data.lat_North_Mode << " -> " << SF._uORB_GPS_Data.lat_East_Mode << "            \n";
 	std::cout << " GPSSATCount:" << SF._uORB_GPS_Data.satillitesCount << "            \n";
-	std::cout << std::endl;
 
 	std::cout << "RCOutPUTINFO:   "
 			  << "\n";
@@ -815,7 +891,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ChannelThrot "
 			  << ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
 	std::cout << " ChannelYaw   "
-			  << ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n\n";
+			  << ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n";
 
 	std::cout << "ChannelINFO: "
 			  << " \n";
@@ -860,6 +936,47 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 #endif
 		SaftyCheckTaskReg();
 		usleep(20000);
+	}
+}
+
+void SingleAPMAPI::RPiSingleAPM::ESCCalibrate()
+{
+	char Comfirm[128];
+	std::cout << "[WARNING! WARNING! WARNING! ]\n";
+	std::cout << "YOU ARE TRY TO ENABLE CALIBRATION THE ESC\n";
+	std::cout << "PLEASE REMOVE ALL THE PROPELLER\n";
+	std::cout << "IF YOU STILL NEED TO ENABLE , PLEASE INPUT : YES,DO AS I SAY , AND ENTER\n";
+	std::cout << "(YES,DO AS I SAY)";
+	std::cin.getline(Comfirm, sizeof(Comfirm));
+	if (strncmp(Comfirm, "YES,DO AS I SAY", 16) == 0)
+	{
+		std::cout << "\nALL ESC WILL PULL TO MAX,IF THE ESC RING, PLEASE INPUT : CHEACK , AND ENTER\n";
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Max__Throttle);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
+		std::cout << "(CHEACK)";
+		std::cin >> Comfirm;
+		if (strncmp(Comfirm, "CHECK", 6) == 0)
+		{
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lazy_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lazy_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lazy_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lazy_Throttle);
+			std::cout << "\nESC CALIBRATION COMPLETE\n";
+		}
+		else
+		{
+			std::cout << "\nABORT!\n";
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
+		}
+	}
+	else
+	{
+		std::cout << "\nABORT!\n";
 	}
 }
 
