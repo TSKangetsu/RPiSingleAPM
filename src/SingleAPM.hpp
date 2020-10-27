@@ -204,7 +204,10 @@ namespace SingleAPMAPI
 			float _uORB_Gryo___Yaw = 0;
 			float _uORB_Real_Pitch = 0;
 			float _uORB_Real__Roll = 0;
+			float _uORB_MAG_Heading = 0;
 
+			float _Tmp_MPU9250_M_XH;
+			float _Tmp_MPU9250_M_YH;
 			float _Tmp_Gryo_RTSpeed__Roll;
 			float _Tmp_Gryo_RTSpeed_Pitch;
 			unsigned long _Tmp_MPU9250_G_X;

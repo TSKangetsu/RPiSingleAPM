@@ -173,7 +173,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 		SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
 		SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
-		MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[0]);
+		MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[0], 5);
 		SF._uORB_MS5611_PressureFill = SF._uORB_MS5611_Pressure * 100;
 #ifdef DEBUG
 		std::cout << "Done! LocalPressure Is: " << SF._uORB_MS5611_PressureFill << "\n";
@@ -213,6 +213,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	std::cout << "Done \n";
 	system("clear");
 #endif
+	return 0;
 }
 
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
@@ -270,6 +271,20 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			}
 			SF._uORB_Real_Pitch -= SF._uORB_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
 			SF._uORB_Real__Roll += SF._uORB_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
+			//HeadingCaculate------------------------------------------------------------//
+			SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._uORB_Real_Pitch * -0.0174533) +
+								   SF._uORB_MPU9250_M_Y * sin(SF._uORB_Real_Pitch * 0.0174533) + sin(SF._uORB_Real__Roll * -0.0174533) -
+								   SF._uORB_MPU9250_M_Z * cos(SF._uORB_Real_Pitch * 0.0174533) * sin(SF._uORB_Real__Roll * -0.0174533);
+			SF._Tmp_MPU9250_M_YH = SF._Tmp_MPU9250_M_Y * cos(SF._uORB_Real_Pitch * 0.0174533) +
+								   SF._Tmp_MPU9250_M_Z + sin(SF._uORB_Real_Pitch * 0.0174533);
+			if (SF._Tmp_MPU9250_M_YH < 0)
+				SF._uORB_MAG_Heading = 180 + (180 + ((atan2(SF._Tmp_MPU9250_M_YH, SF._Tmp_MPU9250_M_XH)) * (180 / 3.14)));
+			else
+				SF._uORB_MAG_Heading = (atan2(SF._Tmp_MPU9250_M_YH, SF._Tmp_MPU9250_M_XH)) * (180 / 3.14);
+			if (SF._uORB_MAG_Heading < 0)
+				SF._uORB_MAG_Heading += 360;
+			else if (SF._uORB_MAG_Heading >= 360)
+				SF._uORB_MAG_Heading -= 360;
 
 			TF._Tmp_IMUThreadTimeEnd = micros();
 			TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
@@ -305,7 +320,8 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			TF._Tmp_ALTThreadTimeStart = micros();
 			TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-			MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
+			MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
+			// MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.f;
 			SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1] * 100.f;
 			SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
@@ -322,7 +338,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			if (SF._uORB_MS5611_PressureDiff < -8)
 				SF._uORB_MS5611_PressureDiff = -8;
 			if (SF._uORB_MS5611_PressureDiff > 1 || SF._uORB_MS5611_PressureDiff < -1)
-				SF._uORB_MS5611_PressureFill -= SF._uORB_MS5611_PressureDiff / 2.f;
+				SF._uORB_MS5611_PressureFill -= SF._uORB_MS5611_PressureDiff / 6.f;
 			SF._uORB_MS5611_PressureFinal = SF._uORB_MS5611_PressureFill;
 			AF._flag_MS5611_Async = true;
 			TF._Tmp_ALTThreadTimeEnd = micros();
@@ -862,7 +878,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " CompassX:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
 			  << " CompassY: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Y << "    "
-			  << " CompassZ:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Z
+			  << " CompassZ:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Z << "    "
+			  << " CompassHeading:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Heading << "    "
 			  << "                        "
 			  << std::endl;
 
@@ -955,7 +972,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCCalibrate()
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
 		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
-		std::cout << "(CHEACK)";
+		std::cout << "(CHECK)";
 		std::cin >> Comfirm;
 		if (strncmp(Comfirm, "CHECK", 6) == 0)
 		{
