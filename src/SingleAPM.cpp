@@ -190,7 +190,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	std::cout << "Done \n";
 #endif
 #ifdef DEBUG
-	std::cout << "Calibrating Gryo , Dont Move!! ...";
+	std::cout << "[RPiSingleAPM]Calibrating Gryo , Dont Move!! ...";
+	std::cout.flush();
 #endif
 	//GryoCali()
 	{
@@ -203,7 +204,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
 			SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
 			SF._flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
-			usleep(3);
+			usleep(1000);
 		}
 		SF._flag_MPU9250_G_X_Cali = SF._flag_MPU9250_G_X_Cali / 2000;
 		SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
@@ -211,6 +212,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 #ifdef DEBUG
 	std::cout << "Done \n";
+	sleep(1);
 	system("clear");
 #endif
 	return 0;
@@ -1198,7 +1200,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long &next
 		xv[2] = next_input_value / SF._flag_Filter2x50_Gain;
 		yv[0] = yv[1];
 		yv[1] = yv[2];
-		yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.1958157127 * yv[0]) + (0.3695273774 * yv[1]);
+		yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.6413515381 * yv[0]) + (1.5610180758 * yv[1]);
 		next_output_value = yv[2];
 	}
 };

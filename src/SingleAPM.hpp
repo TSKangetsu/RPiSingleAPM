@@ -247,7 +247,7 @@ namespace SingleAPMAPI
 			long _Tmp_Acce_filer_Input_Quene_Z[5] = {0, 0, 0, 0, 0};
 			long _Tmp_Acce_filer_Output_Quene_Z[5] = {0, 0, 0, 0, 0};
 
-			float _flag_Filter2x50_Gain = 4.840925170e+00;
+			float _flag_Filter2x50_Gain = 4.979245121e+01;
 			//=========================MS5611======//
 			int _Tmp_MS5611_AvaClock = 0;
 			double _Tmp_MS5611_Data[2];
@@ -370,6 +370,10 @@ namespace SingleAPMAPI
 			int _Tmp_UserInput__Roll;
 			int _Tmp_UserInput_Pitch;
 			int _Tmp_UserInput___Yaw;
+
+			const int _flag_RC_PWM_Fixed_Min = 1000;
+			const int _flag_RC_PWM_Fixed_Mid = 1500;
+			const int _flag_RC_PWM_Fixed_Max = 2000;
 		} RF;
 
 		struct ESCINFO
