@@ -604,6 +604,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 						PF._uORB_PID_Alt_Throttle = PF._flag_PID_Alt_Level_Max * -1;
 					}
 				}
+				else
+				{
+					AF._flag_IsAltHoldDisSet = true;
+					PF._uORB_PID_AltHold_Target = 0;
+					PF._uORB_PID_Alt_Throttle = 0;
+					PF._uORB_PID_I_Alt_Extend = 0;
+				}
 				AF._flag_MS5611_Async = false;
 			}
 		}
@@ -742,10 +749,6 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 		if (RF._flag_RC_Min_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
 		{
 			AF.AutoPilotMode = APModeINFO::AutoStable;
-			AF._flag_IsAltHoldDisSet = true;
-			PF._uORB_PID_AltHold_Target = 0;
-			PF._uORB_PID_Alt_Throttle = 0;
-			PF._uORB_PID_I_Alt_Extend = 0;
 		}
 		if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
 		{
@@ -893,6 +896,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " AltHoldTarget:      " << PF._uORB_PID_AltHold_Target << "            \n";
 	std::cout << " Altitude:           " << SF._uORB_MS5611_AltMeter << "            \n";
 	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
+	std::cout << " AltholdFixUp:       " << PF._uORB_PID_I_Alt_Extend << "            \n";
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";
