@@ -512,6 +512,235 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	int rc2 = pthread_setaffinity_np(TF.GPSTask->native_handle(), sizeof(cpu_set_t), &cpuset2);
 }
 
+void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
+{
+	TF.ESCTask = new std::thread([&] {
+		while (true)
+		{
+			TF._Tmp_ESCThreadTimeStart = micros();
+			TF._Tmp_ESCThreadTimeNext = TF._Tmp_ESCThreadTimeStart - TF._Tmp_ESCThreadTimeEnd;
+
+			if (AF._flag_ESC_ARMED)
+			{
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
+			}
+			if (!AF._flag_ESC_ARMED)
+			{
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0,
+								EF._uORB_A1_Speed);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0,
+								EF._uORB_A2_Speed);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0,
+								EF._uORB_B1_Speed);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0,
+								EF._uORB_B2_Speed);
+			}
+
+			TF._Tmp_ESCThreadTimeEnd = micros();
+			TF._Tmp_ESCThreadTimeLoop = TF._Tmp_ESCThreadTimeEnd - TF._Tmp_ESCThreadTimeStart;
+			if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._flag_ESCThreadTimeMax | TF._Tmp_ESCThreadTimeNext < 0)
+			{
+				usleep(50);
+				AF._flag_ClockingTime_Error = true;
+			}
+			else
+			{
+				usleep(TF._flag_ESCThreadTimeMax - TF._Tmp_ESCThreadTimeLoop - TF._Tmp_ESCThreadTimeNext);
+			}
+			if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._Tmp_ESCThreadError)
+			{
+				TF._Tmp_ESCThreadError = TF._Tmp_ESCThreadTimeLoop;
+			}
+			TF._Tmp_ESCThreadTimeEnd = micros();
+		}
+	});
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
+	int rc = pthread_setaffinity_np(TF.ESCTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+}
+
+void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
+{
+	while (true)
+	{
+#ifdef DEBUG
+		DebugOutPut();
+#endif
+		SaftyCheckTaskReg();
+		usleep(20000);
+	}
+}
+
+//=-----------------------------------------------------------------------------------------==//
+
+void SingleAPMAPI::RPiSingleAPM::PID_Caculate(float inputData, float &outputData,
+											  float &last_I_Data, float &last_D_Data,
+											  float P_Gain, float I_Gain, float D_Gain, float I_Max)
+{
+	//P caculate
+	outputData = P_Gain * inputData;
+	//D caculate
+	outputData += D_Gain * (inputData - last_D_Data);
+	last_D_Data = inputData;
+	//I caculate
+	last_I_Data += inputData * I_Gain;
+	if (last_I_Data > I_Max)
+		last_I_Data = I_Max;
+	if (last_I_Data < I_Max * -1)
+		last_I_Data = I_Max * -1;
+	//P_I_D Mix OUTPUT
+	outputData += last_I_Data;
+}
+
+void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
+{
+	//==========================================================Device Type=======/
+	RF.RC_Type = APMInit.RC_Type;
+	SF.MPU9250_Type = APMInit.MPU9250_Type;
+	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
+	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
+	//==========================================================Controller cofig==/
+	RF._flag_RC_ARM_PWM_Value = APMInit._flag_RC_ARM_PWM_Value;
+	RF._flag_RC_Min_PWM_Value = APMInit._flag_RC_Min_PWM_Value;
+	RF._flag_RC_Mid_PWM_Value = APMInit._flag_RC_Mid_PWM_Value;
+	RF._flag_RC_Max_PWM_Value = APMInit._flag_RC_Max_PWM_Value;
+
+	RF._flag_RCIsReserv__Roll = APMInit._flag_RCIsReserv__Roll;
+	RF._flag_RCIsReserv_Pitch = APMInit._flag_RCIsReserv_Pitch;
+	RF._flag_RCIsReserv___Yaw = APMInit._flag_RCIsReserv___Yaw;
+	//==========================================================ESC cofig=========/
+	EF._flag_A1_Pin = APMInit._flag_A1_Pin;
+	EF._flag_A2_Pin = APMInit._flag_A2_Pin;
+	EF._flag_B1_Pin = APMInit._flag_B1_Pin;
+	EF._flag_B2_Pin = APMInit._flag_B2_Pin;
+	//==================================================================PID cofig==/
+	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
+	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
+	PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
+	PF._flag_PID_P_Alt_Gain = APMInit._flag_PID_P_Alt_Gain;
+
+	PF._flag_PID_I__Roll_Gain = APMInit._flag_PID_I__Roll_Gain;
+	PF._flag_PID_I_Pitch_Gain = APMInit._flag_PID_I_Pitch_Gain;
+	PF._flag_PID_I___Yaw_Gain = APMInit._flag_PID_I___Yaw_Gain;
+	PF._flag_PID_I_Alt_Gain = APMInit._flag_PID_I_Alt_Gain;
+	PF._flag_PID_I__Roll_Max__Value = APMInit._flag_PID_I__Roll_Max__Value;
+	PF._flag_PID_I_Pitch_Max__Value = APMInit._flag_PID_I_Pitch_Max__Value;
+	PF._flag_PID_I___Yaw_Max__Value = APMInit._flag_PID_I___Yaw_Max__Value;
+
+	PF._flag_PID_D__Roll_Gain = APMInit._flag_PID_D__Roll_Gain;
+	PF._flag_PID_D_Pitch_Gain = APMInit._flag_PID_D_Pitch_Gain;
+	PF._flag_PID_D___Yaw_Gain = APMInit._flag_PID_D___Yaw_Gain;
+	PF._flag_PID_D_Alt_Gain = APMInit._flag_PID_D_Alt_Gain;
+
+	PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
+	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
+	//==============================================================Sensors cofig==/
+	SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
+	SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;
+	//===============================================================Update cofig==/
+	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
+	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
+	TF._flag_RXTThreadFreq = APMInit.RXT_Freqeuncy;
+	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
+	TF._flag_ESCThreadFreq = APMInit.ESC_Freqeuncy;
+	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
+}
+
+void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
+{
+	if (SF.MPU9250_Type == MPUIsI2c)
+	{
+		SF._Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3B);
+		SF._Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3C);
+		SF._Tmp_MPU9250_A_X = (SF._Tmp_MPU9250_Buffer[0] << 8 | SF._Tmp_MPU9250_Buffer[1]);
+		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
+		SF._Tmp_MPU9250_Buffer[2] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3D);
+		SF._Tmp_MPU9250_Buffer[3] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3E);
+		SF._Tmp_MPU9250_A_Y = (SF._Tmp_MPU9250_Buffer[2] << 8 | SF._Tmp_MPU9250_Buffer[3]);
+		SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
+		SF._Tmp_MPU9250_Buffer[4] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3F);
+		SF._Tmp_MPU9250_Buffer[5] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x40);
+		SF._Tmp_MPU9250_A_Z = (SF._Tmp_MPU9250_Buffer[4] << 8 | SF._Tmp_MPU9250_Buffer[5]);
+		SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
+
+		SF._Tmp_MPU9250_Buffer[6] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x43);
+		SF._Tmp_MPU9250_Buffer[7] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x44);
+		SF._Tmp_MPU9250_G_X = (SF._Tmp_MPU9250_Buffer[6] << 8 | SF._Tmp_MPU9250_Buffer[7]);
+		SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
+		SF._Tmp_MPU9250_Buffer[8] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x45);
+		SF._Tmp_MPU9250_Buffer[9] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x46);
+		SF._Tmp_MPU9250_G_Y = (SF._Tmp_MPU9250_Buffer[8] << 8 | SF._Tmp_MPU9250_Buffer[9]);
+		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
+		SF._Tmp_MPU9250_Buffer[10] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x47);
+		SF._Tmp_MPU9250_Buffer[11] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x48);
+		SF._Tmp_MPU9250_G_Z = (SF._Tmp_MPU9250_Buffer[10] << 8 | SF._Tmp_MPU9250_Buffer[11]);
+		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
+	}
+	else if (SF.MPU9250_Type == MPUIsSpi)
+	{
+		SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
+		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Buffer, 21);
+		SF._Tmp_MPU9250_A_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[1] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[2]);
+		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
+		SF._Tmp_MPU9250_A_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[3] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[4]);
+		SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
+		SF._Tmp_MPU9250_A_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[5] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[6]);
+		SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
+
+		SF._Tmp_MPU9250_G_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[9] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[10]);
+		SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
+		SF._Tmp_MPU9250_G_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[11] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[12]);
+		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
+		SF._Tmp_MPU9250_G_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[14]);
+		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
+
+		SF._Tmp_MPU9250_M_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[16] << 8) | (int)SF._Tmp_MPU9250_SPI_Buffer[15];
+		SF._uORB_MPU9250_M_X = (short)SF._Tmp_MPU9250_M_X;
+		SF._Tmp_MPU9250_M_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[18] << 8) | (int)SF._Tmp_MPU9250_SPI_Buffer[17];
+		SF._uORB_MPU9250_M_Y = (short)SF._Tmp_MPU9250_M_Y;
+		SF._Tmp_MPU9250_M_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[20] << 8) | (int)SF._Tmp_MPU9250_SPI_Buffer[19];
+		SF._uORB_MPU9250_M_Z = (short)SF._Tmp_MPU9250_M_Z;
+	}
+}
+
+void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long &next_output_value, long *xv, long *yv, int filtertype)
+{
+	if (filtertype == GryoFilterType_none)
+	{
+		next_output_value = next_input_value;
+	}
+	else if (filtertype == GryoFilterType_pt1)
+	{
+	}
+	else if (filtertype == GryoFilterType_Butterworth)
+	{
+		xv[0] = xv[1];
+		xv[1] = xv[2];
+		xv[2] = next_input_value / SF._flag_Filter2x50_Gain;
+		yv[0] = yv[1];
+		yv[1] = yv[2];
+		yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.6413515381 * yv[0]) + (1.5610180758 * yv[1]);
+		next_output_value = yv[2];
+	}
+};
+
+void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman *kal, float next_input_value_Gryo, float next_input_value_Accel,
+											  float next_input_value_speed, float &next_output_value, int filtertype)
+{
+	if (filtertype == MixFilterType_traditional)
+	{
+		next_output_value = next_input_value_Gryo * 0.9996 + next_input_value_Accel * 0.0004;
+	}
+	else if (filtertype == MixFilterType_Kalman)
+	{
+		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 1.f / (float)TF._flag_IMUThreadFreq);
+	}
+}
+
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 {
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
@@ -788,57 +1017,6 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 	}
 }
 
-void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
-{
-	TF.ESCTask = new std::thread([&] {
-		while (true)
-		{
-			TF._Tmp_ESCThreadTimeStart = micros();
-			TF._Tmp_ESCThreadTimeNext = TF._Tmp_ESCThreadTimeStart - TF._Tmp_ESCThreadTimeEnd;
-
-			if (AF._flag_ESC_ARMED)
-			{
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
-			}
-			if (!AF._flag_ESC_ARMED)
-			{
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0,
-								EF._uORB_A1_Speed);
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0,
-								EF._uORB_A2_Speed);
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0,
-								EF._uORB_B1_Speed);
-				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0,
-								EF._uORB_B2_Speed);
-			}
-
-			TF._Tmp_ESCThreadTimeEnd = micros();
-			TF._Tmp_ESCThreadTimeLoop = TF._Tmp_ESCThreadTimeEnd - TF._Tmp_ESCThreadTimeStart;
-			if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._flag_ESCThreadTimeMax | TF._Tmp_ESCThreadTimeNext < 0)
-			{
-				usleep(50);
-				AF._flag_ClockingTime_Error = true;
-			}
-			else
-			{
-				usleep(TF._flag_ESCThreadTimeMax - TF._Tmp_ESCThreadTimeLoop - TF._Tmp_ESCThreadTimeNext);
-			}
-			if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._Tmp_ESCThreadError)
-			{
-				TF._Tmp_ESCThreadError = TF._Tmp_ESCThreadTimeLoop;
-			}
-			TF._Tmp_ESCThreadTimeEnd = micros();
-		}
-	});
-	cpu_set_t cpuset;
-	CPU_ZERO(&cpuset);
-	CPU_SET(3, &cpuset);
-	int rc = pthread_setaffinity_np(TF.ESCTask->native_handle(), sizeof(cpu_set_t), &cpuset);
-}
-
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 {
 	std::cout << "\033[200A";
@@ -949,276 +1127,4 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " GPSNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadTimeNext;
 	std::cout << " GPSMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadError << "    \n"
 			  << std::endl;
-}
-
-void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
-{
-	while (true)
-	{
-#ifdef DEBUG
-		DebugOutPut();
-#endif
-		SaftyCheckTaskReg();
-		usleep(20000);
-	}
-}
-
-void SingleAPMAPI::RPiSingleAPM::APMCalibrator()
-{
-	char Comfirm[128];
-	std::cout << "[WARNING! WARNING! WARNING! ]\n";
-	std::cout << "YOU ARE TRY TO ENABLE CALIBRATION THE ESC\n";
-	std::cout << "PLEASE REMOVE ALL THE PROPELLER\n";
-	std::cout << "IF YOU STILL NEED TO ENABLE , PLEASE INPUT : YES,DO AS I SAY , AND ENTER\n";
-	std::cout << "(YES,DO AS I SAY)";
-	std::cin.getline(Comfirm, sizeof(Comfirm));
-	if (strncmp(Comfirm, "YES,DO AS I SAY", 16) == 0)
-	{
-		std::cout << "\nALL ESC WILL PULL TO MAX,IF THE ESC RING, PLEASE INPUT : CHEACK , AND ENTER\n";
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Max__Throttle);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
-		std::cout << "(CHECK)";
-		std::cin >> Comfirm;
-		if (strncmp(Comfirm, "CHECK", 6) == 0)
-		{
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lazy_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lazy_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lazy_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lazy_Throttle);
-			std::cout << "\nESC CALIBRATION COMPLETE\n";
-		}
-		else
-		{
-			std::cout << "\nABORT!\n";
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
-		}
-	}
-	else
-	{
-		std::cout << "\nABORT!\n";
-	}
-}
-
-//=-----------------------------------------------------------------------------------------==//
-
-void SingleAPMAPI::RPiSingleAPM::PID_Caculate(float inputData, float &outputData,
-											  float &last_I_Data, float &last_D_Data,
-											  float P_Gain, float I_Gain, float D_Gain, float I_Max)
-{
-	//P caculate
-	outputData = P_Gain * inputData;
-	//D caculate
-	outputData += D_Gain * (inputData - last_D_Data);
-	last_D_Data = inputData;
-	//I caculate
-	last_I_Data += inputData * I_Gain;
-	if (last_I_Data > I_Max)
-		last_I_Data = I_Max;
-	if (last_I_Data < I_Max * -1)
-		last_I_Data = I_Max * -1;
-	//P_I_D Mix OUTPUT
-	outputData += last_I_Data;
-}
-
-void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
-{
-#ifdef USINGJSON
-	std::ifstream config(DF.configDir);
-	std::string content((std::istreambuf_iterator<char>(config)),
-						(std::istreambuf_iterator<char>()));
-	nlohmann::json Configdata = nlohmann::json::parse(content);
-	//==========================================================Device Type=======/
-	RF.RC_Type = Configdata["Type_RC"].get<int>();
-	SF.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
-	SF.IMUFilter_Type = Configdata["Type_IMUFilter"].get<int>();
-	SF.IMUMixFilter_Type = Configdata["Type_IMUMixFilter"].get<int>();
-	//==========================================================Controller cofig==/
-	RF._flag_RC_ARM_PWM_Value = Configdata["_flag_RC_ARM_PWM_Value"].get<int>();
-	RF._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();
-	RF._flag_RC_Mid_PWM_Value = Configdata["_flag_RC_Mid_PWM_Value"].get<int>();
-	RF._flag_RC_Max_PWM_Value = Configdata["_flag_RC_Max_PWM_Value"].get<int>();
-
-	RF._flag_RCIsReserv__Roll = Configdata["_flag_RCIsReserv__Roll"].get<int>();
-	RF._flag_RCIsReserv_Pitch = Configdata["_flag_RCIsReserv_Pitch"].get<int>();
-	RF._flag_RCIsReserv___Yaw = Configdata["_flag_RCIsReserv___Yaw"].get<int>();
-	//==========================================================ESC cofig=========/
-	EF._flag_A1_Pin = Configdata["_flag_A1_Pin"].get<int>();
-	EF._flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
-	EF._flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
-	EF._flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
-	//==================================================================PID cofig==/
-	PF._flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
-	PF._flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();
-	PF._flag_PID_P___Yaw_Gain = Configdata["_flag_PID_P___Yaw_Gain"].get<float>();
-	PF._flag_PID_P_Alt_Gain = Configdata["_flag_PID_P_Alt_Gain"].get<float>();
-
-	PF._flag_PID_I__Roll_Gain = Configdata["_flag_PID_I__Roll_Gain"].get<float>();
-	PF._flag_PID_I_Pitch_Gain = Configdata["_flag_PID_I_Pitch_Gain"].get<float>();
-	PF._flag_PID_I___Yaw_Gain = Configdata["_flag_PID_I___Yaw_Gain"].get<float>();
-	PF._flag_PID_I_Alt_Gain = Configdata["_flag_PID_I_Alt_Gain"].get<float>();
-	PF._flag_PID_I__Roll_Max__Value = Configdata["_flag_PID_I__Roll_Max__Value"].get<float>();
-	PF._flag_PID_I_Pitch_Max__Value = Configdata["_flag_PID_I_Pitch_Max__Value"].get<float>();
-	PF._flag_PID_I___Yaw_Max__Value = Configdata["_flag_PID_I___Yaw_Max__Value"].get<float>();
-
-	PF._flag_PID_D__Roll_Gain = Configdata["_flag_PID_D__Roll_Gain"].get<float>();
-	PF._flag_PID_D_Pitch_Gain = Configdata["_flag_PID_D_Pitch_Gain"].get<float>();
-	PF._flag_PID_D___Yaw_Gain = Configdata["_flag_PID_D___Yaw_Gain"].get<float>();
-	PF._flag_PID_D_Alt_Gain = Configdata["_flag_PID_D_Alt_Gain"].get<float>();
-
-	PF._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
-	PF._flag_PID_Alt_Level_Max = Configdata["_flag_PID_Alt_Level_Max"].get<float>();
-	//==============================================================Sensors cofig==/
-	SF._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
-	SF._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
-	//===============================================================Update cofig==/
-	TF._flag_IMUThreadFreq = Configdata["IMU_Freqeucy"].get<int>();
-	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
-	TF._flag_RXTThreadFreq = Configdata["RXT_Freqeucy"].get<int>();
-	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
-	TF._flag_ESCThreadFreq = Configdata["ESC_Freqeucy"].get<int>();
-	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
-#else
-	SF.MPU9250_Type = APMInit.MPU9250_Type;
-	RF.RC_Type = APMInit.RC_Type;
-	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
-	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
-
-	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
-	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
-	TF._flag_RXTThreadFreq = APMInit.RXT_Freqeuncy;
-	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
-	TF._flag_ESCThreadFreq = APMInit.ESC_Freqeuncy;
-	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
-
-	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
-	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
-	PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
-	PF._flag_PID_P_Alt_Gain = APMInit._flag_PID_P_Alt_Gain;
-
-	PF._flag_PID_I__Roll_Gain = APMInit._flag_PID_I__Roll_Gain;
-	PF._flag_PID_I_Pitch_Gain = APMInit._flag_PID_I_Pitch_Gain;
-	PF._flag_PID_I___Yaw_Gain = APMInit._flag_PID_I___Yaw_Gain;
-	PF._flag_PID_I_Alt_Gain = APMInit._flag_PID_I_Alt_Gain;
-
-	PF._flag_PID_I__Roll_Max__Value = APMInit._flag_PID_I__Roll_Max__Value;
-	PF._flag_PID_I_Pitch_Max__Value = APMInit._flag_PID_I_Pitch_Max__Value;
-	PF._flag_PID_I___Yaw_Max__Value = APMInit._flag_PID_I___Yaw_Max__Value;
-
-	PF._flag_PID_D__Roll_Gain = APMInit._flag_PID_D__Roll_Gain;
-	PF._flag_PID_D_Pitch_Gain = APMInit._flag_PID_D_Pitch_Gain;
-	PF._flag_PID_D___Yaw_Gain = APMInit._flag_PID_D___Yaw_Gain;
-	PF._flag_PID_D_Alt_Gain = APMInit._flag_PID_D_Alt_Gain;
-
-	PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
-	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
-
-	SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
-	SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;
-
-	EF._flag_A1_Pin = APMInit._flag_A1_Pin;
-	EF._flag_A2_Pin = APMInit._flag_A2_Pin;
-	EF._flag_B1_Pin = APMInit._flag_B1_Pin;
-	EF._flag_B2_Pin = APMInit._flag_B2_Pin;
-
-	RF._flag_RC_Min_PWM_Value = APMInit._flag_RC_Min_PWM_Value;
-	RF._flag_RC_Mid_PWM_Value = APMInit._flag_RC_Mid_PWM_Value;
-	RF._flag_RC_Max_PWM_Value = APMInit._flag_RC_Max_PWM_Value;
-	RF._flag_RC_ARM_PWM_Value = APMInit._flag_RC_ARM_PWM_Value;
-#endif
-}
-
-void SingleAPMAPI::RPiSingleAPM::IMUSensorsDataRead()
-{
-	if (SF.MPU9250_Type == MPUIsI2c)
-	{
-		SF._Tmp_MPU9250_Buffer[0] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3B);
-		SF._Tmp_MPU9250_Buffer[1] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3C);
-		SF._Tmp_MPU9250_A_X = (SF._Tmp_MPU9250_Buffer[0] << 8 | SF._Tmp_MPU9250_Buffer[1]);
-		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
-		SF._Tmp_MPU9250_Buffer[2] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3D);
-		SF._Tmp_MPU9250_Buffer[3] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3E);
-		SF._Tmp_MPU9250_A_Y = (SF._Tmp_MPU9250_Buffer[2] << 8 | SF._Tmp_MPU9250_Buffer[3]);
-		SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
-		SF._Tmp_MPU9250_Buffer[4] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x3F);
-		SF._Tmp_MPU9250_Buffer[5] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x40);
-		SF._Tmp_MPU9250_A_Z = (SF._Tmp_MPU9250_Buffer[4] << 8 | SF._Tmp_MPU9250_Buffer[5]);
-		SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
-
-		SF._Tmp_MPU9250_Buffer[6] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x43);
-		SF._Tmp_MPU9250_Buffer[7] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x44);
-		SF._Tmp_MPU9250_G_X = (SF._Tmp_MPU9250_Buffer[6] << 8 | SF._Tmp_MPU9250_Buffer[7]);
-		SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
-		SF._Tmp_MPU9250_Buffer[8] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x45);
-		SF._Tmp_MPU9250_Buffer[9] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x46);
-		SF._Tmp_MPU9250_G_Y = (SF._Tmp_MPU9250_Buffer[8] << 8 | SF._Tmp_MPU9250_Buffer[9]);
-		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
-		SF._Tmp_MPU9250_Buffer[10] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x47);
-		SF._Tmp_MPU9250_Buffer[11] = wiringPiI2CReadReg8(DF.MPU9250_fd, 0x48);
-		SF._Tmp_MPU9250_G_Z = (SF._Tmp_MPU9250_Buffer[10] << 8 | SF._Tmp_MPU9250_Buffer[11]);
-		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
-	}
-	else if (SF.MPU9250_Type == MPUIsSpi)
-	{
-		SF._Tmp_MPU9250_SPI_Buffer[0] = 0xBB;
-		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Buffer, 21);
-		SF._Tmp_MPU9250_A_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[1] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[2]);
-		SF._uORB_MPU9250_A_X = (short)SF._Tmp_MPU9250_A_X;
-		SF._Tmp_MPU9250_A_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[3] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[4]);
-		SF._uORB_MPU9250_A_Y = (short)SF._Tmp_MPU9250_A_Y;
-		SF._Tmp_MPU9250_A_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[5] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[6]);
-		SF._uORB_MPU9250_A_Z = (short)SF._Tmp_MPU9250_A_Z;
-
-		SF._Tmp_MPU9250_G_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[9] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[10]);
-		SF._uORB_MPU9250_G_X = (short)SF._Tmp_MPU9250_G_X;
-		SF._Tmp_MPU9250_G_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[11] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[12]);
-		SF._uORB_MPU9250_G_Y = (short)SF._Tmp_MPU9250_G_Y;
-		SF._Tmp_MPU9250_G_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[13] << 8 | (int)SF._Tmp_MPU9250_SPI_Buffer[14]);
-		SF._uORB_MPU9250_G_Z = (short)SF._Tmp_MPU9250_G_Z;
-
-		SF._Tmp_MPU9250_M_X = ((int)SF._Tmp_MPU9250_SPI_Buffer[16] << 8) | (int)SF._Tmp_MPU9250_SPI_Buffer[15];
-		SF._uORB_MPU9250_M_X = (short)SF._Tmp_MPU9250_M_X;
-		SF._Tmp_MPU9250_M_Y = ((int)SF._Tmp_MPU9250_SPI_Buffer[18] << 8) | (int)SF._Tmp_MPU9250_SPI_Buffer[17];
-		SF._uORB_MPU9250_M_Y = (short)SF._Tmp_MPU9250_M_Y;
-		SF._Tmp_MPU9250_M_Z = ((int)SF._Tmp_MPU9250_SPI_Buffer[20] << 8) | (int)SF._Tmp_MPU9250_SPI_Buffer[19];
-		SF._uORB_MPU9250_M_Z = (short)SF._Tmp_MPU9250_M_Z;
-	}
-}
-
-void SingleAPMAPI::RPiSingleAPM::IMUGryoFilter(long next_input_value, long &next_output_value, long *xv, long *yv, int filtertype)
-{
-	if (filtertype == GryoFilterType_none)
-	{
-		next_output_value = next_input_value;
-	}
-	else if (filtertype == GryoFilterType_pt1)
-	{
-	}
-	else if (filtertype == GryoFilterType_Butterworth)
-	{
-		xv[0] = xv[1];
-		xv[1] = xv[2];
-		xv[2] = next_input_value / SF._flag_Filter2x50_Gain;
-		yv[0] = yv[1];
-		yv[1] = yv[2];
-		yv[2] = (xv[0] + xv[2]) + 2 * xv[1] + (-0.6413515381 * yv[0]) + (1.5610180758 * yv[1]);
-		next_output_value = yv[2];
-	}
-};
-
-void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman *kal, float next_input_value_Gryo, float next_input_value_Accel,
-											  float next_input_value_speed, float &next_output_value, int filtertype)
-{
-	if (filtertype == MixFilterType_traditional)
-	{
-		next_output_value = next_input_value_Gryo * 0.9996 + next_input_value_Accel * 0.0004;
-	}
-	else if (filtertype == MixFilterType_Kalman)
-	{
-		next_output_value = kal->getAngle(next_input_value_Accel, next_input_value_speed, 1.f / (float)TF._flag_IMUThreadFreq);
-	}
 }

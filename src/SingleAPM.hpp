@@ -1,7 +1,6 @@
 #pragma once
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
-#include <wiringSerial.h>
 #include <wiringPiSPI.h>
 #include <math.h>
 #include <thread>
@@ -19,11 +18,6 @@
 #include "../_thirdparty/RCLib/RPiIBus/RPiIBus.hpp"
 #include "../_thirdparty/RCLib/RPiSBus/RPiSBus.hpp"
 #include "../_thirdparty/RCLib/RPiGPS/RPiGPS.hpp"
-
-#ifdef USINGJSON
-#include <nlohmann/json.hpp>
-#endif
-
 #define MPUIsI2c 0
 #define MPUIsSpi 1
 #define MPUCompassEnable 1
@@ -84,6 +78,14 @@ namespace SingleAPMAPI
 		int _flag_RCIsReserv___Yaw;
 	};
 
+	enum APModeINFO
+	{
+		ManuallHold,
+		AltHold,
+		AutoStable,
+		PositionHold,
+	};
+
 	class RPiSingleAPM
 	{
 	public:
@@ -99,11 +101,7 @@ namespace SingleAPMAPI
 
 		void ESCUpdateTaskReg();
 
-		void DebugOutPut();
-
 		void TaskThreadBlock();
-
-		void APMCalibrator();
 
 	protected:
 		Sbus *SbusInit;
@@ -112,10 +110,6 @@ namespace SingleAPMAPI
 		Kalman *Kal__Roll;
 		MS5611 *MS5611S;
 		GPSUart *GPSInit;
-
-		void AttitudeUpdateTask();
-
-		void SaftyCheckTaskReg();
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
@@ -129,13 +123,11 @@ namespace SingleAPMAPI
 
 		void IMUMixFilter(Kalman *kal, float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float &next_output_value, int filtertype);
 
-		enum APModeINFO
-		{
-			ManuallHold,
-			AltHold,
-			AutoStable,
-			PositionHold,
-		};
+		void AttitudeUpdateTask();
+
+		void SaftyCheckTaskReg();
+
+		void DebugOutPut();
 
 		struct SafyINFO
 		{
