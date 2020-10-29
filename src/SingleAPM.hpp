@@ -20,7 +20,6 @@
 #include "../_thirdparty/RCLib/RPiGPS/RPiGPS.hpp"
 #define MPUIsI2c 0
 #define MPUIsSpi 1
-#define MPUCompassEnable 1
 #define RCIsIbus 0
 #define RCIsSbus 1
 #define GryoFilterType_none 0
@@ -162,7 +161,6 @@ namespace SingleAPMAPI
 			const int MS5611_ADDR = 0x77;
 			char RCDevice[20] = "/dev/ttyAMA0";
 			char GPSDevice[20] = "/dev/ttyAMA1";
-			char configDir[20] = "/etc/APMconfig.json";
 		} DF;
 
 		struct SensorsINFO
@@ -245,14 +243,14 @@ namespace SingleAPMAPI
 			double _Tmp_MS5611_Data[2];
 			double _Tmp_MS5611_AvaTotal = 0;
 			double _Tmp_MS5611_AvaData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			double _uORB_MS5611_Pressure = 0;
-			double _uORB_MS5611_PressureFast = 0;
+			float _uORB_MS5611_Pressure = 0;
+			float _uORB_MS5611_PressureFast = 0;
 			float _uORB_MS5611_PressureFill = 0;
 			float _uORB_MS5611_PressureDiff = 0;
 			float _uORB_MS5611_PressureFinal = 0;
-			double _uORB_MS5611_AltMeter = 0;
-			double _flag_MS5611_LocalPressure = 1023;
-			double _flag_MS5611_FilterAlpha = 0.985;
+			float _uORB_MS5611_AltMeter = 0;
+			float _flag_MS5611_LocalPressure = 1023;
+			float _flag_MS5611_FilterAlpha = 0.985;
 			//=========================GPS=========//
 			GPSUartData _uORB_GPS_Data;
 			float _uORB_GPS_Lng_Diff = 0;

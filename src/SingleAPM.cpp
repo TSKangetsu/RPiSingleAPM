@@ -2,13 +2,9 @@
 
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
-	wiringPiSetupSys();
-	piHiPri(99);
-
 	AF.RC_Lose_Clocking = 0;
 	AF._flag_MPU9250_first_StartUp = true;
 	AF._flag_ESC_ARMED = true;
-	AF._flag_ClockingTime_Error = false;
 	AF.AutoPilotMode = APModeINFO::AutoStable;
 	ConfigReader(APMInit);
 
@@ -17,6 +13,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #endif
 	if (DF.PCA9658_fd == -1)
 		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
+	else
+		pca9685PWMReset(DF.PCA9658_fd);
 	if (DF.PCA9658_fd == -1)
 	{
 #ifdef DEBUG
@@ -42,9 +40,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::cout << "[RPiSingleAPM]MPUSPIIniting \n";
 #endif
 		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
-		SF._Tmp_MPU9250_SPI_Compass_Buffer[0] = 0x6B;
-		SF._Tmp_MPU9250_SPI_Compass_Buffer[1] = 0x80;
-		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Compass_Buffer, 2); //ResetPower
 		usleep(500000);
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x75;
 		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //WHOAMI
@@ -66,7 +61,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::cout.flush();
 #endif
 		{
-			unsigned char CompassConfig[35][4] = {
+			unsigned char CompassConfig[39][4] = {
 				{0x37, 0x30}, // INT_PIN_CFG
 				{0x24, 0x5D}, // I2C_MST_CTRL
 				{0x6A, 0x20}, // USER_CTRL
@@ -102,7 +97,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{0x26, 0x0A},
 				{0x27, 0x81},
 			};
-			for (size_t Index = 0; Index < 35; Index++)
+			for (size_t Index = 0; Index < 39; Index++)
 			{
 				if (Index == 22)
 				{
@@ -116,14 +111,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{
 					wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfig[Index], 2);
 				}
-				usleep(100000);
+				usleep(50000);
 			}
 			unsigned char CompassConfigFinal[4][2] = {{0x25, 0x0C | 0x80}, {0x26, 0x03}, {0x27, 0x87}};
 			for (size_t Index = 0; Index < 3; Index++)
 			{
 				wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfigFinal[Index], 2);
 			}
-			usleep(10000);
+			usleep(1000);
 		}
 #ifdef DEBUG
 		std::cout << "Done!\n";
@@ -170,11 +165,21 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]MS5611InitError \n";
 #endif
 		}
-		MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
-		SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
-		SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1];
-		MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[0], 5);
-		SF._uORB_MS5611_PressureFill = SF._uORB_MS5611_Pressure * 100;
+		MS5611S->LocalPressureSetter(0, 5);
+		for (size_t i = 0; i < 40; i++)
+		{
+			MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
+			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.f;
+			SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
+			SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock] = SF._uORB_MS5611_Pressure;
+			SF._Tmp_MS5611_AvaTotal += SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
+			SF._Tmp_MS5611_AvaClock++;
+			if (SF._Tmp_MS5611_AvaClock == 20)
+				SF._Tmp_MS5611_AvaClock = 0;
+			SF._uORB_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.f;
+			SF._uORB_MS5611_PressureFill = SF._uORB_MS5611_PressureFast;
+		}
+
 #ifdef DEBUG
 		std::cout << "Done! LocalPressure Is: " << SF._uORB_MS5611_PressureFill << "\n";
 #endif
@@ -204,7 +209,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			SF._flag_MPU9250_G_X_Cali += SF._uORB_MPU9250_G_X;
 			SF._flag_MPU9250_G_Y_Cali += SF._uORB_MPU9250_G_Y;
 			SF._flag_MPU9250_G_Z_Cali += SF._uORB_MPU9250_G_Z;
-			usleep(1000);
+			usleep(500);
 		}
 		SF._flag_MPU9250_G_X_Cali = SF._flag_MPU9250_G_X_Cali / 2000;
 		SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
@@ -324,9 +329,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
 			MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
-			// MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 			SF._uORB_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.f;
-			SF._uORB_MS5611_AltMeter = SF._Tmp_MS5611_Data[1] * 100.f;
 			SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
 			SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock] = SF._uORB_MS5611_Pressure;
 			SF._Tmp_MS5611_AvaTotal += SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
@@ -334,7 +337,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 			if (SF._Tmp_MS5611_AvaClock == 20)
 				SF._Tmp_MS5611_AvaClock = 0;
 			SF._uORB_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.f;
-			SF._uORB_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * (float)SF._uORB_MS5611_PressureFill + (1.f - SF._flag_MS5611_FilterAlpha) * (float)SF._uORB_MS5611_PressureFast;
+			SF._uORB_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * SF._uORB_MS5611_PressureFill + (1.f - SF._flag_MS5611_FilterAlpha) * SF._uORB_MS5611_PressureFast;
 			SF._uORB_MS5611_PressureDiff = SF._uORB_MS5611_PressureFill - SF._uORB_MS5611_PressureFast;
 			if (SF._uORB_MS5611_PressureDiff > 8)
 				SF._uORB_MS5611_PressureDiff = 8;
@@ -344,6 +347,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				SF._uORB_MS5611_PressureFill -= SF._uORB_MS5611_PressureDiff / 6.f;
 			SF._uORB_MS5611_PressureFinal = SF._uORB_MS5611_PressureFill;
 			AF._flag_MS5611_Async = true;
+
 			TF._Tmp_ALTThreadTimeEnd = micros();
 			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
 			if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._Tmp_ALTThreadError)
@@ -1070,10 +1074,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << "MS5611ParseDataINFO:"
 			  << "\n";
 	std::cout << " FastPressure :    " << SF._uORB_MS5611_PressureFast << "            \n";
-	std::cout << " FilterPressure :    " << SF._uORB_MS5611_PressureFill << "            \n";
 	std::cout << " FilterPressureFast :" << SF._uORB_MS5611_PressureFinal << "            \n";
 	std::cout << " AltHoldTarget:      " << PF._uORB_PID_AltHold_Target << "            \n";
-	std::cout << " Altitude:           " << SF._uORB_MS5611_AltMeter << "            \n";
 	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
 	std::cout << " AltholdFixUp:       " << PF._uORB_PID_I_Alt_Extend << "            \n";
 
