@@ -277,12 +277,13 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._uORB_Real_Pitch * -0.0174533) +
 								   SF._uORB_MPU9250_M_Y * sin(SF._uORB_Real_Pitch * 0.0174533) + sin(SF._uORB_Real__Roll * -0.0174533) -
 								   SF._uORB_MPU9250_M_Z * cos(SF._uORB_Real_Pitch * 0.0174533) * sin(SF._uORB_Real__Roll * -0.0174533);
-			SF._Tmp_MPU9250_M_YH = SF._Tmp_MPU9250_M_Y * cos(SF._uORB_Real_Pitch * 0.0174533) +
-								   SF._Tmp_MPU9250_M_Z + sin(SF._uORB_Real_Pitch * 0.0174533);
+			SF._Tmp_MPU9250_M_YH = SF._uORB_MPU9250_M_Y * cos(SF._uORB_Real_Pitch * 0.0174533) +
+								   SF._uORB_MPU9250_M_Z + sin(SF._uORB_Real_Pitch * 0.0174533);
 			if (SF._Tmp_MPU9250_M_YH < 0)
 				SF._uORB_MAG_Heading = 180 + (180 + ((atan2(SF._Tmp_MPU9250_M_YH, SF._Tmp_MPU9250_M_XH)) * (180 / 3.14)));
 			else
 				SF._uORB_MAG_Heading = (atan2(SF._Tmp_MPU9250_M_YH, SF._Tmp_MPU9250_M_XH)) * (180 / 3.14);
+
 			if (SF._uORB_MAG_Heading < 0)
 				SF._uORB_MAG_Heading += 360;
 			else if (SF._uORB_MAG_Heading >= 360)
@@ -962,7 +963,7 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 	}
 }
 
-void SingleAPMAPI::RPiSingleAPM::ESCCalibrate()
+void SingleAPMAPI::RPiSingleAPM::APMCalibrator()
 {
 	char Comfirm[128];
 	std::cout << "[WARNING! WARNING! WARNING! ]\n";

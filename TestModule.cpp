@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 		{
 			RPiSingleAPM APM_Settle;
 			APM_Settle.RPiSingleAPMInit(setting);
-			APM_Settle.ESCCalibrate();
+			APM_Settle.APMCalibrator();
 		}
 		break;
 		//--------------------------------------------------------------------------------//

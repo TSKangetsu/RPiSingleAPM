@@ -103,7 +103,7 @@ namespace SingleAPMAPI
 
 		void TaskThreadBlock();
 
-		void ESCCalibrate();
+		void APMCalibrator();
 
 	protected:
 		Sbus *SbusInit;
