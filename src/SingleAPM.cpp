@@ -293,6 +293,11 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				SF._uORB_MAG_Heading += 360;
 			else if (SF._uORB_MAG_Heading >= 360)
 				SF._uORB_MAG_Heading -= 360;
+			//IMU SaftyChecking---------------------------------------------------------//
+			if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
+			{
+				AF._flag_Error = true;
+			}
 
 			TF._Tmp_IMUThreadTimeEnd = micros();
 			TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
@@ -370,57 +375,127 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			TF._Tmp_RXTThreadTimeStart = micros();
 			TF._Tmp_RXTThreadTimeNext = TF._Tmp_RXTThreadTimeStart - TF._Tmp_RXTThreadTimeEnd;
 
-			if (RF.RC_Type == RCIsSbus)
+			//RC Read Parse
 			{
-				if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
+				if (RF.RC_Type == RCIsSbus)
 				{
-					for (size_t i = 0; i < 16; i++)
+					if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 					{
-						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
+						for (size_t i = 0; i < 16; i++)
+						{
+							RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
+						}
+						AF._flag_RC_Disconnected = false;
 					}
-					AF._flag_RC_Disconnected = false;
+					else
+					{
+						AF._flag_RC_Disconnected = true;
+					}
 				}
-				else
+				else if (RF.RC_Type == RCIsIbus)
 				{
-					AF._flag_RC_Disconnected = true;
+					if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
+					{
+						for (size_t i = 0; i < 16; i++)
+						{
+							RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
+						}
+						AF._flag_RC_Disconnected = false;
+					}
+					else
+					{
+						AF._flag_RC_Disconnected = true;
+					}
 				}
 			}
-			else if (RF.RC_Type == RCIsIbus)
+			//RC Out Caculation
 			{
-				if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
-				{
-					for (size_t i = 0; i < 16; i++)
-					{
-						RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
-					}
-					AF._flag_RC_Disconnected = false;
-				}
+				if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
+					RF._uORB_RC_Out__Roll = 0;
 				else
-				{
-					AF._flag_RC_Disconnected = true;
-				}
+					RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) * RF._flag_RCIsReserv__Roll;
+				//
+				if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
+					RF._uORB_RC_Out_Pitch = 0;
+				else
+					RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) * RF._flag_RCIsReserv_Pitch;
+				//
+				if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
+					RF._uORB_RC_Out___Yaw = 0;
+				else
+					RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) * RF._flag_RCIsReserv___Yaw;
+				//
+				RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
+				//
+				RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
+				//
+				RF._uORB_RC_Out_FlyMod = RF._uORB_RC_Channel_PWM[5];
 			}
+			//RC Safty Checking
+			{
+				if (RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[0] && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Max_PWM_Value ||
+					RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[1] && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Max_PWM_Value ||
+					RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[2] && RF._uORB_RC_Channel_PWM[2] > RF._flag_RC_Max_PWM_Value ||
+					RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value)
+					AF._flag_RC_Disconnected = true;
 
-			if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
-				RF._uORB_RC_Out__Roll = 0;
-			else
-				RF._uORB_RC_Out__Roll = (RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value) * RF._flag_RCIsReserv__Roll;
-			//
-			if (RF._uORB_RC_Channel_PWM[1] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Mid_PWM_Value - 10)
-				RF._uORB_RC_Out_Pitch = 0;
-			else
-				RF._uORB_RC_Out_Pitch = (RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value) * RF._flag_RCIsReserv_Pitch;
-			//
-			if (RF._uORB_RC_Channel_PWM[3] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Mid_PWM_Value - 10)
-				RF._uORB_RC_Out___Yaw = 0;
-			else
-				RF._uORB_RC_Out___Yaw = (RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value) * RF._flag_RCIsReserv___Yaw;
-			//
-			RF._uORB_RC_Out_Throttle = RF._uORB_RC_Channel_PWM[2];
-			//
-			RF._uORB_RC_Out___ARM = RF._uORB_RC_Channel_PWM[4];
-			//
-			RF._uORB_RC_Out_FlyMod = RF._uORB_RC_Channel_PWM[5];
+				if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
+				{
+					if (AF._flag_Device_setupFailed == false)
+					{
+						if (AF._flag_Error == false)
+						{
+							if (AF._flag_StartUP_Protect == false)
+							{
+								AF._flag_ESC_ARMED = false;
+							}
+						}
+						else
+						{
+							AF._flag_ESC_ARMED = true;
+						}
+					}
+				}
+				else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
+				{
+					if (RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_Max_PWM_Value + 50)
+					{
+						AF._flag_StartUP_Protect = false;
+						AF._flag_ESC_ARMED = true;
+						AF._flag_Error = false;
+						AF._flag_ClockingTime_Error = false;
+					}
+				}
+				else if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 20)
+				{
+					if (AF._flag_Error == true)
+					{
+						AF._flag_ESC_ARMED = true;
+					}
+				}
+				if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
+				{
+					if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
+					{
+						AF._flag_StartUP_Protect = true;
+					}
+				}
+			}
+			//flyMode Switch
+			{
+				if (RF._flag_RC_Min_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
+				{
+					AF.AutoPilotMode = APModeINFO::AutoStable;
+				}
+				if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
+				{
+					AF.AutoPilotMode = APModeINFO::AltHold;
+				}
+				if (RF._flag_RC_Max_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Max_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
+				{
+					AF.AutoPilotMode = APModeINFO::PositionHold;
+				}
+			}
 
 			TF._Tmp_RXTThreadTimeEnd = micros();
 			TF._Tmp_RXTThreadTimeLoop = TF._Tmp_RXTThreadTimeEnd - TF._Tmp_RXTThreadTimeStart;
@@ -576,6 +651,47 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 #endif
 		SaftyCheckTaskReg();
 		usleep(20000);
+	}
+}
+
+void SingleAPMAPI::RPiSingleAPM::APMCalibrator()
+{
+	char Comfirm[128];
+	std::cout << "[WARNING! WARNING! WARNING! ]\n";
+	std::cout << "YOU ARE TRY TO ENABLE CALIBRATION THE ESC\n";
+	std::cout << "PLEASE REMOVE ALL THE PROPELLER\n";
+	std::cout << "IF YOU STILL NEED TO ENABLE , PLEASE INPUT : YES,DO AS I SAY , AND ENTER\n";
+	std::cout << "(YES,DO AS I SAY)";
+	std::cin.getline(Comfirm, sizeof(Comfirm));
+	if (strncmp(Comfirm, "YES,DO AS I SAY", 16) == 0)
+	{
+		std::cout << "\nALL ESC WILL PULL TO MAX,IF THE ESC RING, PLEASE INPUT : CHEACK , AND ENTER\n";
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Max__Throttle);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
+		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
+		std::cout << "(CHECK)";
+		std::cin >> Comfirm;
+		if (strncmp(Comfirm, "CHECK", 6) == 0)
+		{
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lazy_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lazy_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lazy_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lazy_Throttle);
+			std::cout << "\nESC CALIBRATION COMPLETE\n";
+		}
+		else
+		{
+			std::cout << "\nABORT!\n";
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
+		}
+	}
+	else
+	{
+		std::cout << "\nABORT!\n";
 	}
 }
 
@@ -747,6 +863,18 @@ void SingleAPMAPI::RPiSingleAPM::IMUMixFilter(Kalman *kal, float next_input_valu
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 {
+	//PID Checking
+	if (AF._flag_ESC_ARMED == true)
+	{
+		AF._flag_MPU9250_first_StartUp = true;
+		PF._uORB_PID_D_Last_Value__Roll = 0;
+		PF._uORB_PID_D_Last_Value_Pitch = 0;
+		PF._uORB_PID_D_Last_Value___Yaw = 0;
+		PF._uORB_PID_I_Last_Value__Roll = 0;
+		PF._uORB_PID_I_Last_Value_Pitch = 0;
+		PF._uORB_PID_I_Last_Value___Yaw = 0;
+	}
+
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::AutoStable ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
@@ -924,88 +1052,6 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 {
-	//ECSLockCheck
-	if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
-	{
-		AF._flag_IsLockCleanerEnable = false;
-		if (AF._flag_Device_setupFailed == false)
-		{
-			if (AF._flag_Error == false)
-			{
-				if (AF._flag_StartUP_Protect == false)
-				{
-					AF._flag_ESC_ARMED = false;
-				}
-			}
-			else
-			{
-				AF._flag_ESC_ARMED = true;
-			}
-		}
-	}
-	else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
-	{
-		if (RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_Max_PWM_Value + 50)
-		{
-			AF._flag_IsLockCleanerEnable = true;
-			AF._flag_StartUP_Protect = false;
-			AF._flag_ESC_ARMED = true;
-			AF._flag_Error = false;
-			AF._flag_ClockingTime_Error = false;
-		}
-	}
-	else if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 20)
-	{
-		if (AF._flag_Error == true)
-		{
-			AF._flag_ESC_ARMED = true;
-		}
-	}
-	if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
-	{
-		if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
-		{
-			AF._flag_StartUP_Protect = true;
-		}
-	}
-	if (AF._flag_ESC_ARMED == true)
-	{
-		AF._flag_MPU9250_first_StartUp = true;
-		PF._uORB_PID_D_Last_Value__Roll = 0;
-		PF._uORB_PID_D_Last_Value_Pitch = 0;
-		PF._uORB_PID_D_Last_Value___Yaw = 0;
-		PF._uORB_PID_I_Last_Value__Roll = 0;
-		PF._uORB_PID_I_Last_Value_Pitch = 0;
-		PF._uORB_PID_I_Last_Value___Yaw = 0;
-	}
-	//flyMode Switch
-	{
-		if (RF._flag_RC_Min_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
-		{
-			AF.AutoPilotMode = APModeINFO::AutoStable;
-		}
-		if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
-		{
-			AF.AutoPilotMode = APModeINFO::AltHold;
-		}
-		if (RF._flag_RC_Max_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Max_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
-		{
-			AF.AutoPilotMode = APModeINFO::PositionHold;
-		}
-	}
-	//ErrorDetect
-	if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
-	{
-		AF._flag_Error = true;
-	}
-	if (RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[0] && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Max_PWM_Value ||
-		RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[1] && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Max_PWM_Value ||
-		RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[2] && RF._uORB_RC_Channel_PWM[2] > RF._flag_RC_Max_PWM_Value ||
-		RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value)
-	{
-		AF._flag_RC_Disconnected = true;
-	}
-	//RC_LOSE_Detect
 	if (AF._flag_RC_Disconnected == true)
 	{
 		AF.RC_Lose_Clocking += 1;
@@ -1107,7 +1153,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << " Flag_ESC_ARMED:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
-	std::cout << " Flag_IsLockEnable:" << AF._flag_IsLockCleanerEnable << "         \n";
 	std::cout << " Flag_ClockingTime_Error:" << AF._flag_ClockingTime_Error << "         \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
 	std::cout << " Flag_IsAltHoldDisSet:" << AF._flag_IsAltHoldDisSet << "         \n";

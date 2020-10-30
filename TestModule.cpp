@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 		{
 			RPiSingleAPM APM_Settle;
 			APM_Settle.RPiSingleAPMInit(setting);
-			// APM_Settle.APMCalibrator();
+			APM_Settle.APMCalibrator();
 		}
 		break;
 		//--------------------------------------------------------------------------------//

@@ -102,6 +102,8 @@ namespace SingleAPMAPI
 
 		void TaskThreadBlock();
 
+		void APMCalibrator();
+
 	protected:
 		Sbus *SbusInit;
 		Ibus *IbusInit;
@@ -132,7 +134,6 @@ namespace SingleAPMAPI
 		{
 			APModeINFO AutoPilotMode;
 			long int RC_Lose_Clocking;
-			bool _flag_IsLockCleanerEnable;
 			bool _flag_Error;
 			bool _flag_ClockingTime_Error;
 			bool _flag_StartUP_Protect;
