@@ -61,6 +61,9 @@ namespace SingleAPMAPI
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
+		double _flag_MPU9250_M_X_Scaler;
+		double _flag_MPU9250_M_Y_Scaler;
+		double _flag_MPU9250_M_Z_Scaler;
 
 		int _flag_A1_Pin;
 		int _flag_A2_Pin;
@@ -143,7 +146,9 @@ namespace SingleAPMAPI
 			bool _flag_Device_setupFailed;
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
-			bool _flag_IsAltHoldDisSet;
+			bool _flag_StartingTakeOff;
+			bool _flag_StartingTakeOffFlag;
+			bool _flag_IsAltHoldSet;
 			bool _flag_IsAltHoldChanging;
 		} AF;
 
@@ -195,12 +200,18 @@ namespace SingleAPMAPI
 			float _uORB_Gryo___Yaw = 0;
 			float _uORB_Real_Pitch = 0;
 			float _uORB_Real__Roll = 0;
+			float _uORB_Real___Yaw = 0;
+			float _uORB_Real__Head = 0;
 			float _uORB_MAG_Heading = 0;
 
+			float _Tmp_Real__Head;
+			float _Tmp_Real__Head_Gryo;
+			float _Tmp_Real__Head__Mag;
 			float _Tmp_MPU9250_M_XH;
 			float _Tmp_MPU9250_M_YH;
 			float _Tmp_Gryo_RTSpeed__Roll;
 			float _Tmp_Gryo_RTSpeed_Pitch;
+			float _Tmp_Gryo_RTSpeed___Yaw;
 			unsigned long _Tmp_MPU9250_G_X;
 			unsigned long _Tmp_MPU9250_G_Y;
 			unsigned long _Tmp_MPU9250_G_Z;
@@ -220,6 +231,9 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_M_X_Cali;
 			double _flag_MPU9250_M_Y_Cali;
 			double _flag_MPU9250_M_Z_Cali;
+			double _flag_MPU9250_M_X_Scaler;
+			double _flag_MPU9250_M_Y_Scaler;
+			double _flag_MPU9250_M_Z_Scaler;
 
 			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
@@ -381,6 +395,7 @@ namespace SingleAPMAPI
 			int _flag_A2_Pin = 1;
 			int _flag_B1_Pin = 2;
 			int _flag_B2_Pin = 3;
+			int _uORB_HoverThrottle = 1500;
 			const int _Flag_Lazy_Throttle = 2300;
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;

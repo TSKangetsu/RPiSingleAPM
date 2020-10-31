@@ -99,6 +99,10 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	//==============================================================Sensors cofig==/
 	APMInit._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
 	APMInit._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
+
+	APMInit._flag_MPU9250_M_X_Scaler = Configdata["_flag_MPU9250_M_X_Scaler"].get<double>();
+	APMInit._flag_MPU9250_M_Y_Scaler = Configdata["_flag_MPU9250_M_Y_Scaler"].get<double>();
+	APMInit._flag_MPU9250_M_Z_Scaler = Configdata["_flag_MPU9250_M_Z_Scaler"].get<double>();
 	//===============================================================Update cofig==/
 	APMInit.IMU_Freqeuncy = Configdata["IMU_Freqeucy"].get<int>();
 	APMInit.RXT_Freqeuncy = Configdata["RXT_Freqeucy"].get<int>();

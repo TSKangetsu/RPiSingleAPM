@@ -241,8 +241,14 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			IMUGryoFilter(SF._uORB_MPU9250_G_Z, SF._uORB_MPU9250_G_Fixed_Z, SF._Tmp_Gryo_filer_Input_Quene_Z, SF._Tmp_Gryo_filer_Output_Quene_Z, SF.IMUFilter_Type);
 			SF._Tmp_Gryo_RTSpeed_Pitch = (SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB);
 			SF._Tmp_Gryo_RTSpeed__Roll = (SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB);
+			SF._Tmp_Gryo_RTSpeed___Yaw = (SF._uORB_MPU9250_G_Fixed_Z / DF._flag_MPU9250_LSB);
 			SF._uORB_Real_Pitch += SF._Tmp_Gryo_RTSpeed_Pitch / TF._flag_IMUThreadFreq;
 			SF._uORB_Real__Roll += SF._Tmp_Gryo_RTSpeed__Roll / TF._flag_IMUThreadFreq;
+			SF._uORB_Real___Yaw += SF._Tmp_Gryo_RTSpeed___Yaw / TF._flag_IMUThreadFreq;
+			if (SF._uORB_Real___Yaw < 0)
+				SF._uORB_Real___Yaw += 360;
+			else if (SF._uORB_Real___Yaw >= 360)
+				SF._uORB_Real___Yaw -= 360;
 			//GryoTrue------------------------------------------------------------------//
 			SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB) * 0.3);
@@ -256,9 +262,9 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_Accel__Roll -= SF._flag_Accel__Roll_Cali;
 			SF._uORB_Accel_Pitch -= SF._flag_Accel_Pitch_Cali;
 			//MAG-----------------------------------------------------------------------//
-			SF._uORB_MPU9250_M_X = SF._uORB_MPU9250_M_X * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_X_Cali;
-			SF._uORB_MPU9250_M_Y = SF._uORB_MPU9250_M_Y * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Y_Cali;
-			SF._uORB_MPU9250_M_Z = SF._uORB_MPU9250_M_Z * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Z_Cali;
+			SF._uORB_MPU9250_M_X = SF._uORB_MPU9250_M_X * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_X_Cali - SF._flag_MPU9250_M_X_Scaler;
+			SF._uORB_MPU9250_M_Y = SF._uORB_MPU9250_M_Y * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Y_Cali - SF._flag_MPU9250_M_Y_Scaler;
+			SF._uORB_MPU9250_M_Z = SF._uORB_MPU9250_M_Z * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Z_Cali - SF._flag_MPU9250_M_Z_Scaler;
 			//Gryo_MIX_ACCEL------------------------------------------------------------//
 			if (!AF._flag_MPU9250_first_StartUp)
 			{
@@ -288,11 +294,28 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				SF._uORB_MAG_Heading = 180 + (180 + ((atan2(SF._Tmp_MPU9250_M_YH, SF._Tmp_MPU9250_M_XH)) * (180 / 3.14)));
 			else
 				SF._uORB_MAG_Heading = (atan2(SF._Tmp_MPU9250_M_YH, SF._Tmp_MPU9250_M_XH)) * (180 / 3.14);
-
 			if (SF._uORB_MAG_Heading < 0)
 				SF._uORB_MAG_Heading += 360;
 			else if (SF._uORB_MAG_Heading >= 360)
 				SF._uORB_MAG_Heading -= 360;
+			SF._Tmp_Real__Head = SF._uORB_Real___Yaw - SF._uORB_MAG_Heading;
+			if (SF._Tmp_Real__Head < 180 || SF._Tmp_Real__Head > 180)
+			{
+				if (SF._uORB_MAG_Heading > 180)
+					SF._Tmp_Real__Head__Mag = SF._uORB_MAG_Heading - 180;
+				else
+					SF._Tmp_Real__Head__Mag = SF._uORB_MAG_Heading + 180;
+				if (SF._uORB_Real___Yaw > 180)
+					SF._Tmp_Real__Head_Gryo = SF._uORB_Real___Yaw - 180;
+				else
+					SF._Tmp_Real__Head_Gryo + 180;
+				SF._Tmp_Real__Head = (SF._Tmp_Real__Head_Gryo - SF._Tmp_Real__Head__Mag);
+			}
+			SF._uORB_Real___Yaw -= SF._Tmp_Real__Head / 1200.0;
+			if (SF._uORB_Real___Yaw < 0)
+				SF._uORB_Real___Yaw += 360;
+			else if (SF._uORB_Real___Yaw >= 360)
+				SF._uORB_Real___Yaw -= 360;
 			//IMU SaftyChecking---------------------------------------------------------//
 			if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 			{
@@ -438,46 +461,106 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[2] && RF._uORB_RC_Channel_PWM[2] > RF._flag_RC_Max_PWM_Value ||
 					RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value)
 					AF._flag_RC_Disconnected = true;
-
-				if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
+				//RC UNLOCK Checking
+				if (AF.AutoPilotMode == APModeINFO::AutoStable)
 				{
-					if (AF._flag_Device_setupFailed == false)
+					if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 					{
-						if (AF._flag_Error == false)
+						if (AF._flag_Device_setupFailed == false)
 						{
-							if (AF._flag_StartUP_Protect == false)
+							if (AF._flag_Error == false)
 							{
-								AF._flag_ESC_ARMED = false;
+								if (AF._flag_StartUP_Protect == false)
+								{
+									AF._flag_ESC_ARMED = false;
+								}
+							}
+							else
+							{
+								AF._flag_ESC_ARMED = true;
 							}
 						}
-						else
+					}
+					else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
+					{
+						if (RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_Max_PWM_Value + 50)
+						{
+							AF._flag_StartUP_Protect = false;
+							AF._flag_ESC_ARMED = true;
+							AF._flag_Error = false;
+							AF._flag_ClockingTime_Error = false;
+						}
+					}
+					else if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 20)
+					{
+						if (AF._flag_Error == true)
 						{
 							AF._flag_ESC_ARMED = true;
 						}
 					}
-				}
-				else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
-				{
-					if (RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_Max_PWM_Value + 50)
+					if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 					{
-						AF._flag_StartUP_Protect = false;
-						AF._flag_ESC_ARMED = true;
-						AF._flag_Error = false;
-						AF._flag_ClockingTime_Error = false;
+						if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
+						{
+							AF._flag_StartUP_Protect = true;
+						}
 					}
 				}
-				else if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 20)
+				else if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold)
 				{
-					if (AF._flag_Error == true)
+					if (RF._flag_RC_Mid_PWM_Value - 100 < RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle < RF._flag_RC_Mid_PWM_Value + 100 &&
+						RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 					{
-						AF._flag_ESC_ARMED = true;
+						if (AF._flag_Device_setupFailed == false)
+						{
+							if (AF._flag_Error == false)
+							{
+								if (AF._flag_StartUP_Protect == false)
+								{
+									AF._flag_ESC_ARMED = false;
+								}
+							}
+							else
+							{
+								AF._flag_ESC_ARMED = true;
+							}
+						}
 					}
-				}
-				if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
-				{
-					if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
+					else if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50))
 					{
-						AF._flag_StartUP_Protect = true;
+						if (RF._flag_RC_Min_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_Max_PWM_Value + 50)
+						{
+							AF._flag_StartUP_Protect = false;
+							AF._flag_ESC_ARMED = true;
+							AF._flag_Error = false;
+							AF._flag_ClockingTime_Error = false;
+							AF._flag_StartingTakeOffFlag = false;
+							AF._flag_StartingTakeOff = false;
+						}
+					}
+					else if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 20)
+					{
+						if (AF._flag_Error == true)
+						{
+							AF._flag_ESC_ARMED = true;
+						}
+					}
+					if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
+					{
+						if (RF._flag_RC_Mid_PWM_Value - 100 < RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle < RF._flag_RC_Mid_PWM_Value + 100)
+						{
+							AF._flag_StartUP_Protect = true;
+						}
+					}
+					if (!AF._flag_ESC_ARMED)
+					{
+						if (!AF._flag_StartingTakeOffFlag)
+						{
+							if (!AF._flag_StartingTakeOff)
+								AF._flag_StartingTakeOff = true;
+							else
+								AF._flag_StartingTakeOffFlag = true;
+						}
 					}
 				}
 			}
@@ -495,6 +578,14 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				{
 					AF.AutoPilotMode = APModeINFO::PositionHold;
 				}
+			}
+			//flyMode Function
+			if (AF.AutoPilotMode == APModeINFO::AltHold)
+			{
+				if (RF._flag_RC_Mid_PWM_Value - 100 < RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle < RF._flag_RC_Mid_PWM_Value + 100 && !AF._flag_ESC_ARMED)
+					AF._flag_IsAltHoldSet = true;
+				else
+					AF._flag_IsAltHoldSet = false;
 			}
 
 			TF._Tmp_RXTThreadTimeEnd = micros();
@@ -761,6 +852,10 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	//==============================================================Sensors cofig==/
 	SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
 	SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;
+
+	SF._flag_MPU9250_M_X_Scaler = APMInit._flag_MPU9250_M_X_Scaler;
+	SF._flag_MPU9250_M_Y_Scaler = APMInit._flag_MPU9250_M_Y_Scaler;
+	SF._flag_MPU9250_M_Z_Scaler = APMInit._flag_MPU9250_M_Z_Scaler;
 	//===============================================================Update cofig==/
 	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
 	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
@@ -909,23 +1004,24 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
 
 		//AltHold Caculate
+		if (AF.AutoPilotMode == APModeINFO::AltHold ||
+			AF.AutoPilotMode == APModeINFO::PositionHold)
 		{
-			AF._flag_IsAltHoldChanging = true;
-			if (AF.AutoPilotMode == APModeINFO::AltHold ||
-				AF.AutoPilotMode == APModeINFO::PositionHold)
-			{
-				AF._flag_IsAltHoldChanging = false;
-				if (AF._flag_IsAltHoldDisSet)
-				{
-					PF._uORB_PID_AltHold_Target = PF._uORB_PID_Alt_Input;
-					AF._flag_IsAltHoldDisSet = false;
-				}
-			}
-
 			if (AF._flag_MS5611_Async)
 			{
-				//PID_P
+				//TakeOff Throttle Detect
 				PF._uORB_PID_Alt_Input = SF._uORB_MS5611_PressureFinal;
+				if (AF._flag_StartingTakeOff)
+				{
+					EF._uORB_HoverThrottle++;
+					PF._uORB_PID_I_Alt_Extend = 0;
+					if ((PF._Tmp_PID_D_Alt_Last - (PF._uORB_PID_Alt_Input * 10.f)) >= 2.f)
+					{
+						AF._flag_StartingTakeOff = false;
+					}
+				}
+
+				//PID_P
 				PF._uORB_PID_Alt_Diff = PF._uORB_PID_Alt_Input - PF._uORB_PID_AltHold_Target;
 				PF._uORB_PID_P_Alt_Extend = 0.f;
 				if (PF._uORB_PID_Alt_Diff > 10 || PF._uORB_PID_Alt_Diff > 10)
@@ -941,7 +1037,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				if (PF._uORB_PID_I_Alt_Extend < PF._flag_PID_Alt_Level_Max * -1)
 					PF._uORB_PID_I_Alt_Extend = PF._flag_PID_Alt_Level_Max * -1;
 				//PID_D
-				if (AF._flag_IsAltHoldChanging)
+				if (!AF._flag_IsAltHoldSet)
 					PF._Tmp_PID_D_Alt_Last = PF._uORB_PID_Alt_Input * 10;
 				PF._uORB_PID_D_Alt_Extend -= PF._Tmp_PID_D_Alt_Var[PF._Tmp_PID_D_Alt_VarClock];
 				PF._Tmp_PID_D_Alt_Var[PF._Tmp_PID_D_Alt_VarClock] = PF._uORB_PID_Alt_Input * 10 - PF._Tmp_PID_D_Alt_Last;
@@ -951,8 +1047,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				if (PF._Tmp_PID_D_Alt_VarClock == 30)
 					PF._Tmp_PID_D_Alt_VarClock = 0;
 				//PID_Cal
-				if (AF.AutoPilotMode == APModeINFO::AltHold ||
-					AF.AutoPilotMode == APModeINFO::PositionHold)
+				if (AF._flag_IsAltHoldSet)
 				{
 					PF._uORB_PID_Alt_Throttle = (PF._flag_PID_P_Alt_Gain + PF._uORB_PID_P_Alt_Extend) * PF._uORB_PID_Alt_Diff +
 												PF._uORB_PID_I_Alt_Extend +
@@ -968,11 +1063,18 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				}
 				else
 				{
-					AF._flag_IsAltHoldDisSet = true;
-					PF._uORB_PID_AltHold_Target = 0;
+					if (!AF._flag_StartingTakeOff)
+						PF._uORB_PID_AltHold_Target = PF._uORB_PID_Alt_Input;
 					PF._uORB_PID_Alt_Throttle = 0;
 					PF._uORB_PID_I_Alt_Extend = 0;
 				}
+				//ARMED Check
+				if (AF._flag_ESC_ARMED)
+				{
+					PF._uORB_PID_AltHold_Target = PF._uORB_PID_Alt_Input - 5;
+					EF._uORB_HoverThrottle = RF._flag_RC_Min_PWM_Value;
+				}
+
 				AF._flag_MS5611_Async = false;
 			}
 		}
@@ -1013,10 +1115,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		EF._Tmp_B1_Speed = RF._flag_RC_Mid_PWM_Value - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
-		EF._Tmp_A1_Speed = RF._flag_RC_Mid_PWM_Value - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
-		EF._Tmp_A2_Speed = RF._flag_RC_Mid_PWM_Value + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
-		EF._Tmp_B2_Speed = RF._flag_RC_Mid_PWM_Value + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
+		EF._Tmp_B1_Speed = EF._uORB_HoverThrottle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
+		EF._Tmp_A1_Speed = EF._uORB_HoverThrottle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
+		EF._Tmp_A2_Speed = EF._uORB_HoverThrottle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
+		EF._Tmp_B2_Speed = EF._uORB_HoverThrottle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
 	}
 	else
 	{
@@ -1096,34 +1198,38 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "IMUSenorData: "
 			  << " \n";
-	std::cout << " GryoPitch: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo_Pitch << "    "
-			  << " GryoRoll: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo__Roll << "    "
-			  << " GryoYaw: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo___Yaw
+	std::cout << " GryoPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo_Pitch << "    "
+			  << " GryoRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo__Roll << "    "
+			  << " GryoYaw:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo___Yaw
 			  << "                        "
 			  << std::endl;
 	;
-	std::cout << " AccePitch: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Accel_Pitch * 100) << "    "
-			  << " AcceRoll: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Accel__Roll * 100)
+	std::cout << " AccePitch:  " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Accel_Pitch) << "    "
+			  << " AcceRoll:   " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Accel__Roll) << "    "
+			  << " ClimbeRate: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU9250_A_Z)
 			  << "                        "
 			  << std::endl;
-	std::cout << " RealPitch: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real_Pitch * 100) << "    "
-			  << " RealRoll: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real__Roll * 100)
+	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real_Pitch) << "    "
+			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real__Roll) << "    "
+			  << " RealYaw:    " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real___Yaw)
 			  << "                        "
 			  << std::endl;
-	std::cout << " CompassX:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
-			  << " CompassY: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Y << "    "
-			  << " CompassZ:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Z << "    "
-			  << " CompassHeading:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Heading << "    "
+	std::cout << " CompassX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
+			  << " CompassY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Y << "    "
+			  << " CompassZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Z << "    "
+			  << " CHeading:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Heading << "    "
 			  << "                        "
 			  << std::endl;
 
-	std::cout << "MS5611ParseDataINFO:"
-			  << "\n";
-	std::cout << " FastPressure :    " << SF._uORB_MS5611_PressureFast << "            \n";
+	std::cout
+		<< "MS5611ParseDataINFO:"
+		<< "\n";
+	std::cout << " FastPressure :      " << SF._uORB_MS5611_PressureFast << "            \n";
 	std::cout << " FilterPressureFast :" << SF._uORB_MS5611_PressureFinal << "            \n";
 	std::cout << " AltHoldTarget:      " << PF._uORB_PID_AltHold_Target << "            \n";
 	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
 	std::cout << " AltholdFixUp:       " << PF._uORB_PID_I_Alt_Extend << "            \n";
+	std::cout << " AltholdhoverThrot:  " << EF._uORB_HoverThrottle << "            \n";
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";
@@ -1155,7 +1261,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 	std::cout << " Flag_ClockingTime_Error:" << AF._flag_ClockingTime_Error << "         \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
-	std::cout << " Flag_IsAltHoldDisSet:" << AF._flag_IsAltHoldDisSet << "         \n";
+	std::cout << " Flag_IsAltHoldSet:" << AF._flag_IsAltHoldSet << "         \n";
+	std::cout << " Flag_IsStartTakeOff:" << AF._flag_StartingTakeOff << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
 
 	std::cout << " IMULoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeLoop;
