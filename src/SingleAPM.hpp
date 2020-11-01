@@ -119,6 +119,14 @@ namespace SingleAPMAPI
 						  float &last_I_Data, float &last_D_Data,
 						  float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
+		void PIDSoomth_Caculate(float TargetData, float inputData, float &outputData,
+								float &Last_I_Data, float &Total_D_Data, float &Last_D_Data, float (&Ava_D_Data)[30],
+								float P_Gain, float I_Gain, float D_Gain, float outputMax, bool StartPIDFlag);
+
+		void PIDINC_Caculate(float TargetData, float inputData, float &outputData,
+							 float &LastError, float &PrevError,
+							 float P_Gain, float I_Gain, float D_Gain, float outputMax);
+
 		void ConfigReader(APMSettinngs APMInit);
 
 		void IMUSensorsDataRead();
@@ -146,10 +154,8 @@ namespace SingleAPMAPI
 			bool _flag_Device_setupFailed;
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
-			bool _flag_StartingTakeOff;
-			bool _flag_StartingTakeOffFlag;
 			bool _flag_IsAltHoldSet;
-			bool _flag_IsAltHoldChanging;
+			bool _flag_IsAltHoldTargetSet;
 		} AF;
 
 		struct DeviceINFO
@@ -290,7 +296,6 @@ namespace SingleAPMAPI
 
 			float _uORB_PID__Roll_Input = 0;
 			float _uORB_PID_Pitch_Input = 0;
-			float _uORB_PID_Alt_Input = 100;
 
 			float _uORB_Leveling__Roll;
 			float _uORB_Leveling_Pitch;
@@ -313,23 +318,21 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
-			int _uORB_PID_Alt_Throttle = 0;
-			int _Tmp_PID_D_Alt_VarClock = 0;
-			float _Tmp_PID_D_Alt_Var[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			float _Tmp_PID_D_Alt_Var[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			float _uORB_PID_AltInput = 0;
+			float  _uORB_PID_AltHold_Target = 0;
+			int _flag_SOOMTH_PID_Clock = 0;
+			float  _uORB_PID_Alt_Throttle = 0;
+
 			float _flag_PID_P_Alt_Gain;
 			float _flag_PID_I_Alt_Gain;
 			float _flag_PID_D_Alt_Gain;
+
+			float _uORB_PID_I_Last_Value_Alt = 0;
+			float _uORB_PID_D_Last_Value_Alt = 0;
+			float _uORB_PID_D_Toat_Value_Alt = 0;
+
 			float _flag_PID_Alt_Level_Max;
-
-			float _uORB_PID_P_Alt_Extend = 0;
-			float _uORB_PID_I_Alt_Extend = 0;
-			float _uORB_PID_D_Alt_Extend = 0;
-
-			float _Tmp_PID_D_Alt_Last = 0;
-
-			int _uORB_PID_AltInput = 0;
-			int _uORB_PID_Alt_Diff = 0;
-			int _uORB_PID_AltHold_Target = 0;
 			//==========PositionHoldPID=========//
 			int _uORB_PID_GPS_Lat_Local_Diff = 0;
 			int _uORB_PID_GPS_Lng_Local_Diff = 0;
@@ -395,7 +398,6 @@ namespace SingleAPMAPI
 			int _flag_A2_Pin = 1;
 			int _flag_B1_Pin = 2;
 			int _flag_B2_Pin = 3;
-			int _uORB_HoverThrottle = 1500;
 			const int _Flag_Lazy_Throttle = 2300;
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;
