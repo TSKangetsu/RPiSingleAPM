@@ -17,6 +17,7 @@
   "_flag_PID_D_Pitch_Gain": 25,
   "_flag_PID_D__Roll_Gain": 25,
   "_flag_PID_D___Yaw_Gain": 0,
+  "_flag_PID_Hover_Throttle": 1500,
   "_flag_PID_I_Alt_Gain": 3.8,
   "_flag_PID_I_Pitch_Gain": 0.002,
   "_flag_PID_I_Pitch_Max__Value": 250,

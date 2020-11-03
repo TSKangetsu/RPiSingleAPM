@@ -94,6 +94,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_PID_D___Yaw_Gain = Configdata["_flag_PID_D___Yaw_Gain"].get<float>();
 	APMInit._flag_PID_D_Alt_Gain = Configdata["_flag_PID_D_Alt_Gain"].get<float>();
 
+	APMInit._flag_PID_Hover_Throttle = Configdata["_flag_PID_Hover_Throttle"].get<float>();
 	APMInit._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
 	APMInit._flag_PID_Alt_Level_Max = Configdata["_flag_PID_Alt_Level_Max"].get<float>();
 	//==============================================================Sensors cofig==/

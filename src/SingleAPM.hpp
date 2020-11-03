@@ -57,6 +57,7 @@ namespace SingleAPMAPI
 		float _flag_PID_D___Yaw_Gain;
 		float _flag_PID_D_Alt_Gain;
 		float _flag_PID_Level_Max;
+		float _flag_PID_Hover_Throttle;
 		float _flag_PID_Alt_Level_Max;
 
 		double _flag_Accel__Roll_Cali;
@@ -327,19 +328,13 @@ namespace SingleAPMAPI
 			int _flag_PID_SOOMTH_Clock = 0;
 			float _Tmp_PID_D_Alt_Var[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			float _uORB_PID_AltInput = 0;
-			float _uORB_PID_AltInputLast = 0;
-			float _uORB_PID_AltInputPrev = 0;
 			float _uORB_PID_AltHold_Target = 0;
-			float _uORB_PID_AltHold_Ground = 0;
-			float _uORB_PID_AltHold_Minmen = 7;
-			float _uORB_PID_Hover_Throttle = 0;
+			float _flag_PID_Hover_Throttle = 1500;
 			float _uORB_PID_Alt_Throttle = 0;
 
 			float _flag_PID_P_Alt_Gain;
 			float _flag_PID_I_Alt_Gain;
 			float _flag_PID_D_Alt_Gain;
-			float _flag_PID_I_Climbe_Gain = 1;
-			float _flag_PID_D_Climbe_Gain = 0;
 
 			float _uORB_PID_I_Last_Value_Alt = 0;
 			float _uORB_PID_D_Last_Value_Alt = 0;
