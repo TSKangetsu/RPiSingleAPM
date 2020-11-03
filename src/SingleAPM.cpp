@@ -179,7 +179,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			SF._uORB_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.f;
 			SF._uORB_MS5611_PressureFill = SF._uORB_MS5611_PressureFast;
 		}
-
+		MS5611S->LocalPressureSetter(SF._uORB_MS5611_PressureFill, 5);
 #ifdef DEBUG
 		std::cout << "Done! LocalPressure Is: " << SF._uORB_MS5611_PressureFill << "\n";
 #endif
@@ -487,8 +487,6 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						AF._flag_ESC_ARMED = true;
 						AF._flag_Error = false;
 						AF._flag_ClockingTime_Error = false;
-						AF._flag_IsTakingProtect = true;
-						AF._flag_IsTakingOff = false;
 					}
 				}
 				if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)

@@ -145,24 +145,22 @@ namespace SingleAPMAPI
 		struct SafyINFO
 		{
 			APModeINFO AutoPilotMode;
-			long int RC_Lose_Clocking;
+
 			bool _flag_Error;
-			bool _flag_ClockingTime_Error;
-			bool _flag_StartUP_Protect;
-			bool _flag_MPU9250_first_StartUp;
-			bool _flag_RC_Disconnected;
 			bool _flag_ESC_ARMED;
+			bool _flag_StartUP_Protect;
+			bool _flag_ClockingTime_Error;
+
 			bool _flag_Device_setupFailed;
+			bool _flag_MPU9250_first_StartUp;
+
+			bool _flag_RC_Disconnected;
+			long int RC_Lose_Clocking;
 
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
 
 			bool _flag_IsAltHoldSet;
-			bool _flag_IsAltHoldTargetSet;
-
-			bool _flag_IsTakingOff;
-			bool _flag_IsTakingAfter;
-			bool _flag_IsTakingProtect;
 		} AF;
 
 		struct DeviceINFO
@@ -186,7 +184,6 @@ namespace SingleAPMAPI
 		{
 			//=========================MPU9250======//
 			int MPU9250_Type;
-			int MPUCompassSupport = 1;
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
 			int _Tmp_MPU9250_Buffer[14];
@@ -277,7 +274,6 @@ namespace SingleAPMAPI
 			float _uORB_MS5611_PressureDiff = 0;
 			float _uORB_MS5611_PressureFinal = 0;
 			float _uORB_MS5611_AltMeter = 0;
-			float _flag_MS5611_LocalPressure = 1023;
 			float _flag_MS5611_FilterAlpha = 0.985;
 			//=========================GPS=========//
 			GPSUartData _uORB_GPS_Data;
