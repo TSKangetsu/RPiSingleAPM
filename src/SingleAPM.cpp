@@ -378,10 +378,21 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 
 			TF._Tmp_ALTThreadTimeEnd = micros();
 			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
+			TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
+			if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._flag_ALTThreadTimeMax | TF._Tmp_ALTThreadTimeNext < 0)
+			{
+				usleep(50);
+				AF._flag_ClockingTime_Error = true;
+			}
+			else
+			{
+				usleep(TF._flag_ALTThreadTimeMax - TF._Tmp_ALTThreadTimeLoop - TF._Tmp_ALTThreadTimeNext);
+			}
 			if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._Tmp_ALTThreadError)
 			{
 				TF._Tmp_ALTThreadError = TF._Tmp_ALTThreadTimeLoop;
 			}
+			TF._Tmp_ALTThreadTimeEnd = micros();
 		}
 	});
 	cpu_set_t cpuset;

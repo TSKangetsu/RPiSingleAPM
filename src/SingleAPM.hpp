@@ -438,6 +438,7 @@ namespace SingleAPMAPI
 			int _Tmp_ALTThreadTimeNext;
 			int _Tmp_ALTThreadTimeLoop;
 			int _Tmp_ALTThreadError = 0;
+			int _flag_ALTThreadTimeMax = (float)1 / 88 * 1000000;
 			std::thread *ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;
 			int _Tmp_GPSThreadTimeStart;
