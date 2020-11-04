@@ -298,18 +298,19 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				SF._uORB_MAG_Heading += 360;
 			else if (SF._uORB_MAG_Heading >= 360)
 				SF._uORB_MAG_Heading -= 360;
+
 			SF._Tmp_Real__Head = SF._uORB_Real___Yaw - SF._uORB_MAG_Heading;
-			if (SF._Tmp_Real__Head < 180 || SF._Tmp_Real__Head > 180)
+			if (SF._Tmp_Real__Head < -180 || SF._Tmp_Real__Head > 180)
 			{
 				if (SF._uORB_MAG_Heading > 180)
 					SF._Tmp_Real__Head__Mag = SF._uORB_MAG_Heading - 180;
 				else
 					SF._Tmp_Real__Head__Mag = SF._uORB_MAG_Heading + 180;
-				if (SF._uORB_Real___Yaw > 180)
+				if (SF._Tmp_Real__Head > 180)
 					SF._Tmp_Real__Head_Gryo = SF._uORB_Real___Yaw - 180;
 				else
-					SF._Tmp_Real__Head_Gryo + 180;
-				SF._Tmp_Real__Head = (SF._Tmp_Real__Head_Gryo - SF._Tmp_Real__Head__Mag);
+					SF._Tmp_Real__Head_Gryo = SF._uORB_Real___Yaw + 180;
+				SF._Tmp_Real__Head = SF._Tmp_Real__Head_Gryo - SF._Tmp_Real__Head__Mag;
 			}
 			SF._uORB_Real___Yaw -= SF._Tmp_Real__Head / 1200.0;
 			if (SF._uORB_Real___Yaw < 0)
