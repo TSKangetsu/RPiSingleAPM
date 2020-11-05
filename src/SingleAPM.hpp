@@ -150,6 +150,7 @@ namespace SingleAPMAPI
 			APModeINFO AutoPilotMode;
 
 			bool _flag_Error;
+			bool _flag_GPS_Error;
 			bool _flag_ESC_ARMED;
 			bool _flag_StartUP_Protect;
 			bool _flag_ClockingTime_Error;
@@ -158,12 +159,15 @@ namespace SingleAPMAPI
 			bool _flag_MPU9250_first_StartUp;
 
 			bool _flag_RC_Disconnected;
+			bool _flag_GPS_Disconnected;
 			long int RC_Lose_Clocking;
+			long int GPS_Lose_Clocking;
 
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
 
 			bool _flag_IsAltHoldSet;
+			bool _flag_IsGPSHoldSet;
 		} AF;
 
 		struct DeviceINFO

@@ -2,7 +2,9 @@
 
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
+	wiringPiSetup();
 	AF.RC_Lose_Clocking = 0;
+	AF.GPS_Lose_Clocking = 0;
 	AF._flag_MPU9250_first_StartUp = true;
 	AF._flag_ESC_ARMED = true;
 	AF.AutoPilotMode = APModeINFO::AutoStable;
@@ -474,6 +476,19 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[2] && RF._uORB_RC_Channel_PWM[2] > RF._flag_RC_Max_PWM_Value ||
 					RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value)
 					AF._flag_RC_Disconnected = true;
+				if (AF._flag_RC_Disconnected == true)
+				{
+					AF.RC_Lose_Clocking += 1;
+					if (AF.RC_Lose_Clocking == 200)
+					{
+						AF._flag_Error = true;
+						AF.RC_Lose_Clocking = 0;
+					}
+				}
+				else if (AF._flag_RC_Disconnected == false)
+				{
+					AF.RC_Lose_Clocking = 0;
+				}
 				//RC UNLOCK Checking
 				if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 && RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Out___ARM && RF._uORB_RC_Out___ARM < RF._flag_RC_ARM_PWM_Value + 50)
 				{
@@ -533,6 +548,21 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					AF._flag_IsAltHoldSet = true;
 					if (AF.AutoPilotMode == APModeINFO::PositionHold)
 					{
+						if (RF._uORB_RC_Out__Roll == 0 && RF._uORB_RC_Out_Pitch == 0)
+						{
+							if (!AF._flag_GPS_Error)
+							{
+								AF._flag_IsGPSHoldSet = true;
+							}
+							else
+							{
+								AF._flag_IsGPSHoldSet = false;
+							}
+						}
+						else
+						{
+							AF._flag_IsGPSHoldSet = false;
+						}
 					}
 				}
 			}
@@ -602,9 +632,34 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._uORB_GPS_Lng_Smooth += (int)SF._uOBR_GPS_Lng_Smooth_Diff;
 					SF._uOBR_GPS_Lng_Smooth_Diff -= (int)SF._uOBR_GPS_Lng_Smooth_Diff;
 				}
-
-				AF._flag_GPSData_Async = true;
 				//
+				if (SF._uORB_GPS_Data.satillitesCount < 6)
+				{
+					AF._flag_GPS_Disconnected = true;
+				}
+				else if (SF._uORB_GPS_Data.satillitesCount > 6)
+				{
+					AF._flag_GPS_Disconnected = false;
+				}
+				else
+				{
+					AF._flag_GPS_Disconnected = true;
+				}
+				if (AF._flag_GPS_Disconnected == true)
+				{
+					AF.GPS_Lose_Clocking += 1;
+					if (AF.GPS_Lose_Clocking == 50)
+					{
+						AF._flag_GPS_Error = true;
+						AF.GPS_Lose_Clocking = 0;
+					}
+				}
+				else if (AF._flag_GPS_Disconnected == false)
+				{
+					AF.GPS_Lose_Clocking = 0;
+				}
+				//
+				AF._flag_GPSData_Async = true;
 			}
 			TF._Tmp_GPSThreadTimeEnd = micros();
 			TF._Tmp_GPSThreadTimeLoop = TF._Tmp_GPSThreadTimeEnd - TF._Tmp_GPSThreadTimeStart;
@@ -998,14 +1053,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 		//AltHold Caculate
 		{
-			if (!AF._flag_IsAltHoldSet)
-			{
-				PF._uORB_PID_I_Last_Value_Alt = 0;
-				PF._uORB_PID_AltHold_Target = PF._uORB_PID_AltInput;
-			}
-
 			if (AF._flag_MS5611_Async)
 			{
+				if (!AF._flag_IsAltHoldSet)
+				{
+					PF._uORB_PID_I_Last_Value_Alt = 0;
+					PF._uORB_PID_AltHold_Target = PF._uORB_PID_AltInput;
+				}
 				PF._uORB_PID_AltInput = SF._uORB_MS5611_PressureFinal;
 				PIDSoomth_Caculate(PF._uORB_PID_AltHold_Target, PF._uORB_PID_AltInput, PF._uORB_PID_Alt_Throttle,
 								   PF._uORB_PID_I_Last_Value_Alt, PF._uORB_PID_D_Toat_Value_Alt, PF._uORB_PID_D_Last_Value_Alt, PF._Tmp_PID_D_Alt_Var,
@@ -1019,7 +1073,12 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		{
 			if (AF._flag_GPSData_Async)
 			{
-				if (AF.AutoPilotMode == APModeINFO::PositionHold)
+				if (!AF._flag_IsGPSHoldSet)
+				{
+					PF._uORB_PID_GPS_Lat_Local_Target = SF._uORB_GPS_Lat_Smooth;
+					PF._uORB_PID_GPS_Lng_Local_Target = SF._uORB_GPS_Lng_Smooth;
+				}
+				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsGPSHoldSet)
 				{
 					PF._uORB_PID_GPS_Lng_Local_Diff = SF._uORB_GPS_Lng_Smooth - PF._uORB_PID_GPS_Lng_Local_Target;
 					PF._uORB_PID_GPS_Lat_Local_Diff = PF._uORB_PID_GPS_Lat_Local_Target - SF._uORB_GPS_Lat_Smooth;
@@ -1051,6 +1110,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Pitch_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS_Pitch_Ouput;
 					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Pitch_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS_Pitch_Ouput;
 				}
+				else
+				{
+					PF._uORB_PID_GPS__Roll_Ouput = 0;
+					PF._uORB_PID_GPS_Pitch_Ouput = 0;
+				}
 				AF._flag_GPSData_Async = false;
 			}
 		}
@@ -1059,10 +1123,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
-		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
-		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
-		EF._Tmp_B2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_Alt_Throttle;
+		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw - PF._uORB_PID_GPS__Roll_Ouput + PF._uORB_PID_GPS_Pitch_Ouput;
+		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw - PF._uORB_PID_GPS__Roll_Ouput - PF._uORB_PID_GPS_Pitch_Ouput;
+		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_GPS__Roll_Ouput - PF._uORB_PID_GPS_Pitch_Ouput;
+		EF._Tmp_B2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_GPS__Roll_Ouput + PF._uORB_PID_GPS_Pitch_Ouput;
 	}
 	else
 	{
@@ -1098,20 +1162,6 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
 {
-	if (AF._flag_RC_Disconnected == true)
-	{
-		AF.RC_Lose_Clocking += 1;
-		if (AF.RC_Lose_Clocking == 200)
-		{
-			AF._flag_Error = true;
-			AF.RC_Lose_Clocking = 0;
-		}
-	}
-	else if (AF._flag_RC_Disconnected == false)
-	{
-		AF.RC_Lose_Clocking = 0;
-	}
-
 	if (AF._flag_Error == true)
 	{
 		AF._flag_ESC_ARMED = true;
@@ -1181,8 +1231,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";
-	std::cout << " GPSLAT:     " << (int)SF._uORB_GPS_Lat_Smooth << "            \n";
-	std::cout << " GPSLNG:     " << (int)SF._uORB_GPS_Lng_Smooth << "            \n";
+	std::cout << " GPSLAT:     " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_Lat_Smooth
+			  << " GPSHoldLAT: " << PF._uORB_PID_GPS_Lat_Local_Target << "            \n";
+	std::cout << " GPSLNG:     " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_Lng_Smooth
+			  << " GPSHoldLNG: " << PF._uORB_PID_GPS_Lng_Local_Target << "            \n";
 	std::cout << " GPSNE:      " << SF._uORB_GPS_Data.lat_North_Mode << " -> " << SF._uORB_GPS_Data.lat_East_Mode << "            \n";
 	std::cout << " GPSSATCount:" << SF._uORB_GPS_Data.satillitesCount << "            \n";
 
@@ -1207,9 +1259,13 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << " Flag_ESC_ARMED:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
+	std::cout << " Flag_GPS_Error:" << AF._flag_GPS_Error << "           \n";
 	std::cout << " Flag_ClockingTime_Error:" << AF._flag_ClockingTime_Error << "         \n";
 	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
+	std::cout << " Flag_GPS_Disconnected:" << AF._flag_GPS_Disconnected << "         \n";
 	std::cout << " Flag_IsAltHoldSet:" << AF._flag_IsAltHoldSet << "         \n";
+	std::cout << " Flag_IsGPSHoldSet:" << AF._flag_IsGPSHoldSet << "         \n";
+	std::cout << " GPS_Lose_Clocking:" << AF.GPS_Lose_Clocking << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
 
 	std::cout << " IMULoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeLoop;
