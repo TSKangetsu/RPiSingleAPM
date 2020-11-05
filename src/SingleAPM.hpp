@@ -45,6 +45,7 @@ namespace SingleAPMAPI
 		float _flag_PID_P_Pitch_Gain;
 		float _flag_PID_P___Yaw_Gain;
 		float _flag_PID_P_Alt_Gain;
+		float _flag_PID_P_GPS_Gain;
 		float _flag_PID_I__Roll_Gain;
 		float _flag_PID_I_Pitch_Gain;
 		float _flag_PID_I___Yaw_Gain;
@@ -56,9 +57,11 @@ namespace SingleAPMAPI
 		float _flag_PID_D_Pitch_Gain;
 		float _flag_PID_D___Yaw_Gain;
 		float _flag_PID_D_Alt_Gain;
+		float _flag_PID_D_GPS_Gain;
 		float _flag_PID_Level_Max;
 		float _flag_PID_Hover_Throttle;
 		float _flag_PID_Alt_Level_Max;
+		float _flag_PID_GPS_Level_Max;
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
@@ -351,11 +354,14 @@ namespace SingleAPMAPI
 			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _Tmp_PID_D_GPS_Lng_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-			int _flag_PID_P_GPS_Gain;
-			int _flag_PID_D_GPS_Gain;
+			float _flag_PID_P_GPS_Gain;
+			float _flag_PID_D_GPS_Gain;
+			float _flag_PID_GPS_Level_Max;
 
 			float _uORB_PID_GPS_Lat_Ouput;
 			float _uORB_PID_GPS_Lng_Ouput;
+			float _uORB_PID_GPS_Pitch_Ouput;
+			float _uORB_PID_GPS__Roll_Ouput;
 		} PF;
 
 		struct RCINFO

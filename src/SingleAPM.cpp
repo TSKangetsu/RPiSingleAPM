@@ -317,6 +317,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				SF._uORB_Real___Yaw += 360;
 			else if (SF._uORB_Real___Yaw >= 360)
 				SF._uORB_Real___Yaw -= 360;
+			SF._uORB_Real__Head = SF._uORB_Real___Yaw;
 			//IMU SaftyChecking---------------------------------------------------------//
 			if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 			{
@@ -527,9 +528,12 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			}
 			//flyMode Function
 			{
-				if (!AF._flag_ESC_ARMED && AF.AutoPilotMode == APModeINFO::AltHold)
+				if (!AF._flag_ESC_ARMED && (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold))
 				{
 					AF._flag_IsAltHoldSet = true;
+					if (AF.AutoPilotMode == APModeINFO::PositionHold)
+					{
+					}
 				}
 			}
 
@@ -818,6 +822,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
 	PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
 	PF._flag_PID_P_Alt_Gain = APMInit._flag_PID_P_Alt_Gain;
+	PF._flag_PID_P_GPS_Gain = APMInit._flag_PID_P_GPS_Gain;
 
 	PF._flag_PID_I__Roll_Gain = APMInit._flag_PID_I__Roll_Gain;
 	PF._flag_PID_I_Pitch_Gain = APMInit._flag_PID_I_Pitch_Gain;
@@ -831,10 +836,12 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_D_Pitch_Gain = APMInit._flag_PID_D_Pitch_Gain;
 	PF._flag_PID_D___Yaw_Gain = APMInit._flag_PID_D___Yaw_Gain;
 	PF._flag_PID_D_Alt_Gain = APMInit._flag_PID_D_Alt_Gain;
+	PF._flag_PID_D_GPS_Gain = APMInit._flag_PID_D_GPS_Gain;
 
 	PF._flag_PID_Hover_Throttle = APMInit._flag_PID_Hover_Throttle;
 	PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
 	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
+	PF._flag_PID_GPS_Level_Max = APMInit._flag_PID_GPS_Level_Max;
 	//==============================================================Sensors cofig==/
 	SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
 	SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;
@@ -1035,6 +1042,14 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 					PF._uORB_PID_GPS_Lat_Ouput = (float)PF._uORB_PID_GPS_Lat_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lat_Ouput * PF._flag_PID_D_GPS_Gain;
 					PF._uORB_PID_GPS_Lng_Ouput = (float)PF._uORB_PID_GPS_Lng_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lng_Ouput * PF._flag_PID_D_GPS_Gain;
+
+					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_Real__Head * 0.017453) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_Real__Head - 90.f) * 0.017453);
+					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_Real__Head * 0.017453) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_Real__Head + 90.f) * 0.017453);
+
+					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
+					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
+					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Pitch_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS_Pitch_Ouput;
+					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Pitch_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS_Pitch_Ouput;
 				}
 				AF._flag_GPSData_Async = false;
 			}
@@ -1145,7 +1160,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real_Pitch) << "    "
 			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real__Roll) << "    "
-			  << " RealYaw:    " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real___Yaw)
+			  << " RealYaw:    " << std::setw(7) << std::setfill(' ') << (int)(SF._Tmp_Real__Head)
 			  << "                        "
 			  << std::endl;
 	std::cout << " CompassX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
