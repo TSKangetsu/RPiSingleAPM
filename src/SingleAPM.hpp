@@ -68,6 +68,7 @@ namespace SingleAPMAPI
 		double _flag_MPU9250_M_X_Scaler;
 		double _flag_MPU9250_M_Y_Scaler;
 		double _flag_MPU9250_M_Z_Scaler;
+		double _flag_MPU9250_Head_Asix;
 
 		int _flag_A1_Pin;
 		int _flag_A2_Pin;
@@ -197,18 +198,18 @@ namespace SingleAPMAPI
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
 			unsigned char _Tmp_MPU9250_SPI_Buffer[22];
 			unsigned char _Tmp_MPU9250_SPI_Compass_Buffer[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-			long _uORB_MPU9250_A_X;
-			long _uORB_MPU9250_A_Y;
-			long _uORB_MPU9250_A_Z;
-			long _uORB_MPU9250_G_X;
-			long _uORB_MPU9250_G_Y;
-			long _uORB_MPU9250_G_Z;
-			float _uORB_MPU9250_M_X;
-			float _uORB_MPU9250_M_Y;
-			float _uORB_MPU9250_M_Z;
-			long _uORB_MPU9250_G_Fixed_X;
-			long _uORB_MPU9250_G_Fixed_Y;
-			long _uORB_MPU9250_G_Fixed_Z;
+			long _uORB_MPU9250_A_X = 0;
+			long _uORB_MPU9250_A_Y = 0;
+			long _uORB_MPU9250_A_Z = 0;
+			long _uORB_MPU9250_G_X = 0;
+			long _uORB_MPU9250_G_Y = 0;
+			long _uORB_MPU9250_G_Z = 0;
+			float _uORB_MPU9250_M_X = 0;
+			float _uORB_MPU9250_M_Y = 0;
+			float _uORB_MPU9250_M_Z = 0;
+			long _uORB_MPU9250_G_Fixed_X = 0;
+			long _uORB_MPU9250_G_Fixed_Y = 0;
+			long _uORB_MPU9250_G_Fixed_Z = 0;
 
 			float _uORB_Accel__Roll = 0;
 			float _uORB_Accel_Pitch = 0;
@@ -221,23 +222,23 @@ namespace SingleAPMAPI
 			float _uORB_Real__Head = 0;
 			float _uORB_MAG_Heading = 0;
 
-			float _Tmp_Real__Head;
-			float _Tmp_Real__Head_Gryo;
-			float _Tmp_Real__Head__Mag;
-			float _Tmp_MPU9250_M_XH;
-			float _Tmp_MPU9250_M_YH;
-			float _Tmp_Gryo_RTSpeed__Roll;
-			float _Tmp_Gryo_RTSpeed_Pitch;
-			float _Tmp_Gryo_RTSpeed___Yaw;
-			unsigned long _Tmp_MPU9250_G_X;
-			unsigned long _Tmp_MPU9250_G_Y;
-			unsigned long _Tmp_MPU9250_G_Z;
-			unsigned long _Tmp_MPU9250_A_X;
-			unsigned long _Tmp_MPU9250_A_Y;
-			unsigned long _Tmp_MPU9250_A_Z;
-			unsigned long _Tmp_MPU9250_M_X;
-			unsigned long _Tmp_MPU9250_M_Y;
-			unsigned long _Tmp_MPU9250_M_Z;
+			float _Tmp_Real__Head = 0;
+			float _Tmp_Real__Head_Gryo = 0;
+			float _Tmp_Real__Head__Mag = 0;
+			float _Tmp_MPU9250_M_XH = 0;
+			float _Tmp_MPU9250_M_YH = 0;
+			float _Tmp_Gryo_RTSpeed__Roll = 0;
+			float _Tmp_Gryo_RTSpeed_Pitch = 0;
+			float _Tmp_Gryo_RTSpeed___Yaw = 0;
+			unsigned long _Tmp_MPU9250_G_X = 0;
+			unsigned long _Tmp_MPU9250_G_Y = 0;
+			unsigned long _Tmp_MPU9250_G_Z = 0;
+			unsigned long _Tmp_MPU9250_A_X = 0;
+			unsigned long _Tmp_MPU9250_A_Y = 0;
+			unsigned long _Tmp_MPU9250_A_Z = 0;
+			unsigned long _Tmp_MPU9250_M_X = 0;
+			unsigned long _Tmp_MPU9250_M_Y = 0;
+			unsigned long _Tmp_MPU9250_M_Z = 0;
 
 			long _flag_MPU9250_G_X_Cali;
 			long _flag_MPU9250_G_Y_Cali;
@@ -251,6 +252,7 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_M_X_Scaler;
 			double _flag_MPU9250_M_Y_Scaler;
 			double _flag_MPU9250_M_Z_Scaler;
+			double _flag_MPU9250_Head_Asix;
 
 			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
@@ -307,9 +309,9 @@ namespace SingleAPMAPI
 			float _uORB_PID__Roll_Input = 0;
 			float _uORB_PID_Pitch_Input = 0;
 
-			float _uORB_Leveling__Roll;
-			float _uORB_Leveling_Pitch;
-			float _uORB_Leveling___Yaw;
+			float _uORB_Leveling__Roll = 0;
+			float _uORB_Leveling_Pitch = 0;
+			float _uORB_Leveling___Yaw = 0;
 
 			float _flag_PID_P__Roll_Gain;
 			float _flag_PID_P_Pitch_Gain;
@@ -350,8 +352,8 @@ namespace SingleAPMAPI
 			int _uORB_PID_GPS_Lat_Local_Target = 0;
 			int _uORB_PID_GPS_Lng_Local_Target = 0;
 
-			int _uORB_PID_D_GPS_Lat_Ouput;
-			int _uORB_PID_D_GPS_Lng_Ouput;
+			int _uORB_PID_D_GPS_Lat_Ouput = 0;
+			int _uORB_PID_D_GPS_Lng_Ouput = 0;
 			int _uORB_PID_D_GPS_Lat_LastValue = 0;
 			int _uORB_PID_D_GPS_Lng_LastValue = 0;
 			int _Tmp_PID_D_GPS_AvaClock = 0;
@@ -362,10 +364,10 @@ namespace SingleAPMAPI
 			float _flag_PID_D_GPS_Gain;
 			float _flag_PID_GPS_Level_Max;
 
-			float _uORB_PID_GPS_Lat_Ouput;
-			float _uORB_PID_GPS_Lng_Ouput;
-			float _uORB_PID_GPS_Pitch_Ouput;
-			float _uORB_PID_GPS__Roll_Ouput;
+			float _uORB_PID_GPS_Lat_Ouput = 0;
+			float _uORB_PID_GPS_Lng_Ouput = 0;
+			float _uORB_PID_GPS_Pitch_Ouput = 0;
+			float _uORB_PID_GPS__Roll_Ouput = 0;
 		} PF;
 
 		struct RCINFO

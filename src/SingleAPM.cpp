@@ -319,7 +319,11 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				SF._uORB_Real___Yaw += 360;
 			else if (SF._uORB_Real___Yaw >= 360)
 				SF._uORB_Real___Yaw -= 360;
-			SF._uORB_Real__Head = SF._uORB_Real___Yaw;
+			SF._uORB_Real__Head = SF._uORB_Real___Yaw + SF._flag_MPU9250_Head_Asix;
+			if (SF._uORB_Real__Head < 0)
+				SF._uORB_Real__Head += 360;
+			else if (SF._uORB_Real__Head >= 360)
+				SF._uORB_Real__Head -= 360;
 			//IMU SaftyChecking---------------------------------------------------------//
 			if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 			{
@@ -514,6 +518,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						AF._flag_StartUP_Protect = false;
 						AF._flag_ESC_ARMED = true;
 						AF._flag_Error = false;
+						AF._flag_GPS_Error = false;
 						AF._flag_ClockingTime_Error = false;
 					}
 				}
@@ -633,11 +638,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._uOBR_GPS_Lng_Smooth_Diff -= (int)SF._uOBR_GPS_Lng_Smooth_Diff;
 				}
 				//
-				if (SF._uORB_GPS_Data.satillitesCount < 6)
+				if (SF._uORB_GPS_Data.satillitesCount < 4)
 				{
 					AF._flag_GPS_Disconnected = true;
 				}
-				else if (SF._uORB_GPS_Data.satillitesCount > 6)
+				else if (SF._uORB_GPS_Data.satillitesCount > 4)
 				{
 					AF._flag_GPS_Disconnected = false;
 				}
@@ -904,6 +909,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_MPU9250_M_X_Scaler = APMInit._flag_MPU9250_M_X_Scaler;
 	SF._flag_MPU9250_M_Y_Scaler = APMInit._flag_MPU9250_M_Y_Scaler;
 	SF._flag_MPU9250_M_Z_Scaler = APMInit._flag_MPU9250_M_Z_Scaler;
+
+	SF._flag_MPU9250_Head_Asix = APMInit._flag_MPU9250_Head_Asix;
 	//===============================================================Update cofig==/
 	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
 	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
@@ -1078,30 +1085,31 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 					PF._uORB_PID_GPS_Lat_Local_Target = SF._uORB_GPS_Lat_Smooth;
 					PF._uORB_PID_GPS_Lng_Local_Target = SF._uORB_GPS_Lng_Smooth;
 				}
+
+				PF._uORB_PID_GPS_Lng_Local_Diff = SF._uORB_GPS_Lng_Smooth - PF._uORB_PID_GPS_Lng_Local_Target;
+				PF._uORB_PID_GPS_Lat_Local_Diff = PF._uORB_PID_GPS_Lat_Local_Target - SF._uORB_GPS_Lat_Smooth;
+
+				PF._uORB_PID_D_GPS_Lat_Ouput -= PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+				PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lat_Local_Diff - PF._uORB_PID_D_GPS_Lat_LastValue;
+				PF._uORB_PID_D_GPS_Lat_Ouput += PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+
+				PF._uORB_PID_D_GPS_Lng_Ouput -= PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+				PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lng_Local_Diff - PF._uORB_PID_D_GPS_Lng_LastValue;
+				PF._uORB_PID_D_GPS_Lng_Ouput += PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
+				PF._Tmp_PID_D_GPS_AvaClock++;
+				if (PF._Tmp_PID_D_GPS_AvaClock == 35)
+				{
+					PF._Tmp_PID_D_GPS_AvaClock = 0;
+				}
+
+				PF._uORB_PID_D_GPS_Lat_LastValue = PF._uORB_PID_GPS_Lat_Local_Diff;
+				PF._uORB_PID_D_GPS_Lng_LastValue = PF._uORB_PID_GPS_Lng_Local_Diff;
+
+				PF._uORB_PID_GPS_Lat_Ouput = (float)PF._uORB_PID_GPS_Lat_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lat_Ouput * PF._flag_PID_D_GPS_Gain;
+				PF._uORB_PID_GPS_Lng_Ouput = (float)PF._uORB_PID_GPS_Lng_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lng_Ouput * PF._flag_PID_D_GPS_Gain;
+
 				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsGPSHoldSet)
 				{
-					PF._uORB_PID_GPS_Lng_Local_Diff = SF._uORB_GPS_Lng_Smooth - PF._uORB_PID_GPS_Lng_Local_Target;
-					PF._uORB_PID_GPS_Lat_Local_Diff = PF._uORB_PID_GPS_Lat_Local_Target - SF._uORB_GPS_Lat_Smooth;
-
-					PF._uORB_PID_D_GPS_Lat_Ouput -= PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-					PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lat_Local_Diff - PF._uORB_PID_D_GPS_Lat_LastValue;
-					PF._uORB_PID_D_GPS_Lat_Ouput += PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-
-					PF._uORB_PID_D_GPS_Lng_Ouput -= PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-					PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lng_Local_Diff - PF._uORB_PID_D_GPS_Lng_LastValue;
-					PF._uORB_PID_D_GPS_Lng_Ouput += PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-					PF._Tmp_PID_D_GPS_AvaClock++;
-					if (PF._Tmp_PID_D_GPS_AvaClock == 35)
-					{
-						PF._Tmp_PID_D_GPS_AvaClock = 0;
-					}
-
-					PF._uORB_PID_D_GPS_Lat_LastValue = PF._uORB_PID_GPS_Lat_Local_Diff;
-					PF._uORB_PID_D_GPS_Lng_LastValue = PF._uORB_PID_GPS_Lng_Local_Diff;
-
-					PF._uORB_PID_GPS_Lat_Ouput = (float)PF._uORB_PID_GPS_Lat_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lat_Ouput * PF._flag_PID_D_GPS_Gain;
-					PF._uORB_PID_GPS_Lng_Ouput = (float)PF._uORB_PID_GPS_Lng_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._uORB_PID_D_GPS_Lng_Ouput * PF._flag_PID_D_GPS_Gain;
-
 					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_Real__Head * 0.017453) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_Real__Head - 90.f) * 0.017453);
 					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_Real__Head * 0.017453) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_Real__Head + 90.f) * 0.017453);
 
@@ -1210,7 +1218,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real_Pitch) << "    "
 			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real__Roll) << "    "
-			  << " RealYaw:    " << std::setw(7) << std::setfill(' ') << (int)(SF._Tmp_Real__Head)
+			  << " RealYaw:    " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real__Head)
 			  << "                        "
 			  << std::endl;
 	std::cout << " CompassX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
@@ -1232,9 +1240,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << "GPSDataINFO:"
 			  << "\n";
 	std::cout << " GPSLAT:     " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_Lat_Smooth
-			  << " GPSHoldLAT: " << PF._uORB_PID_GPS_Lat_Local_Target << "            \n";
+			  << " ||GPSHoldLAT: " << std::setw(10) << std::setfill(' ') << PF._uORB_PID_GPS_Lat_Local_Target
+			  << " ||GPSPitchOut:" << std::setw(10) << std::setfill(' ') << PF._uORB_PID_GPS_Pitch_Ouput << "            \n";
 	std::cout << " GPSLNG:     " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_Lng_Smooth
-			  << " GPSHoldLNG: " << PF._uORB_PID_GPS_Lng_Local_Target << "            \n";
+			  << " ||GPSHoldLNG: " << std::setw(10) << std::setfill(' ') << PF._uORB_PID_GPS_Lng_Local_Target
+			  << " ||GPSRollOut: " << std::setw(10) << std::setfill(' ') << PF._uORB_PID_GPS__Roll_Ouput << "            \n";
 	std::cout << " GPSNE:      " << SF._uORB_GPS_Data.lat_North_Mode << " -> " << SF._uORB_GPS_Data.lat_East_Mode << "            \n";
 	std::cout << " GPSSATCount:" << SF._uORB_GPS_Data.satillitesCount << "            \n";
 

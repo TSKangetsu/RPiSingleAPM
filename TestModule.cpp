@@ -107,6 +107,8 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_MPU9250_M_X_Scaler = Configdata["_flag_MPU9250_M_X_Scaler"].get<double>();
 	APMInit._flag_MPU9250_M_Y_Scaler = Configdata["_flag_MPU9250_M_Y_Scaler"].get<double>();
 	APMInit._flag_MPU9250_M_Z_Scaler = Configdata["_flag_MPU9250_M_Z_Scaler"].get<double>();
+
+	APMInit._flag_MPU9250_Head_Asix = Configdata["_flag_MPU9250_Head_Asix"].get<double>();
 	//===============================================================Update cofig==/
 	APMInit.IMU_Freqeuncy = Configdata["IMU_Freqeucy"].get<int>();
 	APMInit.RXT_Freqeuncy = Configdata["RXT_Freqeucy"].get<int>();

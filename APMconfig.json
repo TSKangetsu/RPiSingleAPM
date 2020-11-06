@@ -36,6 +36,7 @@
   "_flag_MPU9250_M_X_Scaler": 0,
   "_flag_MPU9250_M_Y_Scaler": 0,
   "_flag_MPU9250_M_Z_Scaler": 0,
+  "_flag_MPU9250_Head_Asix": 0,
   "_flag_RC_ARM_PWM_Value": 1933,
   "_flag_RC_Max_PWM_Value": 1933,
   "_flag_RC_Mid_PWM_Value": 1499,
