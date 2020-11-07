@@ -5,7 +5,6 @@
 #include <math.h>
 #include <thread>
 #include <string>
-#include <fstream>
 #include <unistd.h>
 #include <iostream>
 #include <iomanip>
@@ -70,6 +69,13 @@ namespace SingleAPMAPI
 		double _flag_MPU9250_M_Z_Scaler;
 		double _flag_MPU9250_Head_Asix;
 
+		double _flag_QMC5883L_Head_Asix;
+		double _flag_QMC5883L_M_X_Offset;
+		double _flag_QMC5883L_M_Y_Offset;
+		double _flag_QMC5883L_M_Z_Offset;
+		double _flag_QMC5883L_M_Y_Scaler;
+		double _flag_QMC5883L_M_Z_Scaler;
+
 		int _flag_A1_Pin;
 		int _flag_A2_Pin;
 		int _flag_B1_Pin;
@@ -110,7 +116,7 @@ namespace SingleAPMAPI
 
 		void TaskThreadBlock();
 
-		void APMCalibrator();
+		void APMCalibrator(int Type, double *data);
 
 	protected:
 		Sbus *SbusInit;
@@ -255,6 +261,7 @@ namespace SingleAPMAPI
 			float _uORB_Gryo___Yaw = 0;
 			float _uORB_Real__Roll = 0;
 			float _uORB_Real_Pitch = 0;
+			float _uORB_Real___Yaw = 0;
 			float _uORB_MPU9250__Head = 0;
 
 			float _Tmp_Real_Pitch = 0;
@@ -293,8 +300,8 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_M_Z_Scaler;
 			double _flag_MPU9250_Head_Asix;
 
-			long _Tmp_IMU_Accel_Calibration[20];
 			long _Tmp_IMU_Accel_Vector;
+			long _Tmp_IMU_Accel_Calibration[20];
 
 			long _Tmp_Gryo_filer_Input_Quene_X[3] = {0, 0, 0};
 			long _Tmp_Gryo_filer_Output_Quene_X[3] = {0, 0, 0};
@@ -329,11 +336,22 @@ namespace SingleAPMAPI
 			//=========================GPS=========//
 			float _Tmp_QMC5883L_M_XH = 0;
 			float _Tmp_QMC5883L_M_YH = 0;
+			float _Tmp_QMC5883L___MAG = 0;
+			float _Tmp_QMC5883L__Head = 0;
+			float _Tmp_QMC5883L__Head_Gryo = 0;
+			float _Tmp_QMC5883L__Head__Mag = 0;
 
 			long _uORB_QMC5883L_M_X = 0;
 			long _uORB_QMC5883L_M_Y = 0;
 			long _uORB_QMC5883L_M_Z = 0;
 			float _uORB_QMC5883L_Head = 0;
+
+			double _flag_QMC5883L_Head_Asix;
+			double _flag_QMC5883L_M_X_Offset;
+			double _flag_QMC5883L_M_Y_Offset;
+			double _flag_QMC5883L_M_Z_Offset;
+			double _flag_QMC5883L_M_Y_Scaler;
+			double _flag_QMC5883L_M_Z_Scaler;
 
 			GPSUartData _uORB_GPS_Data;
 
@@ -518,7 +536,7 @@ namespace SingleAPMAPI
 			int _Tmp_MAGThreadTimeNext;
 			int _Tmp_MAGThreadTimeLoop;
 			int _Tmp_MAGThreadError = 0;
-			int _flag_MAGThreadTimeMax = (float)1 / 150 * 1000000;
+			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
 			std::thread *MAGTask;
 		} TF;
 	};

@@ -1,15 +1,18 @@
 #include "./src/SingleAPM.hpp"
+#include <fstream>
 #include <nlohmann/json.hpp>
 using namespace SingleAPMAPI;
 
+void configWrite(const char *configDir, const char *Target, double obj);
 void configSettle(const char *configDir, APMSettinngs &APMInit);
 
 int main(int argc, char *argv[])
 {
 	system("clear");
 	int argvs;
+	double data[10];
 	APMSettinngs setting;
-	while ((argvs = getopt(argc, argv, "vtcrh")) != -1)
+	while ((argvs = getopt(argc, argv, "vtcCrh")) != -1)
 	{
 		switch (argvs)
 		{
@@ -33,8 +36,22 @@ int main(int argc, char *argv[])
 		case 'c':
 		{
 			RPiSingleAPM APM_Settle;
+			configSettle("/etc/APMconfig.json", setting);
 			APM_Settle.RPiSingleAPMInit(setting);
-			APM_Settle.APMCalibrator();
+			APM_Settle.APMCalibrator(0, data);
+		}
+		break;
+		case 'C':
+		{
+			RPiSingleAPM APM_Settle;
+			configSettle("/etc/APMconfig.json", setting);
+			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.APMCalibrator(1, data);
+			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Y_Scaler", data[0]);
+			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Z_Scaler", data[1]);
+			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_X_Offset", data[2]);
+			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Y_Offset", data[3]);
+			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Z_Offset", data[4]);
 		}
 		break;
 		//--------------------------------------------------------------------------------//
@@ -109,8 +126,28 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_MPU9250_M_Z_Scaler = Configdata["_flag_MPU9250_M_Z_Scaler"].get<double>();
 
 	APMInit._flag_MPU9250_Head_Asix = Configdata["_flag_MPU9250_Head_Asix"].get<double>();
+
+	APMInit._flag_QMC5883L_Head_Asix = Configdata["_flag_QMC5883L_Head_Asix"].get<double>();
+	APMInit._flag_QMC5883L_M_X_Offset = Configdata["_flag_QMC5883L_M_X_Offset"].get<double>();
+	APMInit._flag_QMC5883L_M_Y_Offset = Configdata["_flag_QMC5883L_M_Y_Offset"].get<double>();
+	APMInit._flag_QMC5883L_M_Z_Offset = Configdata["_flag_QMC5883L_M_Z_Offset"].get<double>();
+	APMInit._flag_QMC5883L_M_Y_Scaler = Configdata["_flag_QMC5883L_M_Y_Scaler"].get<double>();
+	APMInit._flag_QMC5883L_M_Z_Scaler = Configdata["_flag_QMC5883L_M_Z_Scaler"].get<double>();
 	//===============================================================Update cofig==/
 	APMInit.IMU_Freqeuncy = Configdata["IMU_Freqeucy"].get<int>();
 	APMInit.RXT_Freqeuncy = Configdata["RXT_Freqeucy"].get<int>();
 	APMInit.ESC_Freqeuncy = Configdata["ESC_Freqeucy"].get<int>();
+}
+
+void configWrite(const char *configDir, const char *Target, double obj)
+{
+	std::ifstream config(configDir);
+	std::string content((std::istreambuf_iterator<char>(config)),
+						(std::istreambuf_iterator<char>()));
+	nlohmann::json Configdata = nlohmann::json::parse(content);
+	Configdata[Target] = obj;
+	std::ofstream configs;
+	configs.open(configDir);
+	configs << std::setw(4) << Configdata << std::endl;
+	configs.close();
 }

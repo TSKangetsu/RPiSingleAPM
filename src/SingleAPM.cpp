@@ -253,11 +253,11 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_Real_Pitch = SF._Tmp_Real_Pitch;
 			SF._uORB_Real__Roll = SF._Tmp_Real__Roll;
 			//HeadingCaculate------------------------------------------------------------//
-			SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._Tmp_Real_Pitch * -0.0174533) +
-								   SF._uORB_MPU9250_M_Y * sin(SF._Tmp_Real_Pitch * 0.0174533) + sin(SF._Tmp_Real__Roll * -0.0174533) -
-								   SF._uORB_MPU9250_M_Z * cos(SF._Tmp_Real_Pitch * 0.0174533) * sin(SF._Tmp_Real__Roll * -0.0174533);
-			SF._Tmp_MPU9250_M_YH = SF._uORB_MPU9250_M_Y * cos(SF._Tmp_Real_Pitch * 0.0174533) +
-								   SF._uORB_MPU9250_M_Z + sin(SF._Tmp_Real_Pitch * 0.0174533);
+			SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._uORB_Real_Pitch * -0.0174533) +
+								   SF._uORB_MPU9250_M_Y * sin(SF._uORB_Real_Pitch * 0.0174533) + sin(SF._uORB_Real__Roll * -0.0174533) -
+								   SF._uORB_MPU9250_M_Z * cos(SF._uORB_Real_Pitch * 0.0174533) * sin(SF._uORB_Real__Roll * -0.0174533);
+			SF._Tmp_MPU9250_M_YH = SF._uORB_MPU9250_M_Y * cos(SF._uORB_Real_Pitch * 0.0174533) +
+								   SF._uORB_MPU9250_M_Z + sin(SF._uORB_Real_Pitch * 0.0174533);
 			if (SF._Tmp_MPU9250_M_YH < 0)
 				SF._Tmp_Real___MAG = 180 + (180 + ((atan2(SF._Tmp_MPU9250_M_YH, SF._Tmp_MPU9250_M_XH)) * (180 / 3.14)));
 			else
@@ -659,19 +659,51 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 			TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 			{
 				GPSMAGInit->GPSI2CCompass_QMC5883LRead(SF._uORB_QMC5883L_M_X, SF._uORB_QMC5883L_M_Y, SF._uORB_QMC5883L_M_Z);
-				SF._Tmp_QMC5883L_M_XH = SF._uORB_QMC5883L_M_X * cos(SF._Tmp_Real_Pitch * -0.0174533) +
-										SF._uORB_QMC5883L_M_Y * sin(SF._Tmp_Real_Pitch * 0.0174533) + sin(SF._Tmp_Real__Roll * -0.0174533) -
-										SF._uORB_QMC5883L_M_Z * cos(SF._Tmp_Real_Pitch * 0.0174533) * sin(SF._Tmp_Real__Roll * -0.0174533);
-				SF._Tmp_QMC5883L_M_YH = SF._uORB_QMC5883L_M_Y * cos(SF._Tmp_Real_Pitch * 0.0174533) +
-										SF._uORB_QMC5883L_M_Z + sin(SF._Tmp_Real_Pitch * 0.0174533);
+				SF._uORB_QMC5883L_M_X += SF._flag_QMC5883L_M_X_Offset;
+				SF._uORB_QMC5883L_M_Y += SF._flag_QMC5883L_M_Y_Offset;
+				SF._uORB_QMC5883L_M_Y *= SF._flag_QMC5883L_M_Y_Scaler;
+				SF._uORB_QMC5883L_M_Z += SF._flag_QMC5883L_M_Z_Offset;
+				SF._uORB_QMC5883L_M_Z *= SF._flag_QMC5883L_M_Z_Scaler;
+				SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real_Pitch / -180.f) +
+										(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real__Roll / 180.f) * sin(SF._uORB_Real_Pitch / -180.f) -
+										(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real__Roll / 180.f) * sin(SF._uORB_Real_Pitch / -180.f);
+				SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real__Roll / 180.f) +
+										(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real__Roll / 180.f);
+
 				if (SF._Tmp_QMC5883L_M_YH < 0)
-					SF._uORB_QMC5883L_Head = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14)));
+					SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_XH, SF._Tmp_QMC5883L_M_YH)) * (180 / 3.14)));
 				else
-					SF._uORB_QMC5883L_Head = (atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14);
-				if (SF._uORB_QMC5883L_Head < 0)
-					SF._uORB_QMC5883L_Head += 360;
-				else if (SF._uORB_QMC5883L_Head >= 360)
-					SF._uORB_QMC5883L_Head -= 360;
+					SF._Tmp_QMC5883L___MAG = (atan2(SF._Tmp_QMC5883L_M_XH, SF._Tmp_QMC5883L_M_YH)) * (180 / 3.14);
+				SF._Tmp_QMC5883L___MAG += SF._flag_QMC5883L_Head_Asix;
+				if (SF._Tmp_QMC5883L___MAG < 0)
+					SF._Tmp_QMC5883L___MAG += 360;
+				else if (SF._Tmp_QMC5883L___MAG >= 360)
+					SF._Tmp_QMC5883L___MAG -= 360;
+				//--------------------------------------------------------------------//
+				SF._uORB_Real___Yaw += SF._Tmp_Gryo_RTSpeed___Yaw / 200.f;
+				if (SF._uORB_Real___Yaw < 0)
+					SF._uORB_Real___Yaw += 360;
+				else if (SF._uORB_Real___Yaw >= 360)
+					SF._uORB_Real___Yaw -= 360;
+				SF._Tmp_QMC5883L__Head = SF._uORB_Real___Yaw - SF._Tmp_QMC5883L___MAG;
+				if (SF._Tmp_QMC5883L__Head < -180 || SF._Tmp_QMC5883L__Head > 180)
+				{
+					if (SF._Tmp_QMC5883L___MAG > 180)
+						SF._Tmp_QMC5883L__Head__Mag = SF._Tmp_QMC5883L___MAG - 180;
+					else
+						SF._Tmp_QMC5883L__Head__Mag = SF._Tmp_QMC5883L___MAG + 180;
+					if (SF._Tmp_QMC5883L__Head > 180)
+						SF._Tmp_QMC5883L__Head_Gryo = SF._uORB_Real___Yaw - 180;
+					else
+						SF._Tmp_QMC5883L__Head_Gryo = SF._uORB_Real___Yaw + 180;
+					SF._Tmp_QMC5883L__Head = SF._Tmp_QMC5883L__Head_Gryo - SF._Tmp_QMC5883L__Head__Mag;
+				}
+				SF._uORB_Real___Yaw -= SF._Tmp_QMC5883L__Head / 150.0 - SF._flag_MPU9250_Head_Asix;
+				if (SF._uORB_Real___Yaw < 0)
+					SF._uORB_Real___Yaw += 360;
+				else if (SF._uORB_Real___Yaw >= 360)
+					SF._uORB_Real___Yaw -= 360;
+				SF._uORB_QMC5883L_Head = SF._uORB_Real___Yaw;
 			}
 			TF._Tmp_MAGThreadTimeEnd = micros();
 			TF._Tmp_MAGThreadTimeLoop = TF._Tmp_MAGThreadTimeEnd - TF._Tmp_MAGThreadTimeStart;
@@ -760,44 +792,99 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 	}
 }
 
-void SingleAPMAPI::RPiSingleAPM::APMCalibrator()
+void SingleAPMAPI::RPiSingleAPM::APMCalibrator(int type, double *data)
 {
-	char Comfirm[128];
-	std::cout << "[WARNING! WARNING! WARNING! ]\n";
-	std::cout << "YOU ARE TRY TO ENABLE CALIBRATION THE ESC\n";
-	std::cout << "PLEASE REMOVE ALL THE PROPELLER\n";
-	std::cout << "IF YOU STILL NEED TO ENABLE , PLEASE INPUT : YES,DO AS I SAY , AND ENTER\n";
-	std::cout << "(YES,DO AS I SAY)";
-	std::cin.getline(Comfirm, sizeof(Comfirm));
-	if (strncmp(Comfirm, "YES,DO AS I SAY", 16) == 0)
+	if (type == 0)
 	{
-		std::cout << "\nALL ESC WILL PULL TO MAX,IF THE ESC RING, PLEASE INPUT : CHEACK , AND ENTER\n";
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Max__Throttle);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
-		pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
-		std::cout << "(CHECK)";
-		std::cin >> Comfirm;
-		if (strncmp(Comfirm, "CHECK", 6) == 0)
+		char Comfirm[128];
+		std::cout << "[WARNING! WARNING! WARNING! ]\n";
+		std::cout << "YOU ARE TRY TO ENABLE CALIBRATION THE ESC\n";
+		std::cout << "PLEASE REMOVE ALL THE PROPELLER\n";
+		std::cout << "IF YOU STILL NEED TO ENABLE , PLEASE INPUT : YES,DO AS I SAY , AND ENTER\n";
+		std::cout << "(YES,DO AS I SAY)";
+		std::cin.getline(Comfirm, sizeof(Comfirm));
+		if (strncmp(Comfirm, "YES,DO AS I SAY", 16) == 0)
 		{
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lazy_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lazy_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lazy_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lazy_Throttle);
-			std::cout << "\nESC CALIBRATION COMPLETE\n";
+			std::cout << "\nALL ESC WILL PULL TO MAX,IF THE ESC RING, PLEASE INPUT : CHEACK , AND ENTER\n";
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Max__Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
+			std::cout << "(CHECK)";
+			std::cin >> Comfirm;
+			if (strncmp(Comfirm, "CHECK", 6) == 0)
+			{
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lazy_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lazy_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lazy_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lazy_Throttle);
+				std::cout << "\nESC CALIBRATION COMPLETE\n";
+			}
+			else
+			{
+				std::cout << "\nABORT!\n";
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
+				pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
+			}
 		}
 		else
 		{
 			std::cout << "\nABORT!\n";
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
 		}
 	}
-	else
+	else if (type == 1)
 	{
-		std::cout << "\nABORT!\n";
+		int i;
+		bool finish;
+		std::cout << "[COMPASS CALIBRATION!COMPASS CALIBRATION!COMPASS CALIBRATION!]\n";
+		std::cout << "  INPUT ANY NUMBER TO START COMPASS CALIBRATION\n";
+		std::cin >> i;
+		finish = true;
+		long compassCal[6] = {0, 0, 0, 0, 0};
+		std::thread compass = std::thread([&] {
+			double compassXOffset;
+			double compassYOffset;
+			double compassZOffset;
+			double compassYScaler;
+			double compassZScaler;
+			while (finish)
+			{
+				GPSMAGInit->GPSI2CCompass_QMC5883LRead(SF._uORB_QMC5883L_M_X, SF._uORB_QMC5883L_M_Y, SF._uORB_QMC5883L_M_Z);
+				compassCal[0] = SF._uORB_QMC5883L_M_X < compassCal[0] ? SF._uORB_QMC5883L_M_X : compassCal[0];
+				compassCal[1] = SF._uORB_QMC5883L_M_X > compassCal[1] ? SF._uORB_QMC5883L_M_X : compassCal[1];
+				compassCal[2] = SF._uORB_QMC5883L_M_Y < compassCal[2] ? SF._uORB_QMC5883L_M_Y : compassCal[2];
+				compassCal[3] = SF._uORB_QMC5883L_M_Y > compassCal[3] ? SF._uORB_QMC5883L_M_Y : compassCal[3];
+				compassCal[4] = SF._uORB_QMC5883L_M_Z < compassCal[4] ? SF._uORB_QMC5883L_M_Z : compassCal[4];
+				compassCal[5] = SF._uORB_QMC5883L_M_Z > compassCal[5] ? SF._uORB_QMC5883L_M_Z : compassCal[5];
+			}
+			compassYScaler = ((float)compassCal[1] - compassCal[0]) / (compassCal[3] - compassCal[2]);
+			compassZScaler = ((float)compassCal[1] - compassCal[0]) / (compassCal[5] - compassCal[4]);
+			compassXOffset = (compassCal[1] - compassCal[0]) / 2 - compassCal[1];
+			compassYOffset = (((float)compassCal[3] - compassCal[2]) / 2 - compassCal[3]) * compassYScaler;
+			compassZOffset = (((float)compassCal[5] - compassCal[4]) / 2 - compassCal[5]) * compassZScaler;
+			data[0] = compassYScaler;
+			data[1] = compassZScaler;
+			data[2] = compassXOffset;
+			data[3] = compassYOffset;
+			data[4] = compassZOffset;
+		});
+		std::cout << "  INPUT ANY NUMBER TO STOP COMPASS CALIBRATION\n";
+		std::cin >> i;
+		finish = false;
+		compass.join();
+		std::cout << "CAL1:" << compassCal[0] << "\n";
+		std::cout << "CAL2:" << compassCal[1] << "\n";
+		std::cout << "CAL3:" << compassCal[2] << "\n";
+		std::cout << "CAL4:" << compassCal[3] << "\n";
+		std::cout << "CAL5:" << compassCal[4] << "\n";
+		std::cout << "CAL6:" << compassCal[5] << "\n";
+		std::cout << "compassYScaler :" << data[0] << "\n";
+		std::cout << "compassZScaler :" << data[1] << "\n";
+		std::cout << "compassXOffset :" << data[2] << "\n";
+		std::cout << "compassYOffset :" << data[3] << "\n";
+		std::cout << "compassZOffset :" << data[4] << "\n";
 	}
 }
 
@@ -917,6 +1004,13 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_MPU9250_M_Z_Scaler = APMInit._flag_MPU9250_M_Z_Scaler;
 
 	SF._flag_MPU9250_Head_Asix = APMInit._flag_MPU9250_Head_Asix;
+
+	SF._flag_QMC5883L_Head_Asix = APMInit._flag_QMC5883L_Head_Asix;
+	SF._flag_QMC5883L_M_X_Offset = APMInit._flag_QMC5883L_M_X_Offset;
+	SF._flag_QMC5883L_M_Y_Offset = APMInit._flag_QMC5883L_M_Y_Offset;
+	SF._flag_QMC5883L_M_Z_Offset = APMInit._flag_QMC5883L_M_Z_Offset;
+	SF._flag_QMC5883L_M_Y_Scaler = APMInit._flag_QMC5883L_M_Y_Scaler;
+	SF._flag_QMC5883L_M_Z_Scaler = APMInit._flag_QMC5883L_M_Z_Scaler;
 	//===============================================================Update cofig==/
 	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
 	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
@@ -1222,21 +1316,22 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " ClimbeRate: " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU9250_A_Z)
 			  << "                        "
 			  << std::endl;
-	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)(SF._Tmp_Real_Pitch) << "    "
-			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)(SF._Tmp_Real__Roll) << "    "
-			  << " RealYaw:    " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU9250__Head)
+	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real_Pitch) << "    "
+			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_Real__Roll) << "    "
+			  << " RealHeading:" << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU9250__Head)
 			  << "                        "
 			  << std::endl;
 	std::cout << " CompassX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
 			  << " CompassY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Y << "    "
 			  << " CompassZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_Z << "    "
-			  << " CHeading:   " << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_Real___MAG << "    "
+			  << " MAGHeading: " << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_Real___MAG << "    "
 			  << "                        "
 			  << std::endl;
-	std::cout << " GCompassX:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_M_X << "    "
-			  << " GCompassY:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_M_Y << "    "
-			  << " GCompassZ:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_M_Z << "    "
-			  << " GCHeading:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_Head << "    "
+	std::cout << " GPSCompassX:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_QMC5883L_M_X << "    "
+			  << " GPSCompassY:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_QMC5883L_M_Y << "    "
+			  << " GPSCompassZ:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_QMC5883L_M_Z << "    "
+			  << " GPSHeading: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_QMC5883L_Head << "    "
+			  << " GPSHeadRaw: " << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_QMC5883L___MAG << "    "
 			  << "                        "
 			  << std::endl;
 
