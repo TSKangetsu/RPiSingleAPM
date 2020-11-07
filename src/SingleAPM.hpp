@@ -253,12 +253,14 @@ namespace SingleAPMAPI
 			float _uORB_Gryo__Roll = 0;
 			float _uORB_Gryo_Pitch = 0;
 			float _uORB_Gryo___Yaw = 0;
-			float _uORB_Real_Pitch = 0;
 			float _uORB_Real__Roll = 0;
-			float _uORB_Real___Yaw = 0;
-			float _uORB_Real__Head = 0;
-			float _uORB_MAG_Heading = 0;
+			float _uORB_Real_Pitch = 0;
+			float _uORB_MPU9250__Head = 0;
 
+			float _Tmp_Real_Pitch = 0;
+			float _Tmp_Real__Roll = 0;
+			float _Tmp_Real___Yaw = 0;
+			float _Tmp_Real___MAG = 0;
 			float _Tmp_Real__Head = 0;
 			float _Tmp_Real__Head_Gryo = 0;
 			float _Tmp_Real__Head__Mag = 0;
@@ -311,32 +313,39 @@ namespace SingleAPMAPI
 			float _flag_Filter2x50_Gain = 4.979245121e+01;
 			//=========================MS5611======//
 			int _Tmp_MS5611_AvaClock = 0;
+
+			float _Tmp_MS5611_Pressure = 0;
+			float _Tmp_MS5611_PressureFast = 0;
+			float _Tmp_MS5611_PressureFill = 0;
+			float _Tmp_MS5611_PressureDiff = 0;
+
 			double _Tmp_MS5611_Data[2];
 			double _Tmp_MS5611_AvaTotal = 0;
 			double _Tmp_MS5611_AvaData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			float _uORB_MS5611_Pressure = 0;
-			float _uORB_MS5611_PressureFast = 0;
-			float _uORB_MS5611_PressureFill = 0;
-			float _uORB_MS5611_PressureDiff = 0;
-			float _uORB_MS5611_PressureFinal = 0;
+
 			float _uORB_MS5611_AltMeter = 0;
+			float _uORB_MS5611_PressureFinal = 0;
 			float _flag_MS5611_FilterAlpha = 0.985;
 			//=========================GPS=========//
-			int _uORB_QMC5883L_M_X = 0;
-			int _uORB_QMC5883L_M_Y = 0;
-			int _uORB_QMC5883L_M_Z = 0;
 			float _Tmp_QMC5883L_M_XH = 0;
 			float _Tmp_QMC5883L_M_YH = 0;
-			float _uORB_QMC5883L_Head;
+
+			long _uORB_QMC5883L_M_X = 0;
+			long _uORB_QMC5883L_M_Y = 0;
+			long _uORB_QMC5883L_M_Z = 0;
+			float _uORB_QMC5883L_Head = 0;
+
 			GPSUartData _uORB_GPS_Data;
-			float _uORB_GPS_Lng_Diff = 0;
-			float _uORB_GPS_Lat_Diff = 0;
+
+			int _Tmp_GPS_Lat_Last_Data = 0;
+			int _Tmp_GPS_Lng_Last_Data = 0;
+			float _Tmp_GPS_Lng_Diff = 0;
+			float _Tmp_GPS_Lat_Diff = 0;
+			float _Tmp_GPS_Lat_Smooth_Diff = 0;
+			float _Tmp_GPS_Lng_Smooth_Diff = 0;
+
 			int _uORB_GPS_Lat_Smooth = 0;
 			int _uORB_GPS_Lng_Smooth = 0;
-			float _uOBR_GPS_Lat_Smooth_Diff = 0;
-			float _uOBR_GPS_Lng_Smooth_Diff = 0;
-			int _uORB_GPS_Lat_Last_Data = 0;
-			int _uORB_GPS_Lng_Last_Data = 0;
 		} SF;
 
 		struct PIDINFO
@@ -375,42 +384,42 @@ namespace SingleAPMAPI
 			//===============AltHoldPID=========//
 			int _flag_PID_SOOMTH_Clock = 0;
 			float _Tmp_PID_D_Alt_Var[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			float _uORB_PID_AltInput = 0;
-			float _uORB_PID_AltHold_Target = 0;
-			float _flag_PID_Hover_Throttle = 1500;
-			float _uORB_PID_Alt_Throttle = 0;
 
-			float _flag_PID_P_Alt_Gain;
-			float _flag_PID_I_Alt_Gain;
-			float _flag_PID_D_Alt_Gain;
+			float _uORB_PID_AltInput = 0;
+			float _uORB_PID_Alt_Throttle = 0;
+			float _uORB_PID_AltHold_Target = 0;
 
 			float _uORB_PID_I_Last_Value_Alt = 0;
 			float _uORB_PID_D_Last_Value_Alt = 0;
 			float _uORB_PID_D_Toat_Value_Alt = 0;
 
+			float _flag_PID_P_Alt_Gain;
+			float _flag_PID_I_Alt_Gain;
+			float _flag_PID_D_Alt_Gain;
 			float _flag_PID_Alt_Level_Max;
+			float _flag_PID_Hover_Throttle;
 			//==========PositionHoldPID=========//
-			int _uORB_PID_GPS_Lat_Local_Diff = 0;
-			int _uORB_PID_GPS_Lng_Local_Diff = 0;
-			int _uORB_PID_GPS_Lat_Local_Target = 0;
-			int _uORB_PID_GPS_Lng_Local_Target = 0;
-
-			int _uORB_PID_D_GPS_Lat_Ouput = 0;
-			int _uORB_PID_D_GPS_Lng_Ouput = 0;
-			int _uORB_PID_D_GPS_Lat_LastValue = 0;
-			int _uORB_PID_D_GPS_Lng_LastValue = 0;
 			int _Tmp_PID_D_GPS_AvaClock = 0;
 			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _Tmp_PID_D_GPS_Lng_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-			float _flag_PID_P_GPS_Gain;
-			float _flag_PID_D_GPS_Gain;
-			float _flag_PID_GPS_Level_Max;
+			int _Tmp_PID_D_GPS_Lat_Ouput = 0;
+			int _Tmp_PID_D_GPS_Lng_Ouput = 0;
 
+			int _uORB_PID_GPS_Lat_Local_Diff = 0;
+			int _uORB_PID_GPS_Lng_Local_Diff = 0;
+			int _uORB_PID_D_GPS_Lat_LastValue = 0;
+			int _uORB_PID_D_GPS_Lng_LastValue = 0;
+			int _uORB_PID_GPS_Lat_Local_Target = 0;
+			int _uORB_PID_GPS_Lng_Local_Target = 0;
 			float _uORB_PID_GPS_Lat_Ouput = 0;
 			float _uORB_PID_GPS_Lng_Ouput = 0;
 			float _uORB_PID_GPS_Pitch_Ouput = 0;
 			float _uORB_PID_GPS__Roll_Ouput = 0;
+
+			float _flag_PID_P_GPS_Gain;
+			float _flag_PID_D_GPS_Gain;
+			float _flag_PID_GPS_Level_Max;
 		} PF;
 
 		struct RCINFO
