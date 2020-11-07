@@ -42,7 +42,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::cout << "[RPiSingleAPM]MPUSPIIniting \n";
 #endif
 		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
-		usleep(500000);
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x75;
 		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //WHOAMI
 		SF._Tmp_MPU9250_SPI_Config[0] = 0x6b;
@@ -63,55 +62,19 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::cout.flush();
 #endif
 		{
-			unsigned char CompassConfig[39][4] = {
-				{0x37, 0x30}, // INT_PIN_CFG
-				{0x24, 0x5D}, // I2C_MST_CTRL
-				{0x6A, 0x20}, // USER_CTRL
-				{0x25, 0x0C | 0x80},
-				{0x26, 0x00},
-				{0x27, 0x81},
-				{0x49 | 0x80, 0x00}, // Read the WHO_AM_I byte,line is 6
-				{0x25, 0x0C},
-				{0x26, 0x0B},
-				{0x63, 0x01}, // Reset AK8963
-				{0x27, 0x81},
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 0x00}, // Power down magnetometer
-				{0x27, 0x81},
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 0x0F}, // Enter fuze mode
-				{0x27, 0x81},
-				{0x25, 0x0C | 0x80},
-				{0x26, 0x10},
-				{0x27, 0x83},
-				{0x49 | 0x80}, // Read the x-, y-, and z-axis calibration values ,line is 22
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 0x00}, // Power down magnetometer
-				{0x27, 0x81},
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 1 << 4 | 0x06}, // Set magnetometer data resolution and sample ODR
-				{0x27, 0x81},
-				{0x25, 0x0C | 0x80},
-				{0x26, 0x0A},
-				{0x27, 0x81},
-			};
 			for (size_t Index = 0; Index < 39; Index++)
 			{
 				if (Index == 22)
 				{
-					wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfig[Index], 4);
-					SF._flag_MPU9250_M_X_Cali = (float)(CompassConfig[Index][1] - 128) / 256.0f + 1.0f;
-					SF._flag_MPU9250_M_Y_Cali = (float)(CompassConfig[Index][2] - 128) / 256.0f + 1.0f;
-					SF._flag_MPU9250_M_Z_Cali = (float)(CompassConfig[Index][3] - 128) / 256.0f + 1.0f;
+					wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._flag_MPU9250_CompassConfig[Index], 4);
+					SF._flag_MPU9250_M_X_Cali = (float)(SF._flag_MPU9250_CompassConfig[Index][1] - 128) / 256.0f + 1.0f;
+					SF._flag_MPU9250_M_Y_Cali = (float)(SF._flag_MPU9250_CompassConfig[Index][2] - 128) / 256.0f + 1.0f;
+					SF._flag_MPU9250_M_Z_Cali = (float)(SF._flag_MPU9250_CompassConfig[Index][3] - 128) / 256.0f + 1.0f;
 					SF._flag_MPU9250_M_MRES = 10. * 4912. / 32760.0;
 				}
 				else
 				{
-					wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfig[Index], 2);
+					wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._flag_MPU9250_CompassConfig[Index], 2);
 				}
 				usleep(50000);
 			}
@@ -120,7 +83,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{
 				wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfigFinal[Index], 2);
 			}
-			usleep(1000);
 		}
 #ifdef DEBUG
 		std::cout << "Done!\n";
@@ -192,6 +154,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	std::cout.flush();
 #endif
 	GPSInit = new GPSUart(DF.GPSDevice);
+	GPSMAGInit = new GPSI2CCompass_QMC5883L();
+	GPSMAGInit->GPSI2CCompass_QMC5883LInit();
 	SF._uORB_GPS_Data = GPSInit->GPSParse();
 #ifdef DEBUG
 	std::cout << "Done \n";
@@ -689,6 +653,50 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	CPU_ZERO(&cpuset2);
 	CPU_SET(3, &cpuset2);
 	int rc2 = pthread_setaffinity_np(TF.GPSTask->native_handle(), sizeof(cpu_set_t), &cpuset2);
+
+	TF.MAGTask = new std::thread([&] {
+		while (true)
+		{
+			TF._Tmp_MAGThreadTimeStart = micros();
+			TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
+			{
+				GPSMAGInit->GPSI2CCompass_QMC5883LRead(SF._uORB_QMC5883L_M_X, SF._uORB_QMC5883L_M_Y, SF._uORB_QMC5883L_M_Z);
+				SF._Tmp_QMC5883L_M_XH = SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real_Pitch * -0.0174533) +
+										SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real_Pitch * 0.0174533) + sin(SF._uORB_Real__Roll * -0.0174533) -
+										SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real_Pitch * 0.0174533) * sin(SF._uORB_Real__Roll * -0.0174533);
+				SF._Tmp_QMC5883L_M_YH = SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real_Pitch * 0.0174533) +
+										SF._uORB_QMC5883L_M_Z + sin(SF._uORB_Real_Pitch * 0.0174533);
+				if (SF._Tmp_QMC5883L_M_YH < 0)
+					SF._uORB_QMC5883L_Head = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14)));
+				else
+					SF._uORB_QMC5883L_Head = (atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14);
+				if (SF._uORB_QMC5883L_Head < 0)
+					SF._uORB_QMC5883L_Head += 360;
+				else if (SF._uORB_QMC5883L_Head >= 360)
+					SF._uORB_QMC5883L_Head -= 360;
+			}
+			TF._Tmp_MAGThreadTimeEnd = micros();
+			TF._Tmp_MAGThreadTimeLoop = TF._Tmp_MAGThreadTimeEnd - TF._Tmp_MAGThreadTimeStart;
+			if (TF._Tmp_MAGThreadTimeLoop + TF._Tmp_MAGThreadTimeNext > TF._flag_MAGThreadTimeMax | TF._Tmp_MAGThreadTimeNext < 0)
+			{
+				usleep(50);
+				AF._flag_ClockingTime_Error = true;
+			}
+			else
+			{
+				usleep(TF._flag_MAGThreadTimeMax - TF._Tmp_MAGThreadTimeLoop - TF._Tmp_MAGThreadTimeNext);
+			}
+			if (TF._Tmp_MAGThreadTimeLoop + TF._Tmp_MAGThreadTimeNext > TF._Tmp_MAGThreadError)
+			{
+				TF._Tmp_MAGThreadError = TF._Tmp_MAGThreadTimeLoop;
+			}
+			TF._Tmp_MAGThreadTimeEnd = micros();
+		}
+	});
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
+	int rc = pthread_setaffinity_np(TF.MAGTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
@@ -1227,6 +1235,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " CHeading:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Heading << "    "
 			  << "                        "
 			  << std::endl;
+	std::cout << " GCompassX:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_M_X << "    "
+			  << " GCompassY:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_M_Y << "    "
+			  << " GCompassZ:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_M_Z << "    "
+			  << " GCHeading:  " << std::setw(7) << std::setfill(' ') << SF._uORB_QMC5883L_Head << "    "
+			  << "                        "
+			  << std::endl;
 
 	std::cout
 		<< "MS5611ParseDataINFO:"
@@ -1292,6 +1306,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ALTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadError << "    \n";
 	std::cout << " GPSLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadTimeLoop;
 	std::cout << " GPSNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadTimeNext;
-	std::cout << " GPSMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadError << "    \n"
+	std::cout << " GPSMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadError << "    \n";
+	std::cout << " MAGLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadTimeLoop;
+	std::cout << " MAGNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadTimeNext;
+	std::cout << " MAGMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadError << "    \n"
 			  << std::endl;
 }

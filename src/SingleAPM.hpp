@@ -119,6 +119,7 @@ namespace SingleAPMAPI
 		Kalman *Kal__Roll;
 		MS5611 *MS5611S;
 		GPSUart *GPSInit;
+		GPSI2CCompass_QMC5883L *GPSMAGInit;
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
@@ -195,6 +196,42 @@ namespace SingleAPMAPI
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
 			int _Tmp_MPU9250_Buffer[14];
+			unsigned char _flag_MPU9250_CompassConfig[39][4] = {
+				{0x37, 0x30}, // INT_PIN_CFG
+				{0x24, 0x5D}, // I2C_MST_CTRL
+				{0x6A, 0x20}, // USER_CTRL
+				{0x25, 0x0C | 0x80},
+				{0x26, 0x00},
+				{0x27, 0x81},
+				{0x49 | 0x80, 0x00}, // Read the WHO_AM_I byte,line is 6
+				{0x25, 0x0C},
+				{0x26, 0x0B},
+				{0x63, 0x01}, // Reset AK8963
+				{0x27, 0x81},
+				{0x25, 0x0C},
+				{0x26, 0x0A},
+				{0x63, 0x00}, // Power down magnetometer
+				{0x27, 0x81},
+				{0x25, 0x0C},
+				{0x26, 0x0A},
+				{0x63, 0x0F}, // Enter fuze mode
+				{0x27, 0x81},
+				{0x25, 0x0C | 0x80},
+				{0x26, 0x10},
+				{0x27, 0x83},
+				{0x49 | 0x80}, // Read the x-, y-, and z-axis calibration values ,line is 22
+				{0x25, 0x0C},
+				{0x26, 0x0A},
+				{0x63, 0x00}, // Power down magnetometer
+				{0x27, 0x81},
+				{0x25, 0x0C},
+				{0x26, 0x0A},
+				{0x63, 1 << 4 | 0x06}, // Set magnetometer data resolution and sample ODR
+				{0x27, 0x81},
+				{0x25, 0x0C | 0x80},
+				{0x26, 0x0A},
+				{0x27, 0x81},
+			};
 			unsigned char _Tmp_MPU9250_SPI_Config[5];
 			unsigned char _Tmp_MPU9250_SPI_Buffer[22];
 			unsigned char _Tmp_MPU9250_SPI_Compass_Buffer[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -285,6 +322,12 @@ namespace SingleAPMAPI
 			float _uORB_MS5611_AltMeter = 0;
 			float _flag_MS5611_FilterAlpha = 0.985;
 			//=========================GPS=========//
+			int _uORB_QMC5883L_M_X = 0;
+			int _uORB_QMC5883L_M_Y = 0;
+			int _uORB_QMC5883L_M_Z = 0;
+			float _Tmp_QMC5883L_M_XH = 0;
+			float _Tmp_QMC5883L_M_YH = 0;
+			float _uORB_QMC5883L_Head;
 			GPSUartData _uORB_GPS_Data;
 			float _uORB_GPS_Lng_Diff = 0;
 			float _uORB_GPS_Lat_Diff = 0;
@@ -460,6 +503,14 @@ namespace SingleAPMAPI
 			int _Tmp_GPSThreadError = 0;
 			int _flag_GPSThreadTimeMax = (float)1 / 50 * 1000000;
 			std::thread *GPSTask;
+			int _Tmp_MAGThreadSMooth = 0;
+			int _Tmp_MAGThreadTimeStart;
+			int _Tmp_MAGThreadTimeEnd;
+			int _Tmp_MAGThreadTimeNext;
+			int _Tmp_MAGThreadTimeLoop;
+			int _Tmp_MAGThreadError = 0;
+			int _flag_MAGThreadTimeMax = (float)1 / 150 * 1000000;
+			std::thread *MAGTask;
 		} TF;
 	};
 } // namespace SingleAPMAPI

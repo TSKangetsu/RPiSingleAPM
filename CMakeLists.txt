@@ -1,6 +1,5 @@
 IF(UNIX)
 ###########################code Definetion##################
-    add_definitions(-DUSINGJSON)
     add_definitions(-DDEBUG) 
 #############################################################
     cmake_minimum_required(VERSION 3.10)
