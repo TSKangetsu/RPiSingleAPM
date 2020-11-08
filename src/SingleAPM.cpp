@@ -664,11 +664,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				SF._uORB_QMC5883L_M_Y *= SF._flag_QMC5883L_M_Y_Scaler;
 				SF._uORB_QMC5883L_M_Z += SF._flag_QMC5883L_M_Z_Offset;
 				SF._uORB_QMC5883L_M_Z *= SF._flag_QMC5883L_M_Z_Scaler;
-				SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real_Pitch / -180.f) +
-										(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real__Roll / 180.f) * sin(SF._uORB_Real_Pitch / -180.f) -
-										(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real__Roll / 180.f) * sin(SF._uORB_Real_Pitch / -180.f);
-				SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real__Roll / 180.f) +
-										(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real__Roll / 180.f);
+				SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real__Roll / -180.f) +
+										(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real_Pitch / 180.f) * sin(SF._uORB_Real__Roll / -180.f) -
+										(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real_Pitch / 180.f) * sin(SF._uORB_Real__Roll / -180.f);
+				SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real_Pitch / 180.f) +
+										(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real_Pitch / 180.f);
 
 				if (SF._Tmp_QMC5883L_M_YH < 0)
 					SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_XH, SF._Tmp_QMC5883L_M_YH)) * (180 / 3.14)));
@@ -680,7 +680,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				else if (SF._Tmp_QMC5883L___MAG >= 360)
 					SF._Tmp_QMC5883L___MAG -= 360;
 				//--------------------------------------------------------------------//
-				SF._uORB_Real___Yaw += SF._Tmp_Gryo_RTSpeed___Yaw / 200.f;
+				SF._uORB_Real___Yaw += SF._Tmp_Gryo_RTSpeed___Yaw / 500.f;
 				if (SF._uORB_Real___Yaw < 0)
 					SF._uORB_Real___Yaw += 360;
 				else if (SF._uORB_Real___Yaw >= 360)
@@ -1210,8 +1210,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsGPSHoldSet)
 				{
-					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_MPU9250__Head * 0.017453) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_MPU9250__Head - 90.f) * 0.017453);
-					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_MPU9250__Head * 0.017453) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_MPU9250__Head + 90.f) * 0.017453);
+					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_QMC5883L_Head * 0.017453) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_QMC5883L_Head - 90.f) * 0.017453);
+					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_QMC5883L_Head * 0.017453) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_QMC5883L_Head + 90.f) * 0.017453);
 
 					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
 					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
