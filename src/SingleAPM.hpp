@@ -64,7 +64,9 @@ namespace SingleAPMAPI
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
-		double _flag_MPU9250_M_X_Scaler;
+		double _flag_MPU9250_M_X_Offset;
+		double _flag_MPU9250_M_Y_Offset;
+		double _flag_MPU9250_M_Z_Offset;
 		double _flag_MPU9250_M_Y_Scaler;
 		double _flag_MPU9250_M_Z_Scaler;
 		double _flag_MPU9250_Head_Asix;
@@ -261,21 +263,12 @@ namespace SingleAPMAPI
 			float _uORB_Gryo___Yaw = 0;
 			float _uORB_Real__Roll = 0;
 			float _uORB_Real_Pitch = 0;
-			float _uORB_Real___Yaw = 0;
-			float _uORB_MPU9250__Head = 0;
 
 			float _Tmp_Real_Pitch = 0;
 			float _Tmp_Real__Roll = 0;
-			float _Tmp_Real___Yaw = 0;
-			float _Tmp_Real___MAG = 0;
-			float _Tmp_Real__Head = 0;
-			float _Tmp_Real__Head_Gryo = 0;
-			float _Tmp_Real__Head__Mag = 0;
-			float _Tmp_MPU9250_M_XH = 0;
-			float _Tmp_MPU9250_M_YH = 0;
 			float _Tmp_Gryo_RTSpeed__Roll = 0;
 			float _Tmp_Gryo_RTSpeed_Pitch = 0;
-			float _Tmp_Gryo_RTSpeed___Yaw = 0;
+			float _uORB_Gryo_RTSpeed___Yaw = 0;
 			unsigned long _Tmp_MPU9250_G_X = 0;
 			unsigned long _Tmp_MPU9250_G_Y = 0;
 			unsigned long _Tmp_MPU9250_G_Z = 0;
@@ -286,6 +279,15 @@ namespace SingleAPMAPI
 			unsigned long _Tmp_MPU9250_M_Y = 0;
 			unsigned long _Tmp_MPU9250_M_Z = 0;
 
+			float _uORB_MPU9250___Yaw = 0;
+			float _uORB_MPU9250__Head = 0;
+			float _Tmp_MPU9250___MAG = 0;
+			float _Tmp_MPU9250__Head = 0;
+			float _Tmp_MPU9250_M_XH = 0;
+			float _Tmp_MPU9250_M_YH = 0;
+			float _Tmp_MPU9250__Head_Gryo = 0;
+			float _Tmp_MPU9250__Head__Mag = 0;
+
 			long _flag_MPU9250_G_X_Cali;
 			long _flag_MPU9250_G_Y_Cali;
 			long _flag_MPU9250_G_Z_Cali;
@@ -295,7 +297,9 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_M_X_Cali;
 			double _flag_MPU9250_M_Y_Cali;
 			double _flag_MPU9250_M_Z_Cali;
-			double _flag_MPU9250_M_X_Scaler;
+			double _flag_MPU9250_M_X_Offset;
+			double _flag_MPU9250_M_Y_Offset;
+			double _flag_MPU9250_M_Z_Offset;
 			double _flag_MPU9250_M_Y_Scaler;
 			double _flag_MPU9250_M_Z_Scaler;
 			double _flag_MPU9250_Head_Asix;
@@ -344,6 +348,7 @@ namespace SingleAPMAPI
 			long _uORB_QMC5883L_M_X = 0;
 			long _uORB_QMC5883L_M_Y = 0;
 			long _uORB_QMC5883L_M_Z = 0;
+			float _uORB_QMC5883L__Yaw = 0;
 			float _uORB_QMC5883L_Head = 0;
 
 			double _flag_QMC5883L_Head_Asix;
@@ -523,10 +528,6 @@ namespace SingleAPMAPI
 			int _flag_ALTThreadTimeMax = (float)1 / 88 * 1000000;
 			std::thread *ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;
-			int _Tmp_GPSThreadLastStart;
-			int _Tmp_GPSThreadLastEnd;
-			int _Tmp_GPSThreadLastNext;
-			int _Tmp_GPSThreadLastLoop;
 			int _Tmp_GPSThreadTimeStart;
 			int _Tmp_GPSThreadTimeEnd;
 			int _Tmp_GPSThreadTimeNext;

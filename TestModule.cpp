@@ -52,6 +52,11 @@ int main(int argc, char *argv[])
 			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_X_Offset", data[2]);
 			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Y_Offset", data[3]);
 			configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Z_Offset", data[4]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Y_Scaler", data[5]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Z_Scaler", data[6]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_X_Offset", data[7]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Y_Offset", data[8]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Z_Offset", data[9]);
 		}
 		break;
 		//--------------------------------------------------------------------------------//
@@ -121,11 +126,12 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
 	APMInit._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
 
-	APMInit._flag_MPU9250_M_X_Scaler = Configdata["_flag_MPU9250_M_X_Scaler"].get<double>();
+	APMInit._flag_MPU9250_Head_Asix = Configdata["_flag_MPU9250_Head_Asix"].get<double>();
+	APMInit._flag_MPU9250_M_X_Offset = Configdata["_flag_MPU9250_M_X_Offset"].get<double>();
+	APMInit._flag_MPU9250_M_Y_Offset = Configdata["_flag_MPU9250_M_Y_Offset"].get<double>();
+	APMInit._flag_MPU9250_M_Z_Offset = Configdata["_flag_MPU9250_M_Z_Offset"].get<double>();
 	APMInit._flag_MPU9250_M_Y_Scaler = Configdata["_flag_MPU9250_M_Y_Scaler"].get<double>();
 	APMInit._flag_MPU9250_M_Z_Scaler = Configdata["_flag_MPU9250_M_Z_Scaler"].get<double>();
-
-	APMInit._flag_MPU9250_Head_Asix = Configdata["_flag_MPU9250_Head_Asix"].get<double>();
 
 	APMInit._flag_QMC5883L_Head_Asix = Configdata["_flag_QMC5883L_Head_Asix"].get<double>();
 	APMInit._flag_QMC5883L_M_X_Offset = Configdata["_flag_QMC5883L_M_X_Offset"].get<double>();
