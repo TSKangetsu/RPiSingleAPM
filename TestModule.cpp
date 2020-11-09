@@ -98,6 +98,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
 	APMInit._flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
 	//==================================================================PID cofig==/
+	APMInit._flag_PID_P_TAsix_Gain = Configdata["_flag_PID_P_TAsix_Gain"].get<float>();
 	APMInit._flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
 	APMInit._flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();
 	APMInit._flag_PID_P___Yaw_Gain = Configdata["_flag_PID_P___Yaw_Gain"].get<float>();

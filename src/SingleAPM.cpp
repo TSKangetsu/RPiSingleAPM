@@ -669,11 +669,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				SF._uORB_QMC5883L_M_Y *= SF._flag_QMC5883L_M_Y_Scaler;
 				SF._uORB_QMC5883L_M_Z += SF._flag_QMC5883L_M_Z_Offset;
 				SF._uORB_QMC5883L_M_Z *= SF._flag_QMC5883L_M_Z_Scaler;
-				SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real__Roll / -180.f) +
-										(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real_Pitch / 180.f) * sin(SF._uORB_Real__Roll / -180.f) -
-										(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real_Pitch / 180.f) * sin(SF._uORB_Real__Roll / -180.f);
-				SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real_Pitch / 180.f) +
-										(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real_Pitch / 180.f);
+				SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real_Pitch / -180.f) +
+										(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real__Roll / -180.f) * sin(SF._uORB_Real_Pitch / -180.f) -
+										(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real__Roll / -180.f) * sin(SF._uORB_Real_Pitch / -180.f);
+				SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real__Roll / -180.f) +
+										(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real__Roll / -180.f);
 
 				if (SF._Tmp_QMC5883L_M_YH < 0)
 					SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_XH, SF._Tmp_QMC5883L_M_YH)) * (180 / 3.14)));
@@ -1003,6 +1003,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	EF._flag_B1_Pin = APMInit._flag_B1_Pin;
 	EF._flag_B2_Pin = APMInit._flag_B2_Pin;
 	//==================================================================PID cofig==/
+	PF._flag_PID_P_TAsix_Gain = APMInit._flag_PID_P_TAsix_Gain;
 	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
 	PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
@@ -1267,10 +1268,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_B2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		PF._uORB_PID_TAsix_Ouput = PF._flag_PID_P_TAsix_Gain * (abs(PF._uORB_Leveling__Roll) + abs(PF._uORB_Leveling_Pitch) + abs(PF._uORB_Leveling___Yaw));
+		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
+		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
+		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
+		EF._Tmp_B2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
 	}
 	else
 	{

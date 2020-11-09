@@ -40,6 +40,7 @@ namespace SingleAPMAPI
 		int IMUFilter_Type;
 		int IMUMixFilter_Type;
 
+		float _flag_PID_P_TAsix_Gain;
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
 		float _flag_PID_P___Yaw_Gain;
@@ -421,6 +422,9 @@ namespace SingleAPMAPI
 			float _flag_PID_D_Alt_Gain;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
+
+			float _flag_PID_P_TAsix_Gain;
+			unsigned int _uORB_PID_TAsix_Ouput = 0;
 			//==========PositionHoldPID=========//
 			int _Tmp_PID_D_GPS_AvaClock = 0;
 			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
