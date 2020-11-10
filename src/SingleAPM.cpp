@@ -105,14 +105,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef DEBUG
 		std::cout << "[RPiSingleAPM]Controller Ibus config comfirm\n";
 #endif
-		IbusInit = new Ibus(DF.RCDevice);
+		IbusInit = new Ibus(DF.RCDevice.c_str());
 	}
 	else if (RF.RC_Type == RCIsSbus)
 	{
 #ifdef DEBUG
 		std::cout << "[RPiSingleAPM]Controller Sbus config comfirm\n";
 #endif
-		SbusInit = new Sbus(DF.RCDevice, SbusMode::Normal);
+		SbusInit = new Sbus(DF.RCDevice.c_str(), SbusMode::Normal);
 	}
 	//--------------------------------------------------------------------//
 	if (DF._IsMS5611Enable)
@@ -158,7 +158,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::cout << "[RPiSingleAPM]Waiting for GPS Data ... ";
 		std::cout.flush();
 #endif
-		GPSInit = new GPSUart(DF.GPSDevice);
+		GPSInit = new GPSUart(DF.GPSDevice.c_str());
 		GPSMAGInit = new GPSI2CCompass_QMC5883L();
 		GPSMAGInit->GPSI2CCompass_QMC5883LInit();
 		SF._uORB_GPS_Data = GPSInit->GPSParse();
@@ -1024,6 +1024,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF.MPU9250_Type = APMInit.MPU9250_Type;
 	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
 	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
+
+	DF.RCDevice = APMInit.__RCDevice;
+	DF.GPSDevice = APMInit.__GPSDevice;
 
 	DF._IsGPSEnable = APMInit._IsGPSEnable;
 	DF._IsFlowEnable = APMInit._IsFlowEnable;

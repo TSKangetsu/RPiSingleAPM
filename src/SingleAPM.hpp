@@ -40,6 +40,9 @@ namespace SingleAPMAPI
 		int IMUFilter_Type;
 		int IMUMixFilter_Type;
 
+		std::string __RCDevice;
+		std::string __GPSDevice;
+
 		bool _IsGPSEnable;
 		bool _IsFlowEnable;
 		bool _IsSonarEnable;
@@ -200,8 +203,8 @@ namespace SingleAPMAPI
 			int MPU9250_SPI_Freq = 1000000;
 			int MS5611_fd;
 			const int MS5611_ADDR = 0x77;
-			char RCDevice[20] = "/dev/ttyAMA0";
-			char GPSDevice[20] = "/dev/ttyAMA1";
+			std::string RCDevice;
+			std::string GPSDevice;
 
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;

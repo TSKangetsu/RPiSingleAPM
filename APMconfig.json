@@ -57,5 +57,7 @@
   "_flag_RC_ARM_PWM_Value": 1933,
   "_flag_RC_Max_PWM_Value": 1933,
   "_flag_RC_Mid_PWM_Value": 1499,
-  "_flag_RC_Min_PWM_Value": 1065
+  "_flag_RC_Min_PWM_Value": 1065,
+  "__RCDevice": "/dev/ttyAMA0",
+  "__GPSDevice": "/dev/ttyAMA1"
 }

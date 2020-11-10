@@ -84,6 +84,9 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.IMUFilter_Type = Configdata["Type_IMUFilter"].get<int>();
 	APMInit.IMUMixFilter_Type = Configdata["Type_IMUMixFilter"].get<int>();
 
+	APMInit.__RCDevice = Configdata["__RCDevice"].get<std::string>(),
+	APMInit.__GPSDevice = Configdata["__GPSDevice"].get<std::string>(),
+
 	APMInit._IsGPSEnable = Configdata["_IsGPSEnable"].get<int>();
 	APMInit._IsFlowEnable = Configdata["_IsFlowEnable"].get<int>();
 	APMInit._IsSonarEnable = Configdata["_IsSonarEnable"].get<int>();
