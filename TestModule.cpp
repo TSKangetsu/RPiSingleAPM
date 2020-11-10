@@ -83,6 +83,12 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
 	APMInit.IMUFilter_Type = Configdata["Type_IMUFilter"].get<int>();
 	APMInit.IMUMixFilter_Type = Configdata["Type_IMUMixFilter"].get<int>();
+
+	APMInit._IsGPSEnable = Configdata["_IsGPSEnable"].get<int>();
+	APMInit._IsFlowEnable = Configdata["_IsFlowEnable"].get<int>();
+	APMInit._IsSonarEnable = Configdata["_IsSonarEnable"].get<int>();
+	APMInit._IsMS5611Enable = Configdata["_IsMS5611Enable"].get<int>();
+	APMInit._IsRCSafeEnable = Configdata["_IsRCSafeEnable"].get<int>();
 	//==========================================================Controller cofig==/
 	APMInit._flag_RC_ARM_PWM_Value = Configdata["_flag_RC_ARM_PWM_Value"].get<int>();
 	APMInit._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();

@@ -40,6 +40,12 @@ namespace SingleAPMAPI
 		int IMUFilter_Type;
 		int IMUMixFilter_Type;
 
+		bool _IsGPSEnable;
+		bool _IsFlowEnable;
+		bool _IsSonarEnable;
+		bool _IsRCSafeEnable;
+		bool _IsMS5611Enable;
+
 		float _flag_PID_P_TAsix_Gain;
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
@@ -196,6 +202,12 @@ namespace SingleAPMAPI
 			const int MS5611_ADDR = 0x77;
 			char RCDevice[20] = "/dev/ttyAMA0";
 			char GPSDevice[20] = "/dev/ttyAMA1";
+
+			bool _IsGPSEnable;
+			bool _IsFlowEnable;
+			bool _IsSonarEnable;
+			bool _IsRCSafeEnable;
+			bool _IsMS5611Enable;
 		} DF;
 
 		struct SensorsINFO
@@ -500,50 +512,50 @@ namespace SingleAPMAPI
 
 		struct TaskThread
 		{
-			int _Tmp_IMUThreadTimeStart;
-			int _Tmp_IMUThreadTimeEnd;
-			int _Tmp_IMUThreadTimeNext;
-			int _Tmp_IMUThreadTimeLoop;
+			int _Tmp_IMUThreadTimeStart = 0;
+			int _Tmp_IMUThreadTimeEnd = 0;
+			int _Tmp_IMUThreadTimeNext = 0;
+			int _Tmp_IMUThreadTimeLoop = 0;
 			int _Tmp_IMUThreadError = 0;
-			int _flag_IMUThreadTimeMax;
+			int _flag_IMUThreadTimeMax = 0;
 			int _flag_IMUThreadFreq;
 			std::thread *IMUTask;
-			int _Tmp_RXTThreadTimeStart;
-			int _Tmp_RXTThreadTimeEnd;
-			int _Tmp_RXTThreadTimeNext;
-			int _Tmp_RXTThreadTimeLoop;
+			int _Tmp_RXTThreadTimeStart = 0;
+			int _Tmp_RXTThreadTimeEnd = 0;
+			int _Tmp_RXTThreadTimeNext = 0;
+			int _Tmp_RXTThreadTimeLoop = 0;
 			int _Tmp_RXTThreadError = 0;
-			int _flag_RXTThreadTimeMax;
+			int _flag_RXTThreadTimeMax = 0;
 			int _flag_RXTThreadFreq;
 			std::thread *RXTask;
-			int _Tmp_ESCThreadTimeStart;
-			int _Tmp_ESCThreadTimeEnd;
-			int _Tmp_ESCThreadTimeNext;
-			int _Tmp_ESCThreadTimeLoop;
+			int _Tmp_ESCThreadTimeStart = 0;
+			int _Tmp_ESCThreadTimeEnd = 0;
+			int _Tmp_ESCThreadTimeNext = 0;
+			int _Tmp_ESCThreadTimeLoop = 0;
 			int _Tmp_ESCThreadError = 0;
-			int _flag_ESCThreadTimeMax;
+			int _flag_ESCThreadTimeMax = 0;
 			int _flag_ESCThreadFreq;
 			std::thread *ESCTask;
-			int _Tmp_ALTThreadTimeStart;
-			int _Tmp_ALTThreadTimeEnd;
-			int _Tmp_ALTThreadTimeNext;
-			int _Tmp_ALTThreadTimeLoop;
+			int _Tmp_ALTThreadTimeStart = 0;
+			int _Tmp_ALTThreadTimeEnd = 0;
+			int _Tmp_ALTThreadTimeNext = 0;
+			int _Tmp_ALTThreadTimeLoop = 0;
 			int _Tmp_ALTThreadError = 0;
 			int _flag_ALTThreadTimeMax = (float)1 / 88 * 1000000;
 			std::thread *ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;
-			int _Tmp_GPSThreadTimeStart;
-			int _Tmp_GPSThreadTimeEnd;
-			int _Tmp_GPSThreadTimeNext;
-			int _Tmp_GPSThreadTimeLoop;
+			int _Tmp_GPSThreadTimeStart = 0;
+			int _Tmp_GPSThreadTimeEnd = 0;
+			int _Tmp_GPSThreadTimeNext = 0;
+			int _Tmp_GPSThreadTimeLoop = 0;
 			int _Tmp_GPSThreadError = 0;
 			int _flag_GPSThreadTimeMax = (float)1 / 50 * 1000000;
 			std::thread *GPSTask;
 			int _Tmp_MAGThreadSMooth = 0;
-			int _Tmp_MAGThreadTimeStart;
-			int _Tmp_MAGThreadTimeEnd;
-			int _Tmp_MAGThreadTimeNext;
-			int _Tmp_MAGThreadTimeLoop;
+			int _Tmp_MAGThreadTimeStart = 0;
+			int _Tmp_MAGThreadTimeEnd = 0;
+			int _Tmp_MAGThreadTimeNext = 0;
+			int _Tmp_MAGThreadTimeLoop = 0;
 			int _Tmp_MAGThreadError = 0;
 			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
 			std::thread *MAGTask;
