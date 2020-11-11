@@ -74,6 +74,9 @@ namespace SingleAPMAPI
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
+		double _flag_MPU9250_A_X_Cali;
+		double _flag_MPU9250_A_Y_Cali;
+		double _flag_MPU9250_A_Z_Cali;
 		double _flag_MPU9250_M_X_Offset;
 		double _flag_MPU9250_M_Y_Offset;
 		double _flag_MPU9250_M_Z_Offset;
@@ -256,7 +259,7 @@ namespace SingleAPMAPI
 				{0x26, 0x0A},
 				{0x27, 0x81},
 			};
-			unsigned char _Tmp_MPU9250_SPI_Config[5];
+			unsigned char _Tmp_MPU9250_SPI_Config[10];
 			unsigned char _Tmp_MPU9250_SPI_Buffer[22];
 			unsigned char _Tmp_MPU9250_SPI_Compass_Buffer[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 			long _uORB_MPU9250_A_X = 0;
@@ -307,6 +310,9 @@ namespace SingleAPMAPI
 			long _flag_MPU9250_G_X_Cali;
 			long _flag_MPU9250_G_Y_Cali;
 			long _flag_MPU9250_G_Z_Cali;
+			double _flag_MPU9250_A_X_Cali;
+			double _flag_MPU9250_A_Y_Cali;
+			double _flag_MPU9250_A_Z_Cali;
 			double _flag_Accel__Roll_Cali;
 			double _flag_Accel_Pitch_Cali;
 			double _flag_MPU9250_M_MRES;

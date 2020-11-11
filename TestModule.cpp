@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	int argvs;
 	double data[10];
 	APMSettinngs setting;
-	while ((argvs = getopt(argc, argv, "vtcCrh")) != -1)
+	while ((argvs = getopt(argc, argv, "vtcCrha")) != -1)
 	{
 		switch (argvs)
 		{
@@ -57,6 +57,17 @@ int main(int argc, char *argv[])
 			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_X_Offset", data[7]);
 			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Y_Offset", data[8]);
 			configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Z_Offset", data[9]);
+		}
+		break;
+		case 'a':
+		{
+			RPiSingleAPM APM_Settle;
+			configSettle("/etc/APMconfig.json", setting);
+			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.APMCalibrator(2, data);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_X_Cali", data[0]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Y_Cali", data[1]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Z_Cali", data[2]);
 		}
 		break;
 		//--------------------------------------------------------------------------------//
@@ -133,6 +144,9 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_PID_Alt_Level_Max = Configdata["_flag_PID_Alt_Level_Max"].get<float>();
 	APMInit._flag_PID_GPS_Level_Max = Configdata["_flag_PID_GPS_Level_Max"].get<float>();
 	//==============================================================Sensors cofig==/
+	APMInit._flag_MPU9250_A_X_Cali = Configdata["_flag_MPU9250_A_X_Cali"].get<double>();
+	APMInit._flag_MPU9250_A_Y_Cali = Configdata["_flag_MPU9250_A_Y_Cali"].get<double>();
+	APMInit._flag_MPU9250_A_Z_Cali = Configdata["_flag_MPU9250_A_Z_Cali"].get<double>();
 	APMInit._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
 	APMInit._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
 

@@ -207,6 +207,9 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_MPU9250_G_X -= SF._flag_MPU9250_G_X_Cali;
 			SF._uORB_MPU9250_G_Y -= SF._flag_MPU9250_G_Y_Cali;
 			SF._uORB_MPU9250_G_Z -= SF._flag_MPU9250_G_Z_Cali;
+			SF._uORB_MPU9250_A_X -= SF._flag_MPU9250_A_X_Cali;
+			SF._uORB_MPU9250_A_Y -= SF._flag_MPU9250_A_Y_Cali;
+			SF._uORB_MPU9250_A_Z -= SF._flag_MPU9250_A_Z_Cali;
 			//GryoTrue------------------------------------------------------------------//
 			SF._uORB_Gryo__Roll = (SF._uORB_Gryo__Roll * 0.7) + ((SF._uORB_MPU9250_G_Fixed_Y / DF._flag_MPU9250_LSB) * 0.3);
 			SF._uORB_Gryo_Pitch = (SF._uORB_Gryo_Pitch * 0.7) + ((SF._uORB_MPU9250_G_Fixed_X / DF._flag_MPU9250_LSB) * 0.3);
@@ -939,20 +942,30 @@ void SingleAPMAPI::RPiSingleAPM::APMCalibrator(int type, double *data)
 	else if (type == 2)
 	{
 		int i;
-		bool finish;
-		int TMPMAX = 0;
-		int TMPMIN = 0;
 		std::cout << "[ACCEL CALIBRATION!ACCEL CALIBRATION!ACCEL CALIBRATION!]\n";
-		std::cout << "  INPUT ANY NUMBER TO START ACCEL CALIBRATION\n";
+		std::cout << " INPUT ANY NUMBER TO START ACCEL CALIBRATION\n";
 		std::cin >> i;
-		std::cout << "PUT ROLL SIDE UP TO SKY! AND INPUT ANY NUMBER TO CONTINU , DON'T MOVE!!\n";
-		std::cin >> i;
-		// for (size_t i = 0; i < 1000; i++)
-		// {
-		// 	IMUSensorsDataRead();
-		// 	if ()
-		// 		usleep(10);
-		// }
+		SF._flag_MPU9250_A_X_Cali = 0;
+		SF._flag_MPU9250_A_Y_Cali = 0;
+		SF._flag_MPU9250_A_Z_Cali = 0;
+		for (int cali_count = 0; cali_count < 2000; cali_count++)
+		{
+			IMUSensorsDataRead();
+			SF._flag_MPU9250_A_X_Cali += SF._uORB_MPU9250_A_X;
+			SF._flag_MPU9250_A_Y_Cali += SF._uORB_MPU9250_A_Y;
+			SF._flag_MPU9250_A_Z_Cali += SF._uORB_MPU9250_A_Z;
+			usleep(500);
+		}
+		SF._flag_MPU9250_A_X_Cali = SF._flag_MPU9250_A_X_Cali / 2000;
+		SF._flag_MPU9250_A_Y_Cali = SF._flag_MPU9250_A_Y_Cali / 2000;
+		SF._flag_MPU9250_A_Z_Cali = (SF._flag_MPU9250_A_Z_Cali / 2000) - 4098.f;
+		std::cout << "CALIBRATION FINISH\n";
+		std::cout << " XASIX: " << SF._flag_MPU9250_A_X_Cali << "\n";
+		std::cout << " YASIX: " << SF._flag_MPU9250_A_Y_Cali << "\n";
+		std::cout << " ZASIX: " << SF._flag_MPU9250_A_Z_Cali << "\n\n";
+		data[0] = SF._flag_MPU9250_A_X_Cali;
+		data[1] = SF._flag_MPU9250_A_Y_Cali;
+		data[2] = SF._flag_MPU9250_A_Z_Cali;
 	}
 }
 
@@ -1074,6 +1087,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
 	PF._flag_PID_GPS_Level_Max = APMInit._flag_PID_GPS_Level_Max;
 	//==============================================================Sensors cofig==/
+	SF._flag_MPU9250_A_X_Cali = APMInit._flag_MPU9250_A_X_Cali;
+	SF._flag_MPU9250_A_Y_Cali = APMInit._flag_MPU9250_A_Y_Cali;
+	SF._flag_MPU9250_A_Z_Cali = APMInit._flag_MPU9250_A_Z_Cali;
 	SF._flag_Accel__Roll_Cali = APMInit._flag_Accel__Roll_Cali;
 	SF._flag_Accel_Pitch_Cali = APMInit._flag_Accel_Pitch_Cali;
 
@@ -1391,8 +1407,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " GryoPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo_Pitch << "    "
 			  << " GryoRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo__Roll << "    "
 			  << " GryoYaw:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Gryo___Yaw << "    "
-			  << " MPURawGX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_G_X << "    "
-			  << " MPURawGY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_G_Y << "    "
 			  << "                        "
 			  << std::endl;
 	;
@@ -1405,7 +1419,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Real_Pitch << "    "
 			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Real__Roll << "    "
-			  << " MPURawGY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_G_Z << "    "
+			  << " MPURawGX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_G_X << "    "
+			  << " MPURawGY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_G_Y << "    "
+			  << " MPURawGZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_G_Z << "    "
 			  << "                        "
 			  << std::endl;
 	std::cout << " CompassX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
