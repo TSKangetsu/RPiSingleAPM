@@ -253,53 +253,53 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_Real_Pitch = SF._Tmp_Real_Pitch;
 			SF._uORB_Real__Roll = SF._Tmp_Real__Roll;
 			//HeadingCaculate------------------------------------------------------------//
-			SF._uORB_MPU9250_M_X = SF._uORB_MPU9250_M_X * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_X_Cali;
-			SF._uORB_MPU9250_M_Y = SF._uORB_MPU9250_M_Y * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Y_Cali;
-			SF._uORB_MPU9250_M_Z = SF._uORB_MPU9250_M_Z * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Z_Cali;
-			SF._uORB_MPU9250_M_X += SF._flag_MPU9250_M_X_Offset;
-			SF._uORB_MPU9250_M_Y += SF._flag_MPU9250_M_Y_Offset;
-			SF._uORB_MPU9250_M_Y *= SF._flag_MPU9250_M_Y_Scaler;
-			SF._uORB_MPU9250_M_Z += SF._flag_MPU9250_M_Z_Offset;
-			SF._uORB_MPU9250_M_Z *= SF._flag_MPU9250_M_Z_Scaler;
-			SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._uORB_Real__Roll / -180.f) +
-								   SF._uORB_MPU9250_M_Y * sin(SF._uORB_Real_Pitch / 180.f) + sin(SF._uORB_Real__Roll / -180.f) -
-								   SF._uORB_MPU9250_M_Z * cos(SF._uORB_Real_Pitch / 180.f) * sin(SF._uORB_Real__Roll / -180.f);
-			SF._Tmp_MPU9250_M_YH = SF._uORB_MPU9250_M_Y * cos(SF._uORB_Real_Pitch / 180.f) +
-								   SF._uORB_MPU9250_M_Z + sin(SF._uORB_Real_Pitch / 180.f);
-			if (SF._Tmp_MPU9250_M_YH < 0)
-				SF._Tmp_MPU9250___MAG = 180 + (180 + ((atan2(SF._Tmp_MPU9250_M_XH, SF._Tmp_MPU9250_M_YH)) * (180 / 3.14)));
-			else
-				SF._Tmp_MPU9250___MAG = (atan2(SF._Tmp_MPU9250_M_XH, SF._Tmp_MPU9250_M_YH)) * (180 / 3.14);
-			SF._Tmp_MPU9250___MAG += SF._flag_MPU9250_Head_Asix;
-			if (SF._Tmp_MPU9250___MAG < 0)
-				SF._Tmp_MPU9250___MAG += 360;
-			else if (SF._Tmp_MPU9250___MAG >= 360)
-				SF._Tmp_MPU9250___MAG -= 360;
-			//--------------------------------------------------------------------//
-			SF._uORB_MPU9250___Yaw += SF._uORB_Gryo_RTSpeed___Yaw / (float)TF._flag_IMUThreadFreq;
-			if (SF._uORB_MPU9250___Yaw < 0)
-				SF._uORB_MPU9250___Yaw += 360;
-			else if (SF._uORB_MPU9250___Yaw >= 360)
-				SF._uORB_MPU9250___Yaw -= 360;
-			SF._Tmp_MPU9250__Head = SF._uORB_MPU9250___Yaw - SF._Tmp_MPU9250___MAG;
-			if (SF._Tmp_MPU9250__Head < -180 || SF._Tmp_MPU9250__Head > 180)
-			{
-				if (SF._Tmp_MPU9250___MAG > 180)
-					SF._Tmp_MPU9250__Head__Mag = SF._Tmp_MPU9250___MAG - 180;
-				else
-					SF._Tmp_MPU9250__Head__Mag = SF._Tmp_MPU9250___MAG + 180;
-				if (SF._Tmp_MPU9250__Head > 180)
-					SF._Tmp_MPU9250__Head_Gryo = SF._uORB_MPU9250___Yaw - 180;
-				else
-					SF._Tmp_MPU9250__Head_Gryo = SF._uORB_MPU9250___Yaw + 180;
-				SF._Tmp_MPU9250__Head = SF._Tmp_MPU9250__Head_Gryo - SF._Tmp_MPU9250__Head__Mag;
-			}
-			SF._uORB_MPU9250___Yaw -= SF._Tmp_MPU9250__Head / 1200.0;
-			if (SF._uORB_MPU9250___Yaw < 0)
-				SF._uORB_MPU9250___Yaw += 360;
-			else if (SF._uORB_MPU9250___Yaw >= 360)
-				SF._uORB_MPU9250___Yaw -= 360;
-			SF._uORB_MPU9250__Head = SF._uORB_MPU9250___Yaw;
+			// SF._uORB_MPU9250_M_X = SF._uORB_MPU9250_M_X * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_X_Cali;
+			// SF._uORB_MPU9250_M_Y = SF._uORB_MPU9250_M_Y * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Y_Cali;
+			// SF._uORB_MPU9250_M_Z = SF._uORB_MPU9250_M_Z * SF._flag_MPU9250_M_MRES * SF._flag_MPU9250_M_Z_Cali;
+			// SF._uORB_MPU9250_M_X += SF._flag_MPU9250_M_X_Offset;
+			// SF._uORB_MPU9250_M_Y += SF._flag_MPU9250_M_Y_Offset;
+			// SF._uORB_MPU9250_M_Y *= SF._flag_MPU9250_M_Y_Scaler;
+			// SF._uORB_MPU9250_M_Z += SF._flag_MPU9250_M_Z_Offset;
+			// SF._uORB_MPU9250_M_Z *= SF._flag_MPU9250_M_Z_Scaler;
+			// SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._uORB_Real_Pitch * 3.14 / -180.f) +
+			// 					   SF._uORB_MPU9250_M_Y * sin(SF._uORB_Real__Roll * 3.14 / 180.f) * sin(SF._uORB_Real_Pitch * 3.14 / -180.f) -
+			// 					   SF._uORB_MPU9250_M_Z * cos(SF._uORB_Real__Roll * 3.14 / 180.f) * sin(SF._uORB_Real_Pitch * 3.14 / -180.f);
+			// SF._Tmp_MPU9250_M_YH = SF._uORB_MPU9250_M_Y * cos(SF._uORB_Real__Roll * 3.14 / 180.f) +
+			// 					   SF._uORB_MPU9250_M_Z + sin(SF._uORB_Real__Roll * 3.14 / 180.f);
+			// if (SF._Tmp_MPU9250_M_YH < 0)
+			// 	SF._Tmp_MPU9250___MAG = 180 + (180 + ((atan2(SF._Tmp_MPU9250_M_XH, SF._Tmp_MPU9250_M_YH)) * (180 / 3.14)));
+			// else
+			// 	SF._Tmp_MPU9250___MAG = (atan2(SF._Tmp_MPU9250_M_XH, SF._Tmp_MPU9250_M_YH)) * (180 / 3.14);
+			// SF._Tmp_MPU9250___MAG += SF._flag_MPU9250_Head_Asix;
+			// if (SF._Tmp_MPU9250___MAG < 0)
+			// 	SF._Tmp_MPU9250___MAG += 360;
+			// else if (SF._Tmp_MPU9250___MAG >= 360)
+			// 	SF._Tmp_MPU9250___MAG -= 360;
+			// //--------------------------------------------------------------------//
+			// SF._uORB_MPU9250___Yaw += SF._uORB_Gryo_RTSpeed___Yaw / (float)TF._flag_IMUThreadFreq;
+			// if (SF._uORB_MPU9250___Yaw < 0)
+			// 	SF._uORB_MPU9250___Yaw += 360;
+			// else if (SF._uORB_MPU9250___Yaw >= 360)
+			// 	SF._uORB_MPU9250___Yaw -= 360;
+			// SF._Tmp_MPU9250__Head = SF._uORB_MPU9250___Yaw - SF._Tmp_MPU9250___MAG;
+			// if (SF._Tmp_MPU9250__Head < -180 || SF._Tmp_MPU9250__Head > 180)
+			// {
+			// 	if (SF._Tmp_MPU9250___MAG > 180)
+			// 		SF._Tmp_MPU9250__Head__Mag = SF._Tmp_MPU9250___MAG - 180;
+			// 	else
+			// 		SF._Tmp_MPU9250__Head__Mag = SF._Tmp_MPU9250___MAG + 180;
+			// 	if (SF._Tmp_MPU9250__Head > 180)
+			// 		SF._Tmp_MPU9250__Head_Gryo = SF._uORB_MPU9250___Yaw - 180;
+			// 	else
+			// 		SF._Tmp_MPU9250__Head_Gryo = SF._uORB_MPU9250___Yaw + 180;
+			// 	SF._Tmp_MPU9250__Head = SF._Tmp_MPU9250__Head_Gryo - SF._Tmp_MPU9250__Head__Mag;
+			// }
+			// SF._uORB_MPU9250___Yaw -= SF._Tmp_MPU9250__Head / 1200.0;
+			// if (SF._uORB_MPU9250___Yaw < 0)
+			// 	SF._uORB_MPU9250___Yaw += 360;
+			// else if (SF._uORB_MPU9250___Yaw >= 360)
+			// 	SF._uORB_MPU9250___Yaw -= 360;
+			// SF._uORB_MPU9250__Head = SF._uORB_MPU9250___Yaw;
 			//IMU SaftyChecking---------------------------------------------------------//
 			if (SF._uORB_Real_Pitch > 70.0 || SF._uORB_Real_Pitch < -70.0 || SF._uORB_Real__Roll > 70.0 || SF._uORB_Real__Roll < -70.0)
 			{
@@ -516,8 +516,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					AF.AutoPilotMode = APModeINFO::AutoStable;
 					AF._flag_IsAltHoldSet = false;
 				}
-				else if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod &&
-						 DF._IsGPSEnable && DF._IsMS5611Enable)
+				else if (RF._flag_RC_Mid_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Mid_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod && DF._IsMS5611Enable)
 				{
 					AF.AutoPilotMode = APModeINFO::AltHold;
 				}
@@ -689,23 +688,23 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._uORB_QMC5883L_M_Y *= SF._flag_QMC5883L_M_Y_Scaler;
 					SF._uORB_QMC5883L_M_Z += SF._flag_QMC5883L_M_Z_Offset;
 					SF._uORB_QMC5883L_M_Z *= SF._flag_QMC5883L_M_Z_Scaler;
-					SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real_Pitch / -180.f) +
-											(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real__Roll / -180.f) * sin(SF._uORB_Real_Pitch / -180.f) -
-											(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real__Roll / -180.f) * sin(SF._uORB_Real_Pitch / -180.f);
-					SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real__Roll / -180.f) +
-											(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real__Roll / -180.f);
+					SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real__Roll * (3.14 / 180.f)) +
+											(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real_Pitch * (3.14 / 180.f)) * sin(SF._uORB_Real__Roll * (3.14 / 180.f)) -
+											(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real_Pitch * (3.14 / 180.f)) * sin(SF._uORB_Real__Roll * (3.14 / 180.f));
+					SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real_Pitch * (3.14 / 180.f)) +
+											(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real_Pitch * (3.14 / 180.f));
 
 					if (SF._Tmp_QMC5883L_M_YH < 0)
-						SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_XH, SF._Tmp_QMC5883L_M_YH)) * (180 / 3.14)));
+						SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14)));
 					else
-						SF._Tmp_QMC5883L___MAG = (atan2(SF._Tmp_QMC5883L_M_XH, SF._Tmp_QMC5883L_M_YH)) * (180 / 3.14);
+						SF._Tmp_QMC5883L___MAG = (atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14);
 					SF._Tmp_QMC5883L___MAG += SF._flag_QMC5883L_Head_Asix;
 					if (SF._Tmp_QMC5883L___MAG < 0)
 						SF._Tmp_QMC5883L___MAG += 360;
 					else if (SF._Tmp_QMC5883L___MAG >= 360)
 						SF._Tmp_QMC5883L___MAG -= 360;
 					//--------------------------------------------------------------------//
-					SF._uORB_QMC5883L__Yaw += SF._uORB_Gryo_RTSpeed___Yaw / 200.f;
+					SF._uORB_QMC5883L__Yaw += SF._uORB_Gryo_RTSpeed___Yaw / 250.f;
 					if (SF._uORB_QMC5883L__Yaw < 0)
 						SF._uORB_QMC5883L__Yaw += 360;
 					else if (SF._uORB_QMC5883L__Yaw >= 360)
@@ -723,7 +722,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 							SF._Tmp_QMC5883L__Head_Gryo = SF._uORB_QMC5883L__Yaw + 180;
 						SF._Tmp_QMC5883L__Head = SF._Tmp_QMC5883L__Head_Gryo - SF._Tmp_QMC5883L__Head__Mag;
 					}
-					SF._uORB_QMC5883L__Yaw -= SF._Tmp_QMC5883L__Head / 150.0;
+					SF._uORB_QMC5883L__Yaw -= SF._Tmp_QMC5883L__Head / 1200.0;
 					if (SF._uORB_QMC5883L__Yaw < 0)
 						SF._uORB_QMC5883L__Yaw += 360;
 					else if (SF._uORB_QMC5883L__Yaw >= 360)
@@ -1277,8 +1276,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsGPSHoldSet)
 				{
-					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_QMC5883L_Head / 180.f) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_QMC5883L_Head - 90.f) / 180.f);
-					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_QMC5883L_Head / 180.f) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_QMC5883L_Head + 90.f) / 180.f);
+					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_QMC5883L_Head - 90.f) * 3.14 / 180.f);
+					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_QMC5883L_Head + 90.f) * 3.14 / 180.f);
 
 					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
 					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
@@ -1329,7 +1328,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		PF._uORB_PID_TAsix_Ouput = PF._flag_PID_P_TAsix_Gain * (abs(PF._uORB_Leveling__Roll) + abs(PF._uORB_Leveling_Pitch) + abs(PF._uORB_Leveling___Yaw));
+		// PF._uORB_PID_TAsix_Ouput = PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) / cos(SF._uORB_Real__Roll * 3.14 / 180.f);
 		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
 		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
 		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
@@ -1447,6 +1446,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " AltHoldTarget:      " << PF._uORB_PID_AltHold_Target << "            \n";
 	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
 	std::cout << " Althold_I_Ouput:    " << PF._uORB_PID_I_Last_Value_Alt << "            \n";
+	std::cout << " AltholdAsixOuput:   " << PF._uORB_PID_TAsix_Ouput << "            \n";
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";

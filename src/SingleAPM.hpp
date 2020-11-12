@@ -566,7 +566,7 @@ namespace SingleAPMAPI
 			int _Tmp_MAGThreadTimeNext = 0;
 			int _Tmp_MAGThreadTimeLoop = 0;
 			int _Tmp_MAGThreadError = 0;
-			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
+			int _flag_MAGThreadTimeMax = (float)1 / 250 * 1000000;
 			std::thread *MAGTask;
 		} TF;
 	};
