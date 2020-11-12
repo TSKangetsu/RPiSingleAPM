@@ -688,11 +688,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._uORB_QMC5883L_M_Y *= SF._flag_QMC5883L_M_Y_Scaler;
 					SF._uORB_QMC5883L_M_Z += SF._flag_QMC5883L_M_Z_Offset;
 					SF._uORB_QMC5883L_M_Z *= SF._flag_QMC5883L_M_Z_Scaler;
-					SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real__Roll * (3.14 / 180.f)) +
-											(float)SF._uORB_QMC5883L_M_Y * sin(SF._uORB_Real_Pitch * (3.14 / 180.f)) * sin(SF._uORB_Real__Roll * (3.14 / 180.f)) -
-											(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real_Pitch * (3.14 / 180.f)) * sin(SF._uORB_Real__Roll * (3.14 / 180.f));
-					SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real_Pitch * (3.14 / 180.f)) +
-											(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real_Pitch * (3.14 / 180.f));
+					SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_Real_Pitch * (3.14 / 180.f)) +
+											(float)SF._uORB_QMC5883L_M_X * sin(SF._uORB_Real__Roll * (3.14 / -180.f)) * sin(SF._uORB_Real_Pitch * (3.14 / 180.f)) -
+											(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_Real__Roll * (3.14 / -180.f)) * sin(SF._uORB_Real_Pitch * (3.14 / 180.f));
+					SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_Real__Roll * (3.14 / -180.f)) +
+											(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_Real__Roll * (3.14 / -180.f));
 
 					if (SF._Tmp_QMC5883L_M_YH < 0)
 						SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14)));
