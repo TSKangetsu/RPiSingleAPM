@@ -698,6 +698,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14)));
 					else
 						SF._Tmp_QMC5883L___MAG = (atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14);
+					SF._Tmp_QMC5883L___MAG += 180;
 					SF._Tmp_QMC5883L___MAG += SF._flag_QMC5883L_Head_Asix;
 					if (SF._Tmp_QMC5883L___MAG < 0)
 						SF._Tmp_QMC5883L___MAG += 360;
@@ -1273,6 +1274,9 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 				PF._uORB_PID_GPS_Lat_Ouput = (float)PF._uORB_PID_GPS_Lat_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._Tmp_PID_D_GPS_Lat_Ouput * PF._flag_PID_D_GPS_Gain;
 				PF._uORB_PID_GPS_Lng_Ouput = (float)PF._uORB_PID_GPS_Lng_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._Tmp_PID_D_GPS_Lng_Ouput * PF._flag_PID_D_GPS_Gain;
+
+				PF._uORB_PID_GPS_Lat_Ouput = !SF._uORB_GPS_Data.lat_North_Mode ? PF._uORB_PID_GPS_Lat_Ouput * -1 : PF._uORB_PID_GPS_Lat_Ouput;
+				PF._uORB_PID_GPS_Lng_Ouput = !SF._uORB_GPS_Data.lat_East_Mode ? PF._uORB_PID_GPS_Lng_Ouput * -1 : PF._uORB_PID_GPS_Lng_Ouput;
 
 				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsGPSHoldSet)
 				{

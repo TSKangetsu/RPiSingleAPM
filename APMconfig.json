@@ -50,7 +50,7 @@
   "_flag_PID_P_TAsix_Gain": 0.75,
   "_flag_PID_P__Roll_Gain": 0.7,
   "_flag_PID_P___Yaw_Gain": 3,
-  "_flag_QMC5883L_Head_Asix": 180,
+  "_flag_QMC5883L_Head_Asix": 0,
   "_flag_QMC5883L_M_X_Offset": 1365.0,
   "_flag_QMC5883L_M_Y_Offset": 926.785831451416,
   "_flag_QMC5883L_M_Y_Scaler": 1.0184459686279297,
