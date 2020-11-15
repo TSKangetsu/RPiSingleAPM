@@ -1,7 +1,0 @@
-﻿cmake_minimum_required (VERSION 3.8)
-project ("MS5611LIB")
-find_library(wiringPi_LIB wiringPi)
-add_subdirectory(src)
-add_executable (MS5611LIB "MS5611LIB.cpp")
-target_link_libraries(MS5611LIB MS5611)
-target_link_libraries(MS5611LIB ${wiringPi_LIB})
