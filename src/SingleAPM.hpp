@@ -13,10 +13,10 @@
 #include <linux/i2c-dev.h>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Kalman.h"
-#include "_thirdparty/MS5611/src/MS5611LIB.h"
-#include "_thirdparty/RCLib/RPiIBus/RPiIBus.hpp"
-#include "_thirdparty/RCLib/RPiSBus/RPiSBus.hpp"
-#include "_thirdparty/RCLib/RPiGPS/RPiGPS.hpp"
+#include "_thirdparty/RPiMS5611LIB/src/MS5611LIB.h"
+#include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
+#include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
+#include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #define MPUIsI2c 0
 #define MPUIsSpi 1
 #define RCIsIbus 0
