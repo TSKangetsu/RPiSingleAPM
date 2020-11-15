@@ -1,0 +1,25 @@
+﻿{
+  "configurations": [
+    {
+      "name": "Linux-GCC-Debug",
+      "generator": "Unix Makefiles",
+      "configurationType": "Debug",
+      "cmakeExecutable": "/usr/bin/cmake",
+      "remoteCopySourcesExclusionList": [ ".vs", ".git", "out" ],
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "linux_arm" ],
+      "remoteMachineName": "-111134560;raspberrypi (username=pi, port=22, authentication=Password)",
+      "remoteCMakeListsRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/src",
+      "remoteBuildRoot": "$HOME/VSProject/MS5611LIB",
+      "remoteInstallRoot": "$HOME/.vs/${projectDirName}/${workspaceHash}/out/install/${name}",
+      "remoteCopySources": true,
+      "rsyncCommandArgs": "-t --delete --delete-excluded",
+      "remoteCopyBuildOutput": false,
+      "remoteCopySourcesMethod": "rsync",
+      "addressSanitizerRuntimeFlags": "detect_leaks=0",
+      "variables": []
+    }
+  ]
+}
