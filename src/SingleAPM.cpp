@@ -1280,8 +1280,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsGPSHoldSet)
 				{
-					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_QMC5883L_Head - 90.f) * 3.14 / 180.f);
-					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_QMC5883L_Head + 90.f) * 3.14 / 180.f);
+					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_QMC5883L_Head + 90.f) * 3.14 / 180.f);
+					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_QMC5883L_Head - 90.f) * 3.14 / 180.f);
 
 					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
 					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
@@ -1332,7 +1332,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		// PF._uORB_PID_TAsix_Ouput = PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) / cos(SF._uORB_Real__Roll * 3.14 / 180.f);
+		// PF._uORB_PID_TAsix_Ouput = PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) / cos(abs(SF._uORB_Real__Roll) * 3.14 / 180.f) +
+		// 						   PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) / cos(abs(SF._uORB_Real_Pitch) * 3.14 / 180.f) -
+		// 						   PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) * 2;
+		// PF._uORB_PID_TAsix_Ouput = PF._uORB_PID_TAsix_Ouput > 500 ? 500 : PF._uORB_PID_TAsix_Ouput;
+		// PF._uORB_PID_TAsix_Ouput = PF._uORB_PID_TAsix_Ouput < 0 ? 0 : PF._uORB_PID_TAsix_Ouput;
 		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
 		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
 		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
