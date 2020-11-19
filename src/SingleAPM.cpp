@@ -15,7 +15,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
 	if (DF.PCA9658_fd == -1)
-		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, TF._flag_ESCThreadFreq);
+		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
 	else
 		pca9685PWMReset(DF.PCA9658_fd);
 	if (DF.PCA9658_fd == -1)
