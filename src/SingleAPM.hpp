@@ -203,7 +203,7 @@ namespace SingleAPMAPI
 			int MPU9250_SPI_Channel = 1;
 			const int MPU9250_ADDR = 0x68;
 			float _flag_MPU9250_LSB = 65.5;
-			int MPU9250_SPI_Freq = 1000000;
+			int MPU9250_SPI_Freq = 10000000;
 			int MS5611_fd;
 			const int MS5611_ADDR = 0x77;
 			std::string RCDevice;
@@ -528,6 +528,7 @@ namespace SingleAPMAPI
 			int _Tmp_IMUThreadError = 0;
 			int _flag_IMUThreadTimeMax = 0;
 			int _flag_IMUThreadFreq;
+			int _flag_IMUErrorTimes = 0;
 			std::thread *IMUTask;
 			int _Tmp_RXTThreadTimeStart = 0;
 			int _Tmp_RXTThreadTimeEnd = 0;
@@ -536,6 +537,7 @@ namespace SingleAPMAPI
 			int _Tmp_RXTThreadError = 0;
 			int _flag_RXTThreadTimeMax = 0;
 			int _flag_RXTThreadFreq;
+			int _flag_RXTErrorTimes = 0;
 			std::thread *RXTask;
 			int _Tmp_ESCThreadTimeStart = 0;
 			int _Tmp_ESCThreadTimeEnd = 0;
@@ -544,13 +546,15 @@ namespace SingleAPMAPI
 			int _Tmp_ESCThreadError = 0;
 			int _flag_ESCThreadTimeMax = 0;
 			int _flag_ESCThreadFreq;
+			int _flag_ESCErrorTimes = 0;
 			std::thread *ESCTask;
 			int _Tmp_ALTThreadTimeStart = 0;
 			int _Tmp_ALTThreadTimeEnd = 0;
 			int _Tmp_ALTThreadTimeNext = 0;
 			int _Tmp_ALTThreadTimeLoop = 0;
 			int _Tmp_ALTThreadError = 0;
-			int _flag_ALTThreadTimeMax = (float)1 / 88 * 1000000;
+			int _flag_ALTThreadTimeMax = (float)1 / 85 * 1000000;
+			int _flag_ALTErrorTimes = 0;
 			std::thread *ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;
 			int _Tmp_GPSThreadTimeStart = 0;
@@ -559,6 +563,7 @@ namespace SingleAPMAPI
 			int _Tmp_GPSThreadTimeLoop = 0;
 			int _Tmp_GPSThreadError = 0;
 			int _flag_GPSThreadTimeMax = (float)1 / 50 * 1000000;
+			int _flag_GPSErrorTimes = 0;
 			std::thread *GPSTask;
 			int _Tmp_MAGThreadSMooth = 0;
 			int _Tmp_MAGThreadTimeStart = 0;
@@ -567,6 +572,7 @@ namespace SingleAPMAPI
 			int _Tmp_MAGThreadTimeLoop = 0;
 			int _Tmp_MAGThreadError = 0;
 			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
+			int _flag_MAGErrorTimes = 0;
 			std::thread *MAGTask;
 		} TF;
 	};

@@ -2,7 +2,8 @@
 
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
-	wiringPiSetup();
+	wiringPiSetupSys();
+	piHiPri(99);
 	AF.RC_Lose_Clocking = 0;
 	AF.GPS_Lose_Clocking = 0;
 	AF._flag_MPU9250_first_StartUp = true;
@@ -14,7 +15,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
 	if (DF.PCA9658_fd == -1)
-		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
+		DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, TF._flag_ESCThreadFreq);
 	else
 		pca9685PWMReset(DF.PCA9658_fd);
 	if (DF.PCA9658_fd == -1)
@@ -305,12 +306,13 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			{
 				AF._flag_Error = true;
 			}
-
+			AttitudeUpdateTask();
 			TF._Tmp_IMUThreadTimeEnd = micros();
 			TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
 			if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_IMUThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
 			{
 				usleep(50);
+				TF._flag_IMUErrorTimes++;
 				AF._flag_ClockingTime_Error = true;
 			}
 			else
@@ -322,8 +324,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadError = TF._Tmp_IMUThreadTimeLoop;
 			}
 			TF._Tmp_IMUThreadTimeEnd = micros();
-
-			AttitudeUpdateTask();
 		}
 	});
 	cpu_set_t cpuset;
@@ -368,6 +368,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._flag_ALTThreadTimeMax | TF._Tmp_ALTThreadTimeNext < 0)
 				{
 					usleep(50);
+					TF._flag_ALTErrorTimes++;
 					AF._flag_ClockingTime_Error = true;
 				}
 				else
@@ -561,6 +562,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			if (TF._Tmp_RXTThreadTimeLoop + TF._Tmp_RXTThreadTimeNext > TF._flag_RXTThreadTimeMax | TF._Tmp_RXTThreadTimeNext < 0)
 			{
 				usleep(50);
+				TF._flag_RXTErrorTimes++;
 				AF._flag_ClockingTime_Error = true;
 			}
 			else
@@ -657,6 +659,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				if (TF._Tmp_GPSThreadTimeLoop + TF._Tmp_GPSThreadTimeNext > TF._flag_GPSThreadTimeMax | TF._Tmp_GPSThreadTimeNext < 0)
 				{
 					usleep(50);
+					TF._flag_GPSErrorTimes++;
 					AF._flag_ClockingTime_Error = true;
 				}
 				else
@@ -739,6 +742,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				if (TF._Tmp_MAGThreadTimeLoop + TF._Tmp_MAGThreadTimeNext > TF._flag_MAGThreadTimeMax | TF._Tmp_MAGThreadTimeNext < 0)
 				{
 					usleep(50);
+					TF._flag_MAGErrorTimes++;
 					AF._flag_ClockingTime_Error = true;
 				}
 				else
@@ -791,7 +795,8 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 			if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._flag_ESCThreadTimeMax | TF._Tmp_ESCThreadTimeNext < 0)
 			{
 				usleep(50);
-				// AF._flag_ClockingTime_Error = true;
+				TF._flag_ESCErrorTimes++;
+				AF._flag_ClockingTime_Error = true;
 			}
 			else
 			{
@@ -1505,21 +1510,27 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << " IMULoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeLoop;
 	std::cout << " IMUNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeNext;
+	std::cout << " IMUErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_IMUErrorTimes;
 	std::cout << " IMUMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadError << "    \n";
 	std::cout << " RXTLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadTimeLoop;
 	std::cout << " RXTNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadTimeNext;
+	std::cout << " RXTErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_RXTErrorTimes;
 	std::cout << " RXTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadError << "    \n";
 	std::cout << " ESCLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadTimeLoop;
 	std::cout << " ESCNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadTimeNext;
+	std::cout << " ESCErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_ESCErrorTimes;
 	std::cout << " ESCMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ESCThreadError << "    \n";
 	std::cout << " ALTLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeLoop;
 	std::cout << " ALTNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadTimeNext;
+	std::cout << " ALTErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_ALTErrorTimes;
 	std::cout << " ALTMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ALTThreadError << "    \n";
 	std::cout << " GPSLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadTimeLoop;
 	std::cout << " GPSNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadTimeNext;
+	std::cout << " GPSErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_GPSErrorTimes;
 	std::cout << " GPSMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_GPSThreadError << "    \n";
 	std::cout << " MAGLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadTimeLoop;
 	std::cout << " MAGNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadTimeNext;
+	std::cout << " MAGErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_MAGErrorTimes;
 	std::cout << " MAGMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadError << "    \n"
 			  << std::endl;
 }
