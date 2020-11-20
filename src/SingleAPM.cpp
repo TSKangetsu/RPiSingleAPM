@@ -162,7 +162,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		GPSInit = new GPSUart(DF.GPSDevice.c_str());
 		GPSMAGInit = new GPSI2CCompass_QMC5883L();
 		GPSMAGInit->GPSI2CCompass_QMC5883LInit();
-		SF._uORB_GPS_Data = GPSInit->GPSParse();
 #ifdef DEBUG
 		std::cout << "Done \n";
 #endif
@@ -587,11 +586,12 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsGPSEnable)
 	{
 		TF.GPSTask = new std::thread([&] {
+			GPSInit->GPSReOpen();
+			TF._Tmp_GPSThreadSMooth = 10;
 			while (true)
 			{
 				TF._Tmp_GPSThreadTimeStart = micros();
 				TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
-
 				{
 					if (TF._Tmp_GPSThreadSMooth == 10)
 					{
