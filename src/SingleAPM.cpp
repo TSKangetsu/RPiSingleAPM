@@ -261,11 +261,11 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_MPU9250_M_Y *= SF._flag_MPU9250_M_Y_Scaler;
 			SF._uORB_MPU9250_M_Z += SF._flag_MPU9250_M_Z_Offset;
 			SF._uORB_MPU9250_M_Z *= SF._flag_MPU9250_M_Z_Scaler;
-			SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._uORB_Real_Pitch * 3.14 / -180.f) +
-								   SF._uORB_MPU9250_M_Y * sin(SF._uORB_Real__Roll * 3.14 / 180.f) * sin(SF._uORB_Real_Pitch * 3.14 / -180.f) -
-								   SF._uORB_MPU9250_M_Z * cos(SF._uORB_Real__Roll * 3.14 / 180.f) * sin(SF._uORB_Real_Pitch * 3.14 / -180.f);
-			SF._Tmp_MPU9250_M_YH = SF._uORB_MPU9250_M_Y * cos(SF._uORB_Real__Roll * 3.14 / 180.f) +
-								   SF._uORB_MPU9250_M_Z + sin(SF._uORB_Real__Roll * 3.14 / 180.f);
+			SF._Tmp_MPU9250_M_XH = SF._uORB_MPU9250_M_X * cos(SF._uORB_Real__Roll * 3.14 / -180.f) +
+								   SF._uORB_MPU9250_M_Y * sin(SF._uORB_Real_Pitch * 3.14 / 180.f) * sin(SF._uORB_Real__Roll * 3.14 / -180.f) -
+								   SF._uORB_MPU9250_M_Z * cos(SF._uORB_Real_Pitch * 3.14 / 180.f) * sin(SF._uORB_Real__Roll * 3.14 / -180.f);
+			SF._Tmp_MPU9250_M_YH = SF._uORB_MPU9250_M_Y * cos(SF._uORB_Real_Pitch * 3.14 / 180.f) +
+								   SF._uORB_MPU9250_M_Z + sin(SF._uORB_Real_Pitch * 3.14 / 180.f);
 			if (SF._Tmp_MPU9250_M_YH < 0)
 				SF._Tmp_MPU9250___MAG = 180 + (180 + ((atan2(SF._Tmp_MPU9250_M_XH, SF._Tmp_MPU9250_M_YH)) * (180 / 3.14)));
 			else
@@ -276,7 +276,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			else if (SF._Tmp_MPU9250___MAG >= 360)
 				SF._Tmp_MPU9250___MAG -= 360;
 			//--------------------------------------------------------------------//
-			SF._uORB_MPU9250___Yaw += SF._uORB_Gryo_RTSpeed___Yaw / (float)TF._flag_IMUThreadFreq;
+			SF._uORB_MPU9250___Yaw += SF._uORB_Gryo_RTSpeed___Yaw / TF._flag_IMUThreadFreq;
 			if (SF._uORB_MPU9250___Yaw < 0)
 				SF._uORB_MPU9250___Yaw += 360;
 			else if (SF._uORB_MPU9250___Yaw >= 360)
@@ -1308,7 +1308,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 		//Roll PID Mix
 		PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 -
-								   RF._uORB_RC_Out__Roll + PF._uORB_PID_GPS__Roll_Ouput;
+								   RF._uORB_RC_Out__Roll - PF._uORB_PID_GPS__Roll_Ouput;
 		PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
 					 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
 					 PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
@@ -1319,7 +1319,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 
 		//Pitch PID Mix
 		PF._uORB_PID_Pitch_Input = SF._uORB_Gryo_Pitch + SF._uORB_Real_Pitch * 15 -
-								   RF._uORB_RC_Out_Pitch + PF._uORB_PID_GPS_Pitch_Ouput;
+								   RF._uORB_RC_Out_Pitch - PF._uORB_PID_GPS_Pitch_Ouput;
 		PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
 					 PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
 					 PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
@@ -1364,23 +1364,15 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	EF._uORB_B1_Speed = (700 * (((float)EF._Tmp_B1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
 	EF._uORB_B2_Speed = (700 * (((float)EF._Tmp_B2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
 
-	if (EF._uORB_A1_Speed < EF._Flag_Lazy_Throttle)
-		EF._uORB_A1_Speed = EF._Flag_Lazy_Throttle;
-	if (EF._uORB_A2_Speed < EF._Flag_Lazy_Throttle)
-		EF._uORB_A2_Speed = EF._Flag_Lazy_Throttle;
-	if (EF._uORB_B1_Speed < EF._Flag_Lazy_Throttle)
-		EF._uORB_B1_Speed = EF._Flag_Lazy_Throttle;
-	if (EF._uORB_B2_Speed < EF._Flag_Lazy_Throttle)
-		EF._uORB_B2_Speed = EF._Flag_Lazy_Throttle;
+	EF._uORB_A1_Speed = EF._uORB_A1_Speed < EF._Flag_Lazy_Throttle ? EF._Flag_Lazy_Throttle : EF._uORB_A1_Speed;
+	EF._uORB_A2_Speed = EF._uORB_A2_Speed < EF._Flag_Lazy_Throttle ? EF._Flag_Lazy_Throttle : EF._uORB_A2_Speed;
+	EF._uORB_B1_Speed = EF._uORB_B1_Speed < EF._Flag_Lazy_Throttle ? EF._Flag_Lazy_Throttle : EF._uORB_B1_Speed;
+	EF._uORB_B2_Speed = EF._uORB_B2_Speed < EF._Flag_Lazy_Throttle ? EF._Flag_Lazy_Throttle : EF._uORB_B2_Speed;
 
-	if (EF._uORB_A1_Speed > EF._Flag_Max__Throttle)
-		EF._uORB_A1_Speed = EF._Flag_Max__Throttle;
-	if (EF._uORB_A2_Speed > EF._Flag_Max__Throttle)
-		EF._uORB_A2_Speed = EF._Flag_Max__Throttle;
-	if (EF._uORB_B1_Speed > EF._Flag_Max__Throttle)
-		EF._uORB_B1_Speed = EF._Flag_Max__Throttle;
-	if (EF._uORB_B2_Speed > EF._Flag_Max__Throttle)
-		EF._uORB_B2_Speed = EF._Flag_Max__Throttle;
+	EF._uORB_A1_Speed = EF._uORB_A1_Speed > EF._Flag_Max__Throttle ? EF._Flag_Max__Throttle : EF._uORB_A1_Speed;
+	EF._uORB_A2_Speed = EF._uORB_A2_Speed > EF._Flag_Max__Throttle ? EF._Flag_Max__Throttle : EF._uORB_A2_Speed;
+	EF._uORB_B1_Speed = EF._uORB_B1_Speed > EF._Flag_Max__Throttle ? EF._Flag_Max__Throttle : EF._uORB_B1_Speed;
+	EF._uORB_B2_Speed = EF._uORB_B2_Speed > EF._Flag_Max__Throttle ? EF._Flag_Max__Throttle : EF._uORB_B2_Speed;
 }
 
 void SingleAPMAPI::RPiSingleAPM::SaftyCheckTaskReg()
@@ -1495,8 +1487,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	{
 		std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
 	}
-	std::cout << " \n\n";
-
+	std::cout << " \n";
 	std::cout << " Flag_ESC_ARMED:" << AF._flag_ESC_ARMED << "               \n";
 	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
 	std::cout << " Flag_GPS_Error:" << AF._flag_GPS_Error << "           \n";

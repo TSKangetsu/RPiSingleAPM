@@ -29,7 +29,6 @@
 
 namespace SingleAPMAPI
 {
-	//if you do not use json,you must full all the APMSettings with correct data, like APMconfig.json,and disable 'add_definitions(-DUSINGJSON)' in cmakelists.txt
 	struct APMSettinngs
 	{
 		int RC_Type;
