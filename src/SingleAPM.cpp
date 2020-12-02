@@ -113,7 +113,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef DEBUG
 		std::cout << "[RPiSingleAPM]Controller Sbus config comfirm\n";
 #endif
-		SbusInit = new Sbus(DF.RCDevice.c_str(), SbusMode::Normal);
+		SbusInit = new Sbus(DF.RCDevice.c_str());
 	}
 	//--------------------------------------------------------------------//
 	if (DF._IsMS5611Enable)
@@ -597,14 +597,26 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					{
 						SF._uORB_GPS_Data = GPSInit->GPSParse();
 						TF._Tmp_GPSThreadSMooth = 0;
-						SF._Tmp_GPS_Lat_Diff = (float)(SF._uORB_GPS_Data.lat - SF._Tmp_GPS_Lat_Last_Data) / 10.f;
-						SF._Tmp_GPS_Lng_Diff = (float)(SF._uORB_GPS_Data.lng - SF._Tmp_GPS_Lng_Last_Data) / 10.f;
-						SF._uORB_GPS_Lat_Smooth = SF._Tmp_GPS_Lat_Last_Data;
-						SF._uORB_GPS_Lng_Smooth = SF._Tmp_GPS_Lng_Last_Data;
-						SF._Tmp_GPS_Lat_Last_Data = SF._uORB_GPS_Data.lat;
-						SF._Tmp_GPS_Lng_Last_Data = SF._uORB_GPS_Data.lng;
-						SF._Tmp_GPS_Lat_Smooth_Diff = 0;
-						SF._Tmp_GPS_Lng_Smooth_Diff = 0;
+						if (!SF._uORB_GPS_Data.DataUnCorrect)
+						{
+							SF._Tmp_GPS_Lat_Diff = (float)(SF._uORB_GPS_Data.lat - SF._Tmp_GPS_Lat_Last_Data) / 10.f;
+							SF._Tmp_GPS_Lng_Diff = (float)(SF._uORB_GPS_Data.lng - SF._Tmp_GPS_Lng_Last_Data) / 10.f;
+							SF._uORB_GPS_Lat_Smooth = SF._Tmp_GPS_Lat_Last_Data;
+							SF._uORB_GPS_Lng_Smooth = SF._Tmp_GPS_Lng_Last_Data;
+							SF._Tmp_GPS_Lat_Last_Data = SF._uORB_GPS_Data.lat;
+							SF._Tmp_GPS_Lng_Last_Data = SF._uORB_GPS_Data.lng;
+							SF._Tmp_GPS_Lat_Smooth_Diff = 0;
+							SF._Tmp_GPS_Lng_Smooth_Diff = 0;
+						}
+						else
+						{
+							SF._Tmp_GPS_Lat_Diff = 0;
+							SF._Tmp_GPS_Lng_Diff = 0;
+							SF._Tmp_GPS_Lat_Smooth_Diff = 0;
+							SF._Tmp_GPS_Lng_Smooth_Diff = 0;
+							SF._Tmp_GPS_Lat_Last_Data = SF._uORB_GPS_Lat_Smooth;
+							SF._Tmp_GPS_Lng_Last_Data = SF._uORB_GPS_Lng_Smooth;
+						}
 					}
 					//
 					if (SF._Tmp_GPS_Lat_Last_Data == 0 && SF._Tmp_GPS_Lng_Last_Data == 0)
@@ -625,11 +637,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						SF._Tmp_GPS_Lng_Smooth_Diff -= (int)SF._Tmp_GPS_Lng_Smooth_Diff;
 					}
 					//
-					if (SF._uORB_GPS_Data.satillitesCount < 4)
+					if (SF._uORB_GPS_Data.satillitesCount < 4 || SF._uORB_GPS_Data.DataUnCorrect)
 					{
 						AF._flag_GPS_Disconnected = true;
 					}
-					else if (SF._uORB_GPS_Data.satillitesCount > 4)
+					else if (SF._uORB_GPS_Data.satillitesCount > 4 || !SF._uORB_GPS_Data.DataUnCorrect)
 					{
 						AF._flag_GPS_Disconnected = false;
 					}
@@ -821,6 +833,12 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 	{
 #ifdef DEBUG
 		DebugOutPut();
+		DEBUGOuputCleaner++;
+		if (DEBUGOuputCleaner > 60)
+		{
+			system("clear");
+			DEBUGOuputCleaner = 0;
+		}
 #endif
 		SaftyCheckTaskReg();
 		usleep(50000);

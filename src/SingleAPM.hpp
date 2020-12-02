@@ -133,6 +133,9 @@ namespace SingleAPMAPI
 		void APMCalibrator(int Type, double *data);
 
 	protected:
+#ifdef DEBUG
+		int DEBUGOuputCleaner = 0;
+#endif
 		Sbus *SbusInit;
 		Ibus *IbusInit;
 		Kalman *Kal_Pitch;
