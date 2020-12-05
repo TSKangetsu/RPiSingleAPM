@@ -17,6 +17,7 @@
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
+#include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
 #define MPUIsI2c 0
 #define MPUIsSpi 1
 #define RCIsIbus 0
@@ -41,10 +42,10 @@ namespace SingleAPMAPI
 
 		std::string __RCDevice;
 		std::string __GPSDevice;
+		std::string __FlowDevice;
 
 		bool _IsGPSEnable;
 		bool _IsFlowEnable;
-		bool _IsSonarEnable;
 		bool _IsRCSafeEnable;
 		bool _IsMS5611Enable;
 
@@ -142,6 +143,7 @@ namespace SingleAPMAPI
 		Kalman *Kal__Roll;
 		MS5611 *MS5611S;
 		GPSUart *GPSInit;
+		MSPUartFlow *FlowInit;
 		GPSI2CCompass_QMC5883L *GPSMAGInit;
 
 		void PID_Caculate(float inputData, float &outputData,
@@ -210,10 +212,10 @@ namespace SingleAPMAPI
 			const int MS5611_ADDR = 0x77;
 			std::string RCDevice;
 			std::string GPSDevice;
+			std::string FlowDevice;
 
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;
-			bool _IsSonarEnable;
 			bool _IsRCSafeEnable;
 			bool _IsMS5611Enable;
 		} DF;
@@ -393,6 +395,12 @@ namespace SingleAPMAPI
 
 			int _uORB_GPS_Lat_Smooth = 0;
 			int _uORB_GPS_Lng_Smooth = 0;
+			//========================Flow=========//
+			int _Tmp_Flow___Status = 0;
+			int _uORB_Flow__XOutput = 0;
+			int _uORB_Flow__YOutput = 0;
+			int _uORB_Flow_Altitude = 0;
+			int _uORB_Flow_Altitude_Final = 0;
 		} SF;
 
 		struct PIDINFO
@@ -576,6 +584,15 @@ namespace SingleAPMAPI
 			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
 			int _flag_MAGErrorTimes = 0;
 			std::thread *MAGTask;
+			int _Tmp_FlowThreadSMooth = 0;
+			int _Tmp_FlowThreadTimeStart = 0;
+			int _Tmp_FlowThreadTimeEnd = 0;
+			int _Tmp_FlowThreadTimeNext = 0;
+			int _Tmp_FlowThreadTimeLoop = 0;
+			int _Tmp_FlowThreadError = 0;
+			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000;
+			int _flag_FlowErrorTimes = 0;
+			std::thread *FlowTask;
 		} TF;
 	};
 } // namespace SingleAPMAPI

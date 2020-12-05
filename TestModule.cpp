@@ -97,10 +97,10 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 
 	APMInit.__RCDevice = Configdata["__RCDevice"].get<std::string>(),
 	APMInit.__GPSDevice = Configdata["__GPSDevice"].get<std::string>(),
+	APMInit.__FlowDevice = Configdata["__FlowDevice"].get<std::string>(),
 
 	APMInit._IsGPSEnable = Configdata["_IsGPSEnable"].get<int>();
 	APMInit._IsFlowEnable = Configdata["_IsFlowEnable"].get<int>();
-	APMInit._IsSonarEnable = Configdata["_IsSonarEnable"].get<int>();
 	APMInit._IsMS5611Enable = Configdata["_IsMS5611Enable"].get<int>();
 	APMInit._IsRCSafeEnable = Configdata["_IsRCSafeEnable"].get<int>();
 	//==========================================================Controller cofig==/

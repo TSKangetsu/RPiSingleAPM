@@ -166,6 +166,18 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::cout << "Done \n";
 #endif
 	}
+	//--------------------------------------------------------------------//
+	if (DF._IsFlowEnable)
+	{
+#ifdef DEBUG
+		std::cout << "[RPiSingleAPM]Setting UP FlowSensor... ";
+		std::cout.flush();
+#endif
+		FlowInit = new MSPUartFlow(DF.FlowDevice.c_str());
+#ifdef DEBUG
+		std::cout << "Done \n";
+#endif
+	}
 //GryoCali()-----------------------------------------------------------//
 #ifdef DEBUG
 	std::cout << "[RPiSingleAPM]Calibrating Gryo , Dont Move!! ...";
@@ -686,10 +698,10 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 			}
 		});
 
-		cpu_set_t cpuset2;
-		CPU_ZERO(&cpuset2);
-		CPU_SET(3, &cpuset2);
-		int rc2 = pthread_setaffinity_np(TF.GPSTask->native_handle(), sizeof(cpu_set_t), &cpuset2);
+		cpu_set_t cpuset;
+		CPU_ZERO(&cpuset);
+		CPU_SET(3, &cpuset);
+		int rc = pthread_setaffinity_np(TF.GPSTask->native_handle(), sizeof(cpu_set_t), &cpuset);
 
 		TF.MAGTask = new std::thread([&] {
 			while (true)
@@ -768,10 +780,49 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._Tmp_MAGThreadTimeEnd = micros();
 			}
 		});
-		cpu_set_t cpuset;
-		CPU_ZERO(&cpuset);
-		CPU_SET(3, &cpuset);
-		int rc = pthread_setaffinity_np(TF.MAGTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+		cpu_set_t cpuset2;
+		CPU_ZERO(&cpuset2);
+		CPU_SET(3, &cpuset2);
+		int rc2 = pthread_setaffinity_np(TF.MAGTask->native_handle(), sizeof(cpu_set_t), &cpuset2);
+	}
+
+	if (DF._IsFlowEnable)
+	{
+		TF.FlowTask = new std::thread([&] {
+			while (true)
+			{
+				TF._Tmp_FlowThreadTimeStart = micros();
+				TF._Tmp_FlowThreadTimeNext = TF._Tmp_FlowThreadTimeStart - TF._Tmp_FlowThreadTimeEnd;
+				{
+					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow__XOutput, SF._uORB_Flow__YOutput, SF._uORB_Flow_Altitude);
+					SF._uORB_Flow_Altitude = SF._uORB_Flow_Altitude * (1.f - cos(abs(SF._uORB_Real_Pitch) * 3.14 / 180.f) * (1.f - cos(abs(SF._uORB_Real__Roll) * 3.14 / 180.f)));
+					SF._uORB_Flow_Altitude_Final = SF._uORB_Flow_Altitude_Final * 0.7 + SF._uORB_Flow_Altitude * 0.3;
+					if (SF._Tmp_Flow___Status == -1)
+						TF._flag_FlowErrorTimes++;
+				}
+				TF._Tmp_FlowThreadTimeEnd = micros();
+				TF._Tmp_FlowThreadTimeLoop = TF._Tmp_FlowThreadTimeEnd - TF._Tmp_FlowThreadTimeStart;
+				if (TF._Tmp_FlowThreadTimeLoop + TF._Tmp_FlowThreadTimeNext > TF._flag_FlowThreadTimeMax | TF._Tmp_FlowThreadTimeNext < 0)
+				{
+					usleep(50);
+					TF._flag_FlowErrorTimes++;
+					AF._flag_ClockingTime_Error = true;
+				}
+				else
+				{
+					usleep(TF._flag_FlowThreadTimeMax - TF._Tmp_FlowThreadTimeLoop - TF._Tmp_FlowThreadTimeNext);
+				}
+				if (TF._Tmp_FlowThreadTimeLoop + TF._Tmp_FlowThreadTimeNext > TF._Tmp_FlowThreadError)
+				{
+					TF._Tmp_FlowThreadError = TF._Tmp_FlowThreadTimeLoop;
+				}
+				TF._Tmp_FlowThreadTimeEnd = micros();
+			}
+		});
+		cpu_set_t cpuset3;
+		CPU_ZERO(&cpuset3);
+		CPU_SET(3, &cpuset3);
+		int rc3 = pthread_setaffinity_np(TF.FlowTask->native_handle(), sizeof(cpu_set_t), &cpuset3);
 	}
 }
 
@@ -1067,10 +1118,10 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 
 	DF.RCDevice = APMInit.__RCDevice;
 	DF.GPSDevice = APMInit.__GPSDevice;
+	DF.FlowDevice = APMInit.__FlowDevice;
 
 	DF._IsGPSEnable = APMInit._IsGPSEnable;
 	DF._IsFlowEnable = APMInit._IsFlowEnable;
-	DF._IsSonarEnable = APMInit._IsSonarEnable;
 	DF._IsRCSafeEnable = APMInit._IsRCSafeEnable;
 	DF._IsMS5611Enable = APMInit._IsMS5611Enable;
 	//==========================================================Controller cofig==/
@@ -1359,9 +1410,9 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		PF._uORB_PID_TAsix_Ouput = PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) / cos(abs(SF._uORB_Real__Roll) * 3.14 / 180.f) +
-								   PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) / cos(abs(SF._uORB_Real_Pitch) * 3.14 / 180.f) -
-								   PF._flag_PID_P_TAsix_Gain * (PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle) * 2;
+		PF._uORB_PID_TAsix_Ouput = ((PF._flag_PID_Hover_Throttle - 1000 + PF._uORB_PID_Alt_Throttle) * (1.f - cos((abs(SF._uORB_Real_Pitch)) * 3.14 / 180.f)) +
+									(PF._flag_PID_Hover_Throttle - 1000 + PF._uORB_PID_Alt_Throttle) * (1.f - cos((abs(SF._uORB_Real__Roll)) * 3.14 / 180.f))) *
+								   PF._flag_PID_P_TAsix_Gain;
 		PF._uORB_PID_TAsix_Ouput = PF._uORB_PID_TAsix_Ouput > 500 ? 500 : PF._uORB_PID_TAsix_Ouput;
 		PF._uORB_PID_TAsix_Ouput = PF._uORB_PID_TAsix_Ouput < 0 ? 0 : PF._uORB_PID_TAsix_Ouput;
 		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw + PF._uORB_PID_TAsix_Ouput;
@@ -1468,12 +1519,19 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout
 		<< "MS5611ParseDataINFO:"
 		<< "\n";
-	std::cout << " FastPressure :      " << SF._Tmp_MS5611_PressureFast << "            \n";
-	std::cout << " FilterPressureFast :" << SF._uORB_MS5611_PressureFinal << "            \n";
-	std::cout << " AltHoldTarget:      " << PF._uORB_PID_AltHold_Target << "            \n";
-	std::cout << " AltholdThrottle:    " << PF._uORB_PID_Alt_Throttle << "            \n";
-	std::cout << " Althold_I_Ouput:    " << PF._uORB_PID_I_Last_Value_Alt << "            \n";
-	std::cout << " AltholdAsixOuput:   " << PF._uORB_PID_TAsix_Ouput << "            \n";
+	std::cout << " FastPressure :      " << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_MS5611_PressureFast;
+	std::cout << " ||FilterPressureFast :" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MS5611_PressureFinal;
+	std::cout << " ||AltHoldTarget:      " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltHold_Target << "            \n";
+	std::cout << " AltholdThrottle:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Alt_Throttle;
+	std::cout << " ||Althold_I_Ouput:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_I_Last_Value_Alt;
+	std::cout << " ||AltholdAsixOuput:   " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_TAsix_Ouput << "            \n";
+
+	std::cout
+		<< "FlowParseDataINFO:"
+		<< "\n";
+	std::cout << " FlowXOut:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow__XOutput;
+	std::cout << " ||FlowYOut:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow__YOutput;
+	std::cout << " ||FlowAltitude:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow_Altitude_Final << "            \n";
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";
@@ -1540,6 +1598,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " MAGLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadTimeLoop;
 	std::cout << " MAGNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadTimeNext;
 	std::cout << " MAGErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_MAGErrorTimes;
-	std::cout << " MAGMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadError << "    \n"
+	std::cout << " MAGMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_MAGThreadError << "    \n";
+	std::cout << " FloLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadTimeLoop;
+	std::cout << " FloNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadTimeNext;
+	std::cout << " FloErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_FlowErrorTimes;
+	std::cout << " FloMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadError << "    \n"
 			  << std::endl;
 }
