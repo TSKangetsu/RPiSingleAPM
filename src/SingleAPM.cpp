@@ -794,11 +794,75 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._Tmp_FlowThreadTimeStart = micros();
 				TF._Tmp_FlowThreadTimeNext = TF._Tmp_FlowThreadTimeStart - TF._Tmp_FlowThreadTimeEnd;
 				{
-					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow__XOutput, SF._uORB_Flow__YOutput, SF._uORB_Flow_Altitude);
-					SF._uORB_Flow_Altitude = SF._uORB_Flow_Altitude * (1.f - cos(abs(SF._uORB_Real_Pitch) * 3.14 / 180.f) * (1.f - cos(abs(SF._uORB_Real__Roll) * 3.14 / 180.f)));
-					SF._uORB_Flow_Altitude_Final = SF._uORB_Flow_Altitude_Final * 0.7 + SF._uORB_Flow_Altitude * 0.3;
-					if (SF._Tmp_Flow___Status == -1)
+					TF._Tmp_FlowThreadSMooth++;
+					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._uORB_Flow_Altitude);
+
+					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
+					{
+						SF._uORB_Flow_Altitude = SF._uORB_Flow_Altitude * (1.f - cos(abs(SF._uORB_Real_Pitch) * 3.14 / 180.f) * (1.f - cos(abs(SF._uORB_Real__Roll) * 3.14 / 180.f)));
+						SF._uORB_Flow_Altitude_Final += (SF._uORB_Flow_Altitude - SF._uORB_Flow_Altitude_Final) * 0.2;
+					}
+					if (SF._Tmp_Flow___Status == 2 || SF._Tmp_Flow___Status == 3)
+					{
+						SF._Tmp_Flow_XOuput_Total += SF._uORB_Flow_XOutput;
+						SF._Tmp_Flow_YOuput_Total += SF._uORB_Flow_YOutput;
+						SF._Tmp_Flow_Filter_XOutput_Total += (SF._Tmp_Flow_XOuput_Total - SF._Tmp_Flow_Filter_XOutput_Total) * 0.2;
+						SF._Tmp_Flow_Filter_YOutput_Total += (SF._Tmp_Flow_YOuput_Total - SF._Tmp_Flow_Filter_YOutput_Total) * 0.2;
+
+						SF._Tmp_Flow_XOutput_Total_Diff = (float)(SF._Tmp_Flow_Filter_XOutput_Total - SF._Tmp_Flow_XOutput_Total_Last_Data) / 12.f;
+						SF._Tmp_Flow_YOutput_Total_Diff = (float)(SF._Tmp_Flow_Filter_YOutput_Total - SF._Tmp_Flow_YOutput_Total_Last_Data) / 12.f;
+
+						SF._Tmp_Flow_XOutput_Total_Smooth = SF._Tmp_Flow_XOutput_Total_Last_Data;
+						SF._Tmp_Flow_YOutput_Total_Smooth = SF._Tmp_Flow_YOutput_Total_Last_Data;
+
+						SF._Tmp_Flow_XOutput_Total_Last_Data = SF._Tmp_Flow_Filter_XOutput_Total;
+						SF._Tmp_Flow_YOutput_Total_Last_Data = SF._Tmp_Flow_Filter_YOutput_Total;
+
+						SF._Tmp_Flow_XOutput_Total_Smooth_Diff = 0;
+						SF._Tmp_Flow_YOutput_Total_Smooth_Diff = 0;
+						TF._Tmp_FlowThreadSMooth = 0;
+					}
+
+					if (TF._Tmp_FlowThreadSMooth >= 12)
+					{
 						TF._flag_FlowErrorTimes++;
+						SF._Tmp_Flow_XOutput_Total_Diff = 0;
+						SF._Tmp_Flow_YOutput_Total_Diff = 0;
+						SF._Tmp_Flow_XOutput_Total_Smooth_Diff = 0;
+						SF._Tmp_Flow_YOutput_Total_Smooth_Diff = 0;
+						SF._Tmp_Flow_XOutput_Total_Last_Data = SF._Tmp_Flow_XOutput_Total_Smooth;
+						SF._Tmp_Flow_YOutput_Total_Last_Data = SF._Tmp_Flow_YOutput_Total_Smooth;
+					}
+
+					if (SF._Tmp_Flow_XOutput_Total_Last_Data == 0 && SF._Tmp_Flow_YOutput_Total_Last_Data == 0)
+					{
+						SF._Tmp_Flow_XOutput_Total_Last_Data = SF._Tmp_Flow_Filter_XOutput_Total;
+						SF._Tmp_Flow_YOutput_Total_Last_Data = SF._Tmp_Flow_Filter_YOutput_Total;
+					}
+					//
+					SF._Tmp_Flow_XOutput_Total_Smooth_Diff += SF._Tmp_Flow_XOutput_Total_Diff;
+					if (abs(SF._Tmp_Flow_XOutput_Total_Smooth_Diff) > 1)
+					{
+						SF._Tmp_Flow_XOutput_Total_Smooth += (int)SF._Tmp_Flow_XOutput_Total_Smooth_Diff;
+						SF._Tmp_Flow_XOutput_Total_Smooth_Diff -= (int)SF._Tmp_Flow_XOutput_Total_Smooth_Diff;
+					}
+					SF._Tmp_Flow_YOutput_Total_Smooth_Diff += SF._Tmp_Flow_YOutput_Total_Diff;
+					if (abs(SF._Tmp_Flow_YOutput_Total_Smooth_Diff) > 1)
+					{
+						SF._Tmp_Flow_YOutput_Total_Smooth += (int)SF._Tmp_Flow_YOutput_Total_Smooth_Diff;
+						SF._Tmp_Flow_YOutput_Total_Smooth_Diff -= (int)SF._Tmp_Flow_YOutput_Total_Smooth_Diff;
+					}
+					SF._uORB_Flow_Fix_XOutput += (300.f * tan((SF._uORB_Real__Roll) * 3.14 / 180.f) - SF._uORB_Flow_Fix_XOutput) * 0.2;
+					SF._uORB_Flow_Fix_YOutput += (300.f * tan((SF._uORB_Real_Pitch) * 3.14 / 180.f) - SF._uORB_Flow_Fix_YOutput) * 0.2;
+					SF._uORB_Flow_XOutput_Total_Smooth = SF._Tmp_Flow_XOutput_Total_Smooth + SF._uORB_Flow_Fix_XOutput;
+					SF._uORB_Flow_YOutput_Total_Smooth = SF._Tmp_Flow_YOutput_Total_Smooth - SF._uORB_Flow_Fix_YOutput;
+					//
+					AF._flag_IsFloHoldSet = true;
+					if (!AF._flag_IsFloHoldSet)
+					{
+						SF._uORB_Flow_XOutput_Total_Smooth = 0;
+						SF._uORB_Flow_YOutput_Total_Smooth = 0;
+					}
 				}
 				TF._Tmp_FlowThreadTimeEnd = micros();
 				TF._Tmp_FlowThreadTimeLoop = TF._Tmp_FlowThreadTimeEnd - TF._Tmp_FlowThreadTimeStart;
@@ -1529,9 +1593,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout
 		<< "FlowParseDataINFO:"
 		<< "\n";
-	std::cout << " FlowXOut:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow__XOutput;
-	std::cout << " ||FlowYOut:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow__YOutput;
+	std::cout << " FlowXOut:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow_XOutput_Total_Smooth;
+	std::cout << " ||FlowYOut:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow_YOutput_Total_Smooth;
 	std::cout << " ||FlowAltitude:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow_Altitude_Final << "            \n";
+	std::cout << " FlowXFix:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow_Fix_XOutput;
+	std::cout << " ||FlowYFix:" << std::setw(7) << std::setfill(' ') << SF._uORB_Flow_Fix_YOutput << "            \n";
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";

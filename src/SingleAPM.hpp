@@ -195,6 +195,7 @@ namespace SingleAPMAPI
 
 			bool _flag_IsAltHoldSet;
 			bool _flag_IsGPSHoldSet;
+			bool _flag_IsFloHoldSet;
 		} AF;
 
 		struct DeviceINFO
@@ -397,10 +398,32 @@ namespace SingleAPMAPI
 			int _uORB_GPS_Lng_Smooth = 0;
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
-			int _uORB_Flow__XOutput = 0;
-			int _uORB_Flow__YOutput = 0;
+			int _Tmp_Flow_XOuput_Total = 0;
+			int _Tmp_Flow_YOuput_Total = 0;
+			int _Tmp_Flow_Filter_XOutput_Total = 0;
+			int _Tmp_Flow_Filter_YOutput_Total = 0;
+			int _Tmp_Flow_Altitude_Final = 0;
+
+			float _Tmp_Flow_XOutput_Total_Diff = 0;
+			float _Tmp_Flow_YOutput_Total_Diff = 0;
+			int _Tmp_Flow_XOutput_Total_Smooth_Diff = 0;
+			int _Tmp_Flow_YOutput_Total_Smooth_Diff = 0;
+			int _Tmp_Flow_XOutput_Total_Last_Data = 0;
+			int _Tmp_Flow_YOutput_Total_Last_Data = 0;
+
+			int _uORB_Flow_XOutput = 0;
+			int _uORB_Flow_YOutput = 0;
 			int _uORB_Flow_Altitude = 0;
 			int _uORB_Flow_Altitude_Final = 0;
+
+			int _uORB_Flow_Fix_XOutput = 0;
+			int _uORB_Flow_Fix_YOutput = 0;
+
+			int _Tmp_Flow_XOutput_Total_Smooth = 0;
+			int _Tmp_Flow_YOutput_Total_Smooth = 0;
+			int _uORB_Flow_XOutput_Total_Smooth = 0;
+			int _uORB_Flow_YOutput_Total_Smooth = 0;
+
 		} SF;
 
 		struct PIDINFO
@@ -590,7 +613,7 @@ namespace SingleAPMAPI
 			int _Tmp_FlowThreadTimeNext = 0;
 			int _Tmp_FlowThreadTimeLoop = 0;
 			int _Tmp_FlowThreadError = 0;
-			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000;
+			int _flag_FlowThreadTimeMax = (float)1 / 100 * 1000000;
 			int _flag_FlowErrorTimes = 0;
 			std::thread *FlowTask;
 		} TF;
