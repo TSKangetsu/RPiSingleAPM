@@ -192,10 +192,13 @@ namespace SingleAPMAPI
 
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
+			bool _flag_FlowData_Async;
 
 			bool _flag_IsAltHoldSet;
 			bool _flag_IsGPSHoldSet;
-			bool _flag_IsFloHoldSet;
+			bool _flag_IsFlowHoldSet;
+
+			bool _flag_IsFlowAvalible;
 		} AF;
 
 		struct DeviceINFO
@@ -501,6 +504,7 @@ namespace SingleAPMAPI
 			float _flag_PID_P_GPS_Gain;
 			float _flag_PID_D_GPS_Gain;
 			float _flag_PID_GPS_Level_Max;
+			//==========//
 		} PF;
 
 		struct RCINFO

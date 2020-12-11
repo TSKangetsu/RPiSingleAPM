@@ -546,23 +546,43 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			{
 				if (!AF._flag_ESC_ARMED && (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold))
 				{
-					AF._flag_IsAltHoldSet = true;
+					if (!AF._flag_IsFlowAvalible || !DF._IsFlowEnable)
+					{
+						AF._flag_IsAltHoldSet = true;
+					}
+					else
+					{
+						AF._flag_IsAltHoldSet = false;
+					}
 					if (AF.AutoPilotMode == APModeINFO::PositionHold)
 					{
 						if (RF._uORB_RC_Out__Roll == 0 && RF._uORB_RC_Out_Pitch == 0)
 						{
-							if (!AF._flag_GPS_Error)
+							if (!AF._flag_GPS_Error || !AF._flag_IsFlowAvalible)
 							{
 								AF._flag_IsGPSHoldSet = true;
+								AF._flag_IsFlowHoldSet = false;
+							}
+							else if (AF._flag_IsFlowAvalible && DF._IsFlowEnable)
+							{
+								AF._flag_IsFlowHoldSet = true;
+								AF._flag_IsGPSHoldSet = false;
 							}
 							else
 							{
+								AF._flag_IsFlowHoldSet = false;
 								AF._flag_IsGPSHoldSet = false;
 							}
 						}
 						else
 						{
+							AF._flag_IsFlowHoldSet = false;
 							AF._flag_IsGPSHoldSet = false;
+						}
+
+						if (!AF._flag_IsFlowAvalible)
+						{
+							AF._flag_IsFlowHoldSet = false;
 						}
 					}
 				}
@@ -822,7 +842,6 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						SF._Tmp_Flow_YOutput_Total_Smooth_Diff = 0;
 						TF._Tmp_FlowThreadSMooth = 0;
 					}
-
 					if (TF._Tmp_FlowThreadSMooth >= 12)
 					{
 						TF._flag_FlowErrorTimes++;
@@ -856,13 +875,17 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._uORB_Flow_Fix_YOutput += (300.f * tan((SF._uORB_Real_Pitch) * 3.14 / 180.f) - SF._uORB_Flow_Fix_YOutput) * 0.2;
 					SF._uORB_Flow_XOutput_Total_Smooth = SF._Tmp_Flow_XOutput_Total_Smooth + SF._uORB_Flow_Fix_XOutput;
 					SF._uORB_Flow_YOutput_Total_Smooth = SF._Tmp_Flow_YOutput_Total_Smooth - SF._uORB_Flow_Fix_YOutput;
-					//
-					AF._flag_IsFloHoldSet = true;
-					if (!AF._flag_IsFloHoldSet)
+
+					if (20.f < SF._uORB_Flow_Altitude_Final && SF._uORB_Flow_Altitude_Final < 1800.f)
 					{
-						SF._uORB_Flow_XOutput_Total_Smooth = 0;
-						SF._uORB_Flow_YOutput_Total_Smooth = 0;
+						AF._flag_IsFlowAvalible = true;
 					}
+					else
+					{
+						AF._flag_IsFlowAvalible = false;
+					}
+
+					AF._flag_FlowData_Async = true;
 				}
 				TF._Tmp_FlowThreadTimeEnd = micros();
 				TF._Tmp_FlowThreadTimeLoop = TF._Tmp_FlowThreadTimeEnd - TF._Tmp_FlowThreadTimeStart;
@@ -887,6 +910,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		CPU_ZERO(&cpuset3);
 		CPU_SET(3, &cpuset3);
 		int rc3 = pthread_setaffinity_np(TF.FlowTask->native_handle(), sizeof(cpu_set_t), &cpuset3);
+	}
+	else
+	{
+		AF._flag_IsFlowHoldSet = false;
+		AF._flag_IsFlowAvalible = false;
 	}
 }
 
@@ -1439,6 +1467,29 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			}
 		}
 
+		{
+			if (AF._flag_FlowData_Async)
+			{
+				if (!AF._flag_IsFlowHoldSet)
+				{
+					SF._Tmp_Flow_XOuput_Total = 0;
+					SF._Tmp_Flow_YOuput_Total = 0;
+					SF._Tmp_Flow_Filter_YOutput_Total = 0;
+					SF._Tmp_Flow_Filter_YOutput_Total = 0;
+					SF._Tmp_Flow_XOutput_Total_Smooth = 0;
+					SF._Tmp_Flow_YOutput_Total_Smooth = 0;
+				}
+
+				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowHoldSet)
+				{
+				}
+				else
+				{
+				}
+				AF._flag_FlowData_Async = false;
+			}
+		}
+
 		//Roll PID Mix
 		PF._uORB_PID__Roll_Input = SF._uORB_Gryo__Roll + SF._uORB_Real__Roll * 15 -
 								   RF._uORB_RC_Out__Roll - PF._uORB_PID_GPS__Roll_Ouput;
@@ -1583,11 +1634,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout
 		<< "MS5611ParseDataINFO:"
 		<< "\n";
-	std::cout << " FastPressure :      " << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_MS5611_PressureFast;
-	std::cout << " ||FilterPressureFast :" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MS5611_PressureFinal;
-	std::cout << " ||AltHoldTarget:      " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltHold_Target << "            \n";
-	std::cout << " AltholdThrottle:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Alt_Throttle;
-	std::cout << " ||Althold_I_Ouput:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_I_Last_Value_Alt;
+	std::cout << " FastPressure :      " << std::setw(7) << std::setfill(' ') << SF._Tmp_MS5611_PressureFast;
+	std::cout << " ||FilterPressureFast :" << std::setw(7) << std::setfill(' ') << SF._uORB_MS5611_PressureFinal;
+	std::cout << " ||AltHoldTarget:      " << std::setw(7) << std::setfill(' ') << PF._uORB_PID_AltHold_Target << "            \n";
+	std::cout << " AltholdThrottle:    " << std::setw(7) << std::setfill(' ') << PF._uORB_PID_Alt_Throttle;
+	std::cout << " ||Althold_I_Ouput:    " << std::setw(7) << std::setfill(' ') << PF._uORB_PID_I_Last_Value_Alt;
 	std::cout << " ||AltholdAsixOuput:   " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_TAsix_Ouput << "            \n";
 
 	std::cout
@@ -1638,6 +1689,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_GPS_Disconnected:" << AF._flag_GPS_Disconnected << "         \n";
 	std::cout << " Flag_IsAltHoldSet:" << AF._flag_IsAltHoldSet << "         \n";
 	std::cout << " Flag_IsGPSHoldSet:" << AF._flag_IsGPSHoldSet << "         \n";
+	std::cout << " Flag_IsFlowHoldSet:" << AF._flag_IsFlowHoldSet << "           \n";
+	std::cout << " Flag_IsFlowAvalible:" << AF._flag_IsFlowAvalible << "           \n";
 	std::cout << " GPS_Lose_Clocking:" << AF.GPS_Lose_Clocking << "         \n";
 	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
 
