@@ -355,18 +355,18 @@ namespace SingleAPMAPI
 			//=========================MS5611======//
 			int _Tmp_MS5611_AvaClock = 0;
 
-			float _Tmp_MS5611_Pressure = 0;
-			float _Tmp_MS5611_PressureFast = 0;
-			float _Tmp_MS5611_PressureFill = 0;
-			float _Tmp_MS5611_PressureDiff = 0;
+			double _Tmp_MS5611_Pressure = 0;
+			double _Tmp_MS5611_PressureFast = 0;
+			double _Tmp_MS5611_PressureFill = 0;
+			double _Tmp_MS5611_PressureDiff = 0;
 
 			double _Tmp_MS5611_Data[2];
 			double _Tmp_MS5611_AvaTotal = 0;
 			double _Tmp_MS5611_AvaData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-			float _uORB_MS5611_AltMeter = 0;
-			float _uORB_MS5611_PressureFinal = 0;
-			float _flag_MS5611_FilterAlpha = 0.985;
+			double _uORB_MS5611_AltMeter = 0;
+			double _uORB_MS5611_PressureFinal = 0;
+			double _flag_MS5611_FilterAlpha = 0.985;
 			//=========================GPS=========//
 			float _Tmp_QMC5883L_M_XH = 0;
 			float _Tmp_QMC5883L_M_YH = 0;

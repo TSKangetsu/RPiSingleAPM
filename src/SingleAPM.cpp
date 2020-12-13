@@ -135,14 +135,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			for (size_t i = 0; i < 40; i++)
 			{
 				MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
-				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.f;
+				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.0;
 				SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
 				SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock] = SF._Tmp_MS5611_Pressure;
 				SF._Tmp_MS5611_AvaTotal += SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
 				SF._Tmp_MS5611_AvaClock++;
 				if (SF._Tmp_MS5611_AvaClock == 20)
 					SF._Tmp_MS5611_AvaClock = 0;
-				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.f;
+				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.0;
 				SF._Tmp_MS5611_PressureFill = SF._Tmp_MS5611_PressureFast;
 			}
 			MS5611S->LocalPressureSetter(SF._Tmp_MS5611_PressureFill, 5);
@@ -1634,11 +1634,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout
 		<< "MS5611ParseDataINFO:"
 		<< "\n";
-	std::cout << " FastPressure :      " << std::setw(7) << std::setfill(' ') << SF._Tmp_MS5611_PressureFast;
-	std::cout << " ||FilterPressureFast :" << std::setw(7) << std::setfill(' ') << SF._uORB_MS5611_PressureFinal;
-	std::cout << " ||AltHoldTarget:      " << std::setw(7) << std::setfill(' ') << PF._uORB_PID_AltHold_Target << "            \n";
-	std::cout << " AltholdThrottle:    " << std::setw(7) << std::setfill(' ') << PF._uORB_PID_Alt_Throttle;
-	std::cout << " ||Althold_I_Ouput:    " << std::setw(7) << std::setfill(' ') << PF._uORB_PID_I_Last_Value_Alt;
+	std::cout << " FastPressure :      " << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_MS5611_PressureFast;
+	std::cout << " ||FilterPressureFast :" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MS5611_PressureFinal;
+	std::cout << " ||AltHoldTarget:      " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltHold_Target << "            \n";
+	std::cout << " AltholdThrottle:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Alt_Throttle;
+	std::cout << " ||Althold_I_Ouput:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_I_Last_Value_Alt;
 	std::cout << " ||AltholdAsixOuput:   " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_TAsix_Ouput << "            \n";
 
 	std::cout
