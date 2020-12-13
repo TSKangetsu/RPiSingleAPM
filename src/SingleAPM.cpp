@@ -354,22 +354,22 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
 				MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
-				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.f;
+				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.0;
 				SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
 				SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock] = SF._Tmp_MS5611_Pressure;
 				SF._Tmp_MS5611_AvaTotal += SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
 				SF._Tmp_MS5611_AvaClock++;
 				if (SF._Tmp_MS5611_AvaClock == 20)
 					SF._Tmp_MS5611_AvaClock = 0;
-				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.f;
-				SF._Tmp_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * SF._Tmp_MS5611_PressureFill + (1.f - SF._flag_MS5611_FilterAlpha) * SF._Tmp_MS5611_PressureFast;
+				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.0;
+				SF._Tmp_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * SF._Tmp_MS5611_PressureFill + (1.0 - SF._flag_MS5611_FilterAlpha) * SF._Tmp_MS5611_PressureFast;
 				SF._Tmp_MS5611_PressureDiff = SF._Tmp_MS5611_PressureFill - SF._Tmp_MS5611_PressureFast;
 				if (SF._Tmp_MS5611_PressureDiff > 8)
 					SF._Tmp_MS5611_PressureDiff = 8;
 				if (SF._Tmp_MS5611_PressureDiff < -8)
 					SF._Tmp_MS5611_PressureDiff = -8;
 				if (SF._Tmp_MS5611_PressureDiff > 1 || SF._Tmp_MS5611_PressureDiff < -1)
-					SF._Tmp_MS5611_PressureFill -= SF._Tmp_MS5611_PressureDiff / 6.f;
+					SF._Tmp_MS5611_PressureFill -= SF._Tmp_MS5611_PressureDiff / 6.0;
 				SF._uORB_MS5611_PressureFinal = SF._Tmp_MS5611_PressureFill;
 				AF._flag_MS5611_Async = true;
 
