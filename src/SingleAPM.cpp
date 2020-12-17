@@ -353,7 +353,9 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				TF._Tmp_ALTThreadTimeStart = micros();
 				TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-				MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
+				SF._Tmp_MS5611_Error = MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
+				if (SF._Tmp_MS5611_Error < 0)
+					TF._flag_ALTErrorTimes++;
 				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.0;
 				SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
 				SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock] = SF._Tmp_MS5611_Pressure;

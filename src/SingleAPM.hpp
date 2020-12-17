@@ -353,6 +353,7 @@ namespace SingleAPMAPI
 
 			float _flag_Filter2x50_Gain = 4.979245121e+01;
 			//=========================MS5611======//
+			int _Tmp_MS5611_Error = 0;
 			int _Tmp_MS5611_AvaClock = 0;
 
 			double _Tmp_MS5611_Pressure = 0;
