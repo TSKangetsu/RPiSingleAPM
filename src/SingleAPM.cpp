@@ -11,7 +11,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	AF.AutoPilotMode = APModeINFO::AutoStable;
 	ConfigReader(APMInit);
 	//--------------------------------------------------------------------//
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 	std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
 	if (DF.PCA9658_fd == -1)
@@ -20,7 +20,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		pca9685PWMReset(DF.PCA9658_fd);
 	if (DF.PCA9658_fd == -1)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]ESCControllerInitFailed \n";
 #endif
 		return -1;
@@ -28,7 +28,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	//--------------------------------------------------------------------//
 	if (SF.MPU9250_Type == MPUIsI2c)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPUI2CIniting \n";
 #endif
 		DF.MPU9250_fd = wiringPiI2CSetup(DF.MPU9250_ADDR);
@@ -39,7 +39,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	else if (SF.MPU9250_Type == MPUIsSpi)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPUSPIIniting \n";
 #endif
 		DF.MPU9250_fd = wiringPiSPISetup(DF.MPU9250_SPI_Channel, DF.MPU9250_SPI_Freq);
@@ -56,7 +56,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._Tmp_MPU9250_SPI_Config[1] = 0x03;
 		wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, SF._Tmp_MPU9250_SPI_Config, 2); //config
 // MPU9250-AK8963 Slave settle
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Waiting for Compass Config ... ";
 		std::cout.flush();
 #endif
@@ -83,13 +83,13 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				wiringPiSPIDataRW(DF.MPU9250_SPI_Channel, CompassConfigFinal[Index], 2);
 			}
 		}
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "Done!\n";
 #endif
 	}
 	if (DF.MPU9250_fd == -1)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU9250DeviceError \n";
 #endif
 		return -2;
@@ -103,14 +103,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	//--------------------------------------------------------------------//
 	if (RF.RC_Type == RCIsIbus)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Controller Ibus config comfirm\n";
 #endif
 		IbusInit = new Ibus(DF.RCDevice.c_str());
 	}
 	else if (RF.RC_Type == RCIsSbus)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Controller Sbus config comfirm\n";
 #endif
 		SbusInit = new Sbus(DF.RCDevice.c_str());
@@ -118,14 +118,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	//--------------------------------------------------------------------//
 	if (DF._IsMS5611Enable)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Checking MS5611 ... ";
 		std::cout.flush();
 #endif
 		MS5611S = new MS5611();
 		if (!MS5611S->MS5611Init())
 		{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 			std::cout << "[RPiSingleAPM]MS5611InitError \n";
 #endif
 		}
@@ -146,7 +146,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				SF._Tmp_MS5611_PressureFill = SF._Tmp_MS5611_PressureFast;
 			}
 			MS5611S->LocalPressureSetter(SF._Tmp_MS5611_PressureFill, 5);
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 			std::cout << "Done! LocalPressure Is: " << SF._Tmp_MS5611_PressureFill << "\n";
 #endif
 		}
@@ -155,31 +155,31 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	if (DF._IsGPSEnable)
 	{
 
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Waiting for GPS Data ... ";
 		std::cout.flush();
 #endif
 		GPSInit = new GPSUart(DF.GPSDevice.c_str());
 		GPSMAGInit = new GPSI2CCompass_QMC5883L();
 		GPSMAGInit->GPSI2CCompass_QMC5883LInit();
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "Done \n";
 #endif
 	}
 	//--------------------------------------------------------------------//
 	if (DF._IsFlowEnable)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Setting UP FlowSensor... ";
 		std::cout.flush();
 #endif
 		FlowInit = new MSPUartFlow(DF.FlowDevice.c_str());
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 		std::cout << "Done \n";
 #endif
 	}
 //GryoCali()-----------------------------------------------------------//
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 	std::cout << "[RPiSingleAPM]Calibrating Gryo , Dont Move!! ...";
 	std::cout.flush();
 #endif
@@ -199,10 +199,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		SF._flag_MPU9250_G_Y_Cali = SF._flag_MPU9250_G_Y_Cali / 2000;
 		SF._flag_MPU9250_G_Z_Cali = SF._flag_MPU9250_G_Z_Cali / 2000;
 	}
-#ifdef DEBUG
+#ifdef RPiDEBUGStart
 	std::cout << "Done \n";
 	sleep(1);
-	system("clear");
 #endif
 	return 0;
 }
@@ -976,7 +975,7 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 {
 	while (true)
 	{
-#ifdef DEBUG
+#ifdef RPiDEBUG
 		DebugOutPut();
 		DEBUGOuputCleaner++;
 		if (DEBUGOuputCleaner > 60)

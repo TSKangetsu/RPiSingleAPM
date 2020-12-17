@@ -3,12 +3,14 @@
 #include <wiringPiI2C.h>
 #include <wiringPiSPI.h>
 #include <math.h>
+#include <queue>
 #include <thread>
 #include <string>
 #include <unistd.h>
 #include <iomanip>
 #include <math.h>
 #include <thread>
+#include <iostream>
 #include <linux/i2c-dev.h>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/Kalman.h"
@@ -17,6 +19,7 @@
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
+
 #define MPUIsI2c 0
 #define MPUIsSpi 1
 #define RCIsIbus 0
@@ -26,11 +29,8 @@
 #define GryoFilterType_Butterworth 2
 #define MixFilterType_traditional 0
 #define MixFilterType_Kalman 1
+
 #define USERDEBUGINPUTSIZE 5
-#ifdef DEBUG
-#include <queue>
-#include <iostream>
-#endif
 
 namespace SingleAPMAPI
 {
@@ -121,8 +121,6 @@ namespace SingleAPMAPI
 	class RPiSingleAPM
 	{
 	public:
-		std::queue<std::string> DEBUGBuffer;
-
 		int RPiSingleAPMInit(APMSettinngs APMInit);
 
 		void IMUSensorsTaskReg();
@@ -143,6 +141,7 @@ namespace SingleAPMAPI
 
 	protected:
 		int DEBUGOuputCleaner = 0;
+		std::queue<std::string> DEBUGBuffer;
 
 		Sbus *SbusInit;
 		Ibus *IbusInit;
