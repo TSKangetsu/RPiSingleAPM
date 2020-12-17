@@ -6,7 +6,6 @@
 #include <thread>
 #include <string>
 #include <unistd.h>
-#include <iostream>
 #include <iomanip>
 #include <math.h>
 #include <thread>
@@ -27,6 +26,11 @@
 #define GryoFilterType_Butterworth 2
 #define MixFilterType_traditional 0
 #define MixFilterType_Kalman 1
+#define USERDEBUGINPUTSIZE 5
+#ifdef DEBUG
+#include <queue>
+#include <iostream>
+#endif
 
 namespace SingleAPMAPI
 {
@@ -117,6 +121,8 @@ namespace SingleAPMAPI
 	class RPiSingleAPM
 	{
 	public:
+		std::queue<std::string> DEBUGBuffer;
+
 		int RPiSingleAPMInit(APMSettinngs APMInit);
 
 		void IMUSensorsTaskReg();
@@ -133,10 +139,11 @@ namespace SingleAPMAPI
 
 		void APMCalibrator(int Type, double *data);
 
+		void DebugScreenPush(std::string PushMessage);
+
 	protected:
-#ifdef DEBUG
 		int DEBUGOuputCleaner = 0;
-#endif
+
 		Sbus *SbusInit;
 		Ibus *IbusInit;
 		Kalman *Kal_Pitch;

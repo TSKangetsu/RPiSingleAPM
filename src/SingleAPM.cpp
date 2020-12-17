@@ -1668,13 +1668,13 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << "RCOutPUTINFO:   "
 			  << "\n";
 	std::cout << " ChannelRoll  "
-			  << ": " << RF._uORB_RC_Out__Roll << std::setw(10) << std::setfill(' ') << "\n";
+			  << ": " << RF._uORB_RC_Out__Roll << std::setw(5) << std::setfill(' ') << " ||";
 	std::cout << " ChannelPitch "
-			  << ": " << RF._uORB_RC_Out_Pitch << std::setw(10) << std::setfill(' ') << "\n";
+			  << ": " << RF._uORB_RC_Out_Pitch << std::setw(5) << std::setfill(' ') << " ||";
 	std::cout << " ChannelThrot "
-			  << ": " << RF._uORB_RC_Out_Throttle << std::setw(10) << std::setfill(' ') << "\n";
+			  << ": " << RF._uORB_RC_Out_Throttle << std::setw(5) << std::setfill(' ') << " ||";
 	std::cout << " ChannelYaw   "
-			  << ": " << RF._uORB_RC_Out___Yaw << std::setw(10) << std::setfill(' ') << " \n";
+			  << ": " << RF._uORB_RC_Out___Yaw << std::setw(5) << std::setfill(' ') << " \n";
 
 	std::cout << "ChannelINFO: "
 			  << " \n";
@@ -1682,19 +1682,19 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	{
 		std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
 	}
-	std::cout << " \n";
-	std::cout << " Flag_ESC_ARMED:" << AF._flag_ESC_ARMED << "               \n";
-	std::cout << " Flag_Error:" << AF._flag_Error << "           \n";
-	std::cout << " Flag_GPS_Error:" << AF._flag_GPS_Error << "           \n";
-	std::cout << " Flag_ClockingTime_Error:" << AF._flag_ClockingTime_Error << "         \n";
-	std::cout << " Flag_RC_Disconnected:" << AF._flag_RC_Disconnected << "         \n";
-	std::cout << " Flag_GPS_Disconnected:" << AF._flag_GPS_Disconnected << "         \n";
-	std::cout << " Flag_IsAltHoldSet:" << AF._flag_IsAltHoldSet << "         \n";
-	std::cout << " Flag_IsGPSHoldSet:" << AF._flag_IsGPSHoldSet << "         \n";
-	std::cout << " Flag_IsFlowHoldSet:" << AF._flag_IsFlowHoldSet << "           \n";
-	std::cout << " Flag_IsFlowAvalible:" << AF._flag_IsFlowAvalible << "           \n";
-	std::cout << " GPS_Lose_Clocking:" << AF.GPS_Lose_Clocking << "         \n";
-	std::cout << " RC_Lose_Clocking:" << AF.RC_Lose_Clocking << "                        \n\n";
+	std::cout << " \n\n";
+	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
+	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";
+	std::cout << " Flag_GPS_Error:         " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Error << "           \n";
+	std::cout << " Flag_ClockingTime_Error:" << std::setw(3) << std::setfill(' ') << AF._flag_ClockingTime_Error << " |";
+	std::cout << " Flag_RC_Disconnected:   " << std::setw(3) << std::setfill(' ') << AF._flag_RC_Disconnected << " |";
+	std::cout << " Flag_GPS_Disconnected:  " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Disconnected << "         \n";
+	std::cout << " Flag_IsAltHoldSet:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsAltHoldSet << " |";
+	std::cout << " Flag_IsGPSHoldSet:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsGPSHoldSet << " |";
+	std::cout << " Flag_IsFlowHoldSet:     " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowHoldSet << "           \n";
+	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";
+	std::cout << " GPS_Lose_Clocking:      " << std::setw(3) << std::setfill(' ') << AF.GPS_Lose_Clocking << " |";
+	std::cout << " RC_Lose_Clocking:       " << std::setw(3) << std::setfill(' ') << AF.RC_Lose_Clocking << "                        \n\n";
 
 	std::cout << " IMULoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeLoop;
 	std::cout << " IMUNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeNext;
@@ -1725,4 +1725,18 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " FloErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_FlowErrorTimes;
 	std::cout << " FloMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadError << "    \n"
 			  << std::endl;
+	std::cout << "<===============================UserDefineMessager====================================>\n";
+	std::queue<std::string> TmpBuffer = DEBUGBuffer;
+	for (int i = 0; i < DEBUGBuffer.size(); i++)
+	{
+		std::cout << TmpBuffer.front();
+		TmpBuffer.pop();
+	}
+}
+
+void SingleAPMAPI::RPiSingleAPM::DebugScreenPush(std::string PushMessage)
+{
+	if (DEBUGBuffer.size() == USERDEBUGINPUTSIZE)
+		DEBUGBuffer.pop();
+	DEBUGBuffer.push(PushMessage);
 }
