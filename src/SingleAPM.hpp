@@ -13,7 +13,6 @@
 #include <iostream>
 #include <linux/i2c-dev.h>
 #include "_thirdparty/pca9685.h"
-#include "_thirdparty/Kalman.h"
 #include "_thirdparty/RPiMS5611LIB/src/MS5611LIB.h"
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
@@ -29,6 +28,18 @@
 #define GryoFilterType_Butterworth 2
 #define MixFilterType_traditional 0
 #define MixFilterType_Kalman 1
+
+#define ESCCalibration 10
+#define CaliESCStart 0
+#define CaliESCUserDefine 2
+#define ACCELCalibration 11
+#define CaliACCELHeadNormal 0
+#define CaliACCELHeadUpsideDown 1
+#define CaliACCELHeadUp 2
+#define CaliACCELHeadDown 3
+#define CaliACCELHeadright 4
+#define CaliACCELHeadLeft 5
+#define COMPASSCalibration 12;
 
 #define USERDEBUGINPUTSIZE 5
 
@@ -135,7 +146,7 @@ namespace SingleAPMAPI
 
 		void TaskThreadBlock();
 
-		void APMCalibrator(int Type, double *data);
+		int APMCalibrator(int controller, int action, int input, double *data);
 
 		void DebugScreenPush(std::string PushMessage);
 
@@ -145,8 +156,6 @@ namespace SingleAPMAPI
 
 		Sbus *SbusInit;
 		Ibus *IbusInit;
-		Kalman *Kal_Pitch;
-		Kalman *Kal__Roll;
 		MS5611 *MS5611S;
 		GPSUart *GPSInit;
 		MSPUartFlow *FlowInit;
@@ -168,9 +177,9 @@ namespace SingleAPMAPI
 
 		void IMUSensorsDataRead();
 
-		void IMUGryoFilter(long next_input_value, long &next_output_value, long *xv, long *yv, int filtertype);
+		void IMUGryoFilter(long next_input_value, long &next_output_value, int filtertype);
 
-		void IMUMixFilter(Kalman *kal, float next_input_value_Gryo, float next_input_value_Accel, float next_input_value_speed, float &next_output_value, int filtertype);
+		void IMUMixFilter(float next_input_value_Gryo, float next_input_value_Accel, float &next_output_value, int filtertype);
 
 		void AttitudeUpdateTask();
 
@@ -291,11 +300,14 @@ namespace SingleAPMAPI
 
 			float _uORB_Accel__Roll = 0;
 			float _uORB_Accel_Pitch = 0;
+			float _uORB_Accel_VSpeed = 0;
 			float _uORB_Gryo__Roll = 0;
 			float _uORB_Gryo_Pitch = 0;
 			float _uORB_Gryo___Yaw = 0;
 			float _uORB_Real__Roll = 0;
 			float _uORB_Real_Pitch = 0;
+			float _uORB_MPU9250___Yaw = 0;
+			float _uORB_MPU9250__Head = 0;
 
 			float _Tmp_Real_Pitch = 0;
 			float _Tmp_Real__Roll = 0;
@@ -311,9 +323,6 @@ namespace SingleAPMAPI
 			unsigned long _Tmp_MPU9250_M_X = 0;
 			unsigned long _Tmp_MPU9250_M_Y = 0;
 			unsigned long _Tmp_MPU9250_M_Z = 0;
-
-			float _uORB_MPU9250___Yaw = 0;
-			float _uORB_MPU9250__Head = 0;
 			float _Tmp_MPU9250___MAG = 0;
 			float _Tmp_MPU9250__Head = 0;
 			float _Tmp_MPU9250_M_XH = 0;
@@ -341,23 +350,6 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_Head_Asix;
 
 			long _Tmp_IMU_Accel_Vector;
-			long _Tmp_IMU_Accel_Calibration[20];
-
-			long _Tmp_Gryo_filer_Input_Quene_X[3] = {0, 0, 0};
-			long _Tmp_Gryo_filer_Output_Quene_X[3] = {0, 0, 0};
-			long _Tmp_Gryo_filer_Input_Quene_Y[3] = {0, 0, 0};
-			long _Tmp_Gryo_filer_Output_Quene_Y[3] = {0, 0, 0};
-			long _Tmp_Gryo_filer_Input_Quene_Z[3] = {0, 0, 0};
-			long _Tmp_Gryo_filer_Output_Quene_Z[3] = {0, 0, 0};
-
-			long _Tmp_Acce_filer_Input_Quene_X[5] = {0, 0, 0, 0, 0};
-			long _Tmp_Acce_filer_Output_Quene_X[5] = {0, 0, 0, 0, 0};
-			long _Tmp_Acce_filer_Input_Quene_Y[5] = {0, 0, 0, 0, 0};
-			long _Tmp_Acce_filer_Output_Quene_Y[5] = {0, 0, 0, 0, 0};
-			long _Tmp_Acce_filer_Input_Quene_Z[5] = {0, 0, 0, 0, 0};
-			long _Tmp_Acce_filer_Output_Quene_Z[5] = {0, 0, 0, 0, 0};
-
-			float _flag_Filter2x50_Gain = 4.979245121e+01;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
 			int _Tmp_MS5611_AvaClock = 0;
