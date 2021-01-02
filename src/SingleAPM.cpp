@@ -979,19 +979,6 @@ void SingleAPMAPI::RPiSingleAPM::PIDSoomth_Caculate(float TargetData, float inpu
 	outputData = StartPIDFlag ? outputData : 0;
 }
 
-void SingleAPMAPI::RPiSingleAPM::PIDINC_Caculate(float TargetData, float inputData, float &outputData,
-												 float &LastError, float &PrevError,
-												 float P_Gain, float I_Gain, float D_Gain, float outputMax)
-{
-	int32_t iError;
-	iError = TargetData - inputData;
-	outputData = (P_Gain * iError) - (I_Gain * LastError) + (D_Gain * PrevError);
-	PrevError = LastError;
-	LastError = iError;
-	outputData = outputData > outputMax ? outputMax : outputData;
-	outputData = outputData < -outputMax ? -outputMax : outputData;
-}
-
 void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 {
 	//==========================================================Device Type=======/

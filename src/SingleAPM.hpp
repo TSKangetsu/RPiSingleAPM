@@ -164,10 +164,6 @@ namespace SingleAPMAPI
 								float &Last_I_Data, float &Total_D_Data, float &Last_D_Data, float (&Ava_D_Data)[30],
 								float P_Gain, float I_Gain, float D_Gain, float outputMax, bool StartPIDFlag);
 
-		void PIDINC_Caculate(float TargetData, float inputData, float &outputData,
-							 float &LastError, float &PrevError,
-							 float P_Gain, float I_Gain, float D_Gain, float outputMax);
-
 		void ConfigReader(APMSettinngs APMInit);
 
 		void AttitudeUpdateTask();
