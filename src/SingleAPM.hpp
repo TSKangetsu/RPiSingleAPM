@@ -14,10 +14,11 @@
 #include <linux/i2c-dev.h>
 #include "_thirdparty/pca9685.h"
 #include "_thirdparty/RPiMS5611LIB/src/MS5611LIB.h"
+#include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
-#include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
+#include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 
 #define RCIsIbus 0
 #define RCIsSbus 1
@@ -152,6 +153,7 @@ namespace SingleAPMAPI
 		MS5611 *MS5611S;
 		GPSUart *GPSInit;
 		MSPUartFlow *FlowInit;
+		RPiMPU9250 *MPUDevice;
 		GPSI2CCompass_QMC5883L *GPSMAGInit;
 
 		void PID_Caculate(float inputData, float &outputData,
@@ -227,6 +229,7 @@ namespace SingleAPMAPI
 			int MPU9250_Type;
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
+			MPUData *_uORB_MPU_Data;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
 			int _Tmp_MS5611_AvaClock = 0;
