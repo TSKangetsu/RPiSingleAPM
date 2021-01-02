@@ -19,15 +19,8 @@
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
 
-#define MPUIsI2c 0
-#define MPUIsSpi 1
 #define RCIsIbus 0
 #define RCIsSbus 1
-#define GryoFilterType_none 0
-#define GryoFilterType_pt1 1
-#define GryoFilterType_Butterworth 2
-#define MixFilterType_traditional 0
-#define MixFilterType_Kalman 1
 
 #define ESCCalibration 10
 #define CaliESCStart 0
@@ -175,12 +168,6 @@ namespace SingleAPMAPI
 
 		void ConfigReader(APMSettinngs APMInit);
 
-		void IMUSensorsDataRead();
-
-		void IMUGryoFilter(long next_input_value, long &next_output_value, int filtertype);
-
-		void IMUMixFilter(float next_input_value_Gryo, float next_input_value_Accel, float &next_output_value, int filtertype);
-
 		void AttitudeUpdateTask();
 
 		void SaftyCheckTaskReg();
@@ -222,13 +209,8 @@ namespace SingleAPMAPI
 			const int PWM_Freq = 400;
 			const int PCA9685_PinBase = 65;
 			const int PCA9685_Address = 0x40;
-			int MPU9250_fd;
 			int MPU9250_SPI_Channel = 1;
 			const int MPU9250_ADDR = 0x68;
-			float _flag_MPU9250_LSB = 65.5;
-			int MPU9250_SPI_Freq = 10000000;
-			int MS5611_fd;
-			const int MS5611_ADDR = 0x77;
 			std::string RCDevice;
 			std::string GPSDevice;
 			std::string FlowDevice;
@@ -245,111 +227,6 @@ namespace SingleAPMAPI
 			int MPU9250_Type;
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
-			int _Tmp_MPU9250_Buffer[14];
-			unsigned char _flag_MPU9250_CompassConfig[39][4] = {
-				{0x37, 0x30}, // INT_PIN_CFG
-				{0x24, 0x5D}, // I2C_MST_CTRL
-				{0x6A, 0x20}, // USER_CTRL
-				{0x25, 0x0C | 0x80},
-				{0x26, 0x00},
-				{0x27, 0x81},
-				{0x49 | 0x80, 0x00}, // Read the WHO_AM_I byte,line is 6
-				{0x25, 0x0C},
-				{0x26, 0x0B},
-				{0x63, 0x01}, // Reset AK8963
-				{0x27, 0x81},
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 0x00}, // Power down magnetometer
-				{0x27, 0x81},
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 0x0F}, // Enter fuze mode
-				{0x27, 0x81},
-				{0x25, 0x0C | 0x80},
-				{0x26, 0x10},
-				{0x27, 0x83},
-				{0x49 | 0x80}, // Read the x-, y-, and z-axis calibration values ,line is 22
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 0x00}, // Power down magnetometer
-				{0x27, 0x81},
-				{0x25, 0x0C},
-				{0x26, 0x0A},
-				{0x63, 1 << 4 | 0x06}, // Set magnetometer data resolution and sample ODR
-				{0x27, 0x81},
-				{0x25, 0x0C | 0x80},
-				{0x26, 0x0A},
-				{0x27, 0x81},
-			};
-			unsigned char _Tmp_MPU9250_SPI_Config[10];
-			unsigned char _Tmp_MPU9250_SPI_Buffer[22];
-			unsigned char _Tmp_MPU9250_SPI_Compass_Buffer[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-			long _uORB_MPU9250_A_X = 0;
-			long _uORB_MPU9250_A_Y = 0;
-			long _uORB_MPU9250_A_Z = 0;
-			long _uORB_MPU9250_G_X = 0;
-			long _uORB_MPU9250_G_Y = 0;
-			long _uORB_MPU9250_G_Z = 0;
-			float _uORB_MPU9250_M_X = 0;
-			float _uORB_MPU9250_M_Y = 0;
-			float _uORB_MPU9250_M_Z = 0;
-			long _uORB_MPU9250_G_Fixed_X = 0;
-			long _uORB_MPU9250_G_Fixed_Y = 0;
-			long _uORB_MPU9250_G_Fixed_Z = 0;
-
-			float _uORB_Accel__Roll = 0;
-			float _uORB_Accel_Pitch = 0;
-			float _uORB_Accel_VSpeed = 0;
-			float _uORB_Gryo__Roll = 0;
-			float _uORB_Gryo_Pitch = 0;
-			float _uORB_Gryo___Yaw = 0;
-			float _uORB_Real__Roll = 0;
-			float _uORB_Real_Pitch = 0;
-			float _uORB_MPU9250___Yaw = 0;
-			float _uORB_MPU9250__Head = 0;
-
-			float _Tmp_Real_Pitch = 0;
-			float _Tmp_Real__Roll = 0;
-			float _Tmp_Gryo_RTSpeed__Roll = 0;
-			float _Tmp_Gryo_RTSpeed_Pitch = 0;
-			float _uORB_Gryo_RTSpeed___Yaw = 0;
-			unsigned long _Tmp_MPU9250_G_X = 0;
-			unsigned long _Tmp_MPU9250_G_Y = 0;
-			unsigned long _Tmp_MPU9250_G_Z = 0;
-			unsigned long _Tmp_MPU9250_A_X = 0;
-			unsigned long _Tmp_MPU9250_A_Y = 0;
-			unsigned long _Tmp_MPU9250_A_Z = 0;
-			unsigned long _Tmp_MPU9250_M_X = 0;
-			unsigned long _Tmp_MPU9250_M_Y = 0;
-			unsigned long _Tmp_MPU9250_M_Z = 0;
-			float _Tmp_MPU9250___MAG = 0;
-			float _Tmp_MPU9250__Head = 0;
-			float _Tmp_MPU9250_M_XH = 0;
-			float _Tmp_MPU9250_M_YH = 0;
-			float _Tmp_MPU9250__Head_Gryo = 0;
-			float _Tmp_MPU9250__Head__Mag = 0;
-
-			long _flag_MPU9250_G_X_Cali;
-			long _flag_MPU9250_G_Y_Cali;
-			long _flag_MPU9250_G_Z_Cali;
-			double _flag_MPU9250_A_X_Cali;
-			double _flag_MPU9250_A_Y_Cali;
-			double _flag_MPU9250_A_Z_Cali;
-			double _flag_Accel__Roll_Cali;
-			double _flag_Accel_Pitch_Cali;
-			double _flag_MPU9250_M_MRES;
-			double _flag_MPU9250_M_X_Cali;
-			double _flag_MPU9250_M_Y_Cali;
-			double _flag_MPU9250_M_Z_Cali;
-			double _flag_MPU9250_M_X_Offset;
-			double _flag_MPU9250_M_Y_Offset;
-			double _flag_MPU9250_M_Z_Offset;
-			double _flag_MPU9250_M_Y_Scaler;
-			double _flag_MPU9250_M_Z_Scaler;
-			double _flag_MPU9250_Head_Asix;
-
-			long _Tmp_IMU_Accel_Vector;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
 			int _Tmp_MS5611_AvaClock = 0;
