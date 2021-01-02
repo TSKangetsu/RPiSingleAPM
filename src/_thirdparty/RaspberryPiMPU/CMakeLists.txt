@@ -1,7 +1,0 @@
-cmake_minimum_required (VERSION 3.8)
-add_definitions(-DDEBUG)
-find_library(WIRING wiringPi)
-add_subdirectory(src)
-add_executable (RaspberryPiMPU "TestModule.cpp")
-target_link_libraries(RaspberryPiMPU ${RPiMPU})
-target_link_libraries(RaspberryPiMPU ${WIRING})
