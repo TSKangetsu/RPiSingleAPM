@@ -7,8 +7,10 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		AF.RC_Lose_Clocking = 0;
 		AF.GPS_Lose_Clocking = 0;
-		AF._flag_MPU9250_first_StartUp = true;
 		AF._flag_ESC_ARMED = true;
+		AF._flag_IsFlowHoldSet = false;
+		AF._flag_IsFlowAvalible = false;
+		AF._flag_MPU9250_first_StartUp = true;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 	}
 	ConfigReader(APMInit);
@@ -63,23 +65,10 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 			else
 			{
-				MS5611S->LocalPressureSetter(0, 5);
-				for (size_t i = 0; i < 40; i++)
-				{
-					MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
-					SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.0;
-					SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
-					SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock] = SF._Tmp_MS5611_Pressure;
-					SF._Tmp_MS5611_AvaTotal += SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
-					SF._Tmp_MS5611_AvaClock++;
-					if (SF._Tmp_MS5611_AvaClock == 20)
-						SF._Tmp_MS5611_AvaClock = 0;
-					SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.0;
-					SF._Tmp_MS5611_PressureFill = SF._Tmp_MS5611_PressureFast;
-				}
-				MS5611S->LocalPressureSetter(SF._Tmp_MS5611_PressureFill, 5);
+				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data);
 #ifdef RPiDEBUGStart
-				std::cout << "Done! LocalPressure Is: " << SF._Tmp_MS5611_PressureFill << "\n";
+				std::cout << "Done! "
+						  << "\n";
 #endif
 			}
 		}
@@ -114,9 +103,21 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		}
 	}
 	//--------------------------------------------------------------------//
-	MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false, 1, DF.MPU9250_ADDR,
-							   TF._flag_IMUThreadFreq, SF.IMUMixFilter_Type);
-	MPUDevice->MPUGryoCalibration();
+	{
+		MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false, 1, DF.MPU9250_ADDR,
+								   TF._flag_IMUThreadFreq, SF.IMUMixFilter_Type);
+#ifdef RPiDEBUGStart
+		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
+		std::cout.flush();
+#endif
+		MPUDevice->MPUGryoCalibration();
+#ifdef RPiDEBUGStart
+		std::cout << "Done!"
+				  << "\n";
+		sleep(2);
+		system("clear");
+#endif
+	}
 	return 0;
 }
 
@@ -136,7 +137,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				AF._flag_MPU9250_first_StartUp = false;
 			}
 			//IMU SaftyChecking---------------------------------------------------------//
-			if (SF._uORB_MPU_Data->_uORB_Real_Pitch > 70.0 || SF._uORB_MPU_Data->_uORB_Real_Pitch < -70.0 || SF._uORB_MPU_Data->_uORB_Real__Roll > 70.0 || SF._uORB_MPU_Data->_uORB_Real__Roll < -70.0)
+			if (SF._uORB_MPU_Data._uORB_Real_Pitch > 70.0 || SF._uORB_MPU_Data._uORB_Real_Pitch < -70.0 || SF._uORB_MPU_Data._uORB_Real__Roll > 70.0 || SF._uORB_MPU_Data._uORB_Real__Roll < -70.0)
 			{
 				AF._flag_Error = true;
 			}
@@ -178,24 +179,10 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
 				SF._Tmp_MS5611_Error = MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
-				if (SF._Tmp_MS5611_Error < 0)
-					TF._flag_ALTErrorTimes++;
-				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0] * 100.0;
-				SF._Tmp_MS5611_AvaTotal -= SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
-				SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock] = SF._Tmp_MS5611_Pressure;
-				SF._Tmp_MS5611_AvaTotal += SF._Tmp_MS5611_AvaData[SF._Tmp_MS5611_AvaClock];
-				SF._Tmp_MS5611_AvaClock++;
-				if (SF._Tmp_MS5611_AvaClock == 20)
-					SF._Tmp_MS5611_AvaClock = 0;
-				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_AvaTotal / 20.0;
-				SF._Tmp_MS5611_PressureFill = SF._flag_MS5611_FilterAlpha * SF._Tmp_MS5611_PressureFill + (1.0 - SF._flag_MS5611_FilterAlpha) * SF._Tmp_MS5611_PressureFast;
-				SF._Tmp_MS5611_PressureDiff = SF._Tmp_MS5611_PressureFill - SF._Tmp_MS5611_PressureFast;
-				if (SF._Tmp_MS5611_PressureDiff > 8)
-					SF._Tmp_MS5611_PressureDiff = 8;
-				if (SF._Tmp_MS5611_PressureDiff < -8)
-					SF._Tmp_MS5611_PressureDiff = -8;
-				if (SF._Tmp_MS5611_PressureDiff > 1 || SF._Tmp_MS5611_PressureDiff < -1)
-					SF._Tmp_MS5611_PressureFill -= SF._Tmp_MS5611_PressureDiff / 6.0;
+
+				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
+				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_Data[1];
+				SF._Tmp_MS5611_PressureFill = SF._Tmp_MS5611_Data[2];
 				SF._uORB_MS5611_PressureFinal = SF._Tmp_MS5611_PressureFill;
 				AF._flag_MS5611_Async = true;
 
@@ -561,11 +548,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._uORB_QMC5883L_M_Y *= SF._flag_QMC5883L_M_Y_Scaler;
 					SF._uORB_QMC5883L_M_Z += SF._flag_QMC5883L_M_Z_Offset;
 					SF._uORB_QMC5883L_M_Z *= SF._flag_QMC5883L_M_Z_Scaler;
-					SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_MPU_Data->_uORB_Real_Pitch * (3.14 / 180.f)) +
-											(float)SF._uORB_QMC5883L_M_X * sin(SF._uORB_MPU_Data->_uORB_Real__Roll * (3.14 / -180.f)) * sin(SF._uORB_MPU_Data->_uORB_Real_Pitch * (3.14 / 180.f)) -
-											(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_MPU_Data->_uORB_Real__Roll * (3.14 / -180.f)) * sin(SF._uORB_MPU_Data->_uORB_Real_Pitch * (3.14 / 180.f));
-					SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_MPU_Data->_uORB_Real__Roll * (3.14 / -180.f)) +
-											(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_MPU_Data->_uORB_Real__Roll * (3.14 / -180.f));
+					SF._Tmp_QMC5883L_M_XH = (float)SF._uORB_QMC5883L_M_Y * cos(SF._uORB_MPU_Data._uORB_Real_Pitch * (3.14 / 180.f)) +
+											(float)SF._uORB_QMC5883L_M_X * sin(SF._uORB_MPU_Data._uORB_Real__Roll * (3.14 / -180.f)) * sin(SF._uORB_MPU_Data._uORB_Real_Pitch * (3.14 / 180.f)) -
+											(float)SF._uORB_QMC5883L_M_Z * cos(SF._uORB_MPU_Data._uORB_Real__Roll * (3.14 / -180.f)) * sin(SF._uORB_MPU_Data._uORB_Real_Pitch * (3.14 / 180.f));
+					SF._Tmp_QMC5883L_M_YH = (float)SF._uORB_QMC5883L_M_X * cos(SF._uORB_MPU_Data._uORB_Real__Roll * (3.14 / -180.f)) +
+											(float)SF._uORB_QMC5883L_M_Z * sin(SF._uORB_MPU_Data._uORB_Real__Roll * (3.14 / -180.f));
 
 					if (SF._Tmp_QMC5883L_M_YH < 0)
 						SF._Tmp_QMC5883L___MAG = 180 + (180 + ((atan2(SF._Tmp_QMC5883L_M_YH, SF._Tmp_QMC5883L_M_XH)) * (180 / 3.14)));
@@ -578,7 +565,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					else if (SF._Tmp_QMC5883L___MAG >= 360)
 						SF._Tmp_QMC5883L___MAG -= 360;
 					//--------------------------------------------------------------------//
-					// SF._uORB_QMC5883L__Yaw += 200.f;
+					SF._uORB_QMC5883L__Yaw += (SF._uORB_MPU_Data._uORB_MPU9250_G_Z / 65.5) / 200.f;
 					if (SF._uORB_QMC5883L__Yaw < 0)
 						SF._uORB_QMC5883L__Yaw += 360;
 					else if (SF._uORB_QMC5883L__Yaw >= 360)
@@ -645,8 +632,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 
 					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
 					{
-						SF._uORB_Flow_Altitude = SF._uORB_Flow_Altitude * (1.f - cos(abs(SF._uORB_MPU_Data->_uORB_Real_Pitch) * 3.14 / 180.f) *
-																					 (1.f - cos(abs(SF._uORB_MPU_Data->_uORB_Real__Roll) * 3.14 / 180.f)));
+						SF._uORB_Flow_Altitude = SF._uORB_Flow_Altitude * (1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real_Pitch) * 3.14 / 180.f) *
+																					 (1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real__Roll) * 3.14 / 180.f)));
 						SF._uORB_Flow_Altitude_Final += (SF._uORB_Flow_Altitude - SF._uORB_Flow_Altitude_Final) * 0.2;
 					}
 					if (SF._Tmp_Flow___Status == 2 || SF._Tmp_Flow___Status == 3)
@@ -698,8 +685,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						SF._Tmp_Flow_YOutput_Total_Smooth += (int)SF._Tmp_Flow_YOutput_Total_Smooth_Diff;
 						SF._Tmp_Flow_YOutput_Total_Smooth_Diff -= (int)SF._Tmp_Flow_YOutput_Total_Smooth_Diff;
 					}
-					SF._uORB_Flow_Fix_XOutput += (300.f * tan((SF._uORB_MPU_Data->_uORB_Real__Roll) * 3.14 / 180.f) - SF._uORB_Flow_Fix_XOutput) * 0.2;
-					SF._uORB_Flow_Fix_YOutput += (300.f * tan((SF._uORB_MPU_Data->_uORB_Real_Pitch) * 3.14 / 180.f) - SF._uORB_Flow_Fix_YOutput) * 0.2;
+					SF._uORB_Flow_Fix_XOutput += (300.f * tan((SF._uORB_MPU_Data._uORB_Real__Roll) * 3.14 / 180.f) - SF._uORB_Flow_Fix_XOutput) * 0.2;
+					SF._uORB_Flow_Fix_YOutput += (300.f * tan((SF._uORB_MPU_Data._uORB_Real_Pitch) * 3.14 / 180.f) - SF._uORB_Flow_Fix_YOutput) * 0.2;
 					SF._uORB_Flow_XOutput_Total_Smooth = SF._Tmp_Flow_XOutput_Total_Smooth + SF._uORB_Flow_Fix_XOutput;
 					SF._uORB_Flow_YOutput_Total_Smooth = SF._Tmp_Flow_YOutput_Total_Smooth - SF._uORB_Flow_Fix_YOutput;
 
@@ -737,11 +724,6 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		CPU_ZERO(&cpuset3);
 		CPU_SET(3, &cpuset3);
 		int rc3 = pthread_setaffinity_np(TF.FlowTask->native_handle(), sizeof(cpu_set_t), &cpuset3);
-	}
-	else
-	{
-		AF._flag_IsFlowHoldSet = false;
-		AF._flag_IsFlowAvalible = false;
 	}
 }
 
@@ -1165,7 +1147,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		}
 
 		//Roll PID Mix
-		PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data->_uORB_Gryo__Roll + SF._uORB_MPU_Data->_uORB_Real__Roll * 15 -
+		PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + SF._uORB_MPU_Data._uORB_Real__Roll * 15 -
 								   RF._uORB_RC_Out__Roll - PF._uORB_PID_GPS__Roll_Ouput;
 		PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
 					 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
@@ -1176,7 +1158,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data->_uORB_Gryo_Pitch + SF._uORB_MPU_Data->_uORB_Real_Pitch * 15 -
+		PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + SF._uORB_MPU_Data._uORB_Real_Pitch * 15 -
 								   RF._uORB_RC_Out_Pitch - PF._uORB_PID_GPS_Pitch_Ouput;
 		PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
 					 PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
@@ -1187,7 +1169,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
 
 		//Yaw PID Mix
-		PID_Caculate(SF._uORB_MPU_Data->_uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
+		PID_Caculate(SF._uORB_MPU_Data._uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
 					 PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
 					 PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
 		if (PF._uORB_Leveling___Yaw > PF._flag_PID_Level_Max)
@@ -1199,8 +1181,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		PF._uORB_PID_TAsix_Ouput = ((PF._flag_PID_Hover_Throttle - 1000 + PF._uORB_PID_Alt_Throttle) * (1.f - cos((abs(SF._uORB_MPU_Data->_uORB_Real_Pitch)) * 3.14 / 180.f)) +
-									(PF._flag_PID_Hover_Throttle - 1000 + PF._uORB_PID_Alt_Throttle) * (1.f - cos((abs(SF._uORB_MPU_Data->_uORB_Real__Roll)) * 3.14 / 180.f))) *
+		PF._uORB_PID_TAsix_Ouput = ((PF._flag_PID_Hover_Throttle - 1000 + PF._uORB_PID_Alt_Throttle) * (1.f - cos((abs(SF._uORB_MPU_Data._uORB_Real_Pitch)) * 3.14 / 180.f)) +
+									(PF._flag_PID_Hover_Throttle - 1000 + PF._uORB_PID_Alt_Throttle) * (1.f - cos((abs(SF._uORB_MPU_Data._uORB_Real__Roll)) * 3.14 / 180.f))) *
 								   PF._flag_PID_P_TAsix_Gain;
 		PF._uORB_PID_TAsix_Ouput = PF._uORB_PID_TAsix_Ouput > 500 ? 500 : PF._uORB_PID_TAsix_Ouput;
 		PF._uORB_PID_TAsix_Ouput = PF._uORB_PID_TAsix_Ouput < 0 ? 0 : PF._uORB_PID_TAsix_Ouput;
@@ -1270,24 +1252,24 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "IMUSenorData: "
 			  << " \n";
-	std::cout << " GryoPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Gryo_Pitch << "    "
-			  << " GryoRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Gryo__Roll << "    "
-			  << " GryoYaw:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Gryo___Yaw << "    "
-			  //   << " GVSpeed:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Accel_VSpeed << "    "
+	std::cout << " GryoPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Gryo_Pitch << "    "
+			  << " GryoRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Gryo__Roll << "    "
+			  << " GryoYaw:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Gryo___Yaw << "    "
+			  //   << " GVSpeed:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel_VSpeed << "    "
 			  << "                        "
 			  << std::endl;
-	std::cout << " AccePitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Accel_Pitch << "    "
-			  << " AcceRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Accel__Roll << "    "
-			  << " MPURawAX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_MPU9250_A_X << "    "
-			  << " MPURawAY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_MPU9250_A_Y << "    "
-			  << " MPURawAZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_MPU9250_A_Z << "    "
+	std::cout << " AccePitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel_Pitch << "    "
+			  << " AcceRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel__Roll << "    "
+			  << " MPURawAX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_A_X << "    "
+			  << " MPURawAY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_A_Y << "    "
+			  << " MPURawAZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_A_Z << "    "
 			  << "                        "
 			  << std::endl;
-	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Real_Pitch << "    "
-			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_Real__Roll << "    "
-			  << " MPURawGX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_MPU9250_G_X << "    "
-			  << " MPURawGY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_MPU9250_G_Y << "    "
-			  << " MPURawGZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data->_uORB_MPU9250_G_Z << "    "
+	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real_Pitch << "    "
+			  << " RealRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real__Roll << "    "
+			  << " MPURawGX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_G_X << "    "
+			  << " MPURawGY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_G_Y << "    "
+			  << " MPURawGZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_G_Z << "    "
 			  << "                        "
 			  << std::endl;
 	// std::cout << " CompassX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "
@@ -1397,18 +1379,4 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " FloErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_FlowErrorTimes;
 	std::cout << " FloMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadError << "    \n"
 			  << std::endl;
-	std::cout << "<===============================UserDefineMessager====================================>\n";
-	std::queue<std::string> TmpBuffer = DEBUGBuffer;
-	for (int i = 0; i < DEBUGBuffer.size(); i++)
-	{
-		std::cout << TmpBuffer.front();
-		TmpBuffer.pop();
-	}
-}
-
-void SingleAPMAPI::RPiSingleAPM::DebugScreenPush(std::string PushMessage)
-{
-	if (DEBUGBuffer.size() == USERDEBUGINPUTSIZE)
-		DEBUGBuffer.pop();
-	DEBUGBuffer.push(PushMessage);
 }

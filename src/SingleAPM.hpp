@@ -3,7 +3,6 @@
 #include <wiringPiI2C.h>
 #include <wiringPiSPI.h>
 #include <math.h>
-#include <queue>
 #include <thread>
 #include <string>
 #include <unistd.h>
@@ -142,18 +141,14 @@ namespace SingleAPMAPI
 
 		int APMCalibrator(int controller, int action, int input, double *data);
 
-		void DebugScreenPush(std::string PushMessage);
-
 	protected:
-		int DEBUGOuputCleaner = 0;
-		std::queue<std::string> DEBUGBuffer;
-
 		Sbus *SbusInit;
 		Ibus *IbusInit;
 		MS5611 *MS5611S;
 		GPSUart *GPSInit;
-		MSPUartFlow *FlowInit;
 		RPiMPU9250 *MPUDevice;
+		MSPUartFlow *FlowInit;
+		int DEBUGOuputCleaner = 0;
 		GPSI2CCompass_QMC5883L *GPSMAGInit;
 
 		void PID_Caculate(float inputData, float &outputData,
@@ -225,23 +220,14 @@ namespace SingleAPMAPI
 			int MPU9250_Type;
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
-			MPUData *_uORB_MPU_Data;
+			MPUData _uORB_MPU_Data;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
-			int _Tmp_MS5611_AvaClock = 0;
-
+			double _Tmp_MS5611_Data[10] = {1000,1000,1000};
 			double _Tmp_MS5611_Pressure = 0;
 			double _Tmp_MS5611_PressureFast = 0;
 			double _Tmp_MS5611_PressureFill = 0;
-			double _Tmp_MS5611_PressureDiff = 0;
-
-			double _Tmp_MS5611_Data[2];
-			double _Tmp_MS5611_AvaTotal = 0;
-			double _Tmp_MS5611_AvaData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-			double _uORB_MS5611_AltMeter = 0;
 			double _uORB_MS5611_PressureFinal = 0;
-			double _flag_MS5611_FilterAlpha = 0.985;
 			//=========================GPS=========//
 			float _Tmp_QMC5883L_M_XH = 0;
 			float _Tmp_QMC5883L_M_YH = 0;
