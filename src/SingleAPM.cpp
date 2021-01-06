@@ -235,8 +235,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_Gryo_RTSpeed___Yaw = (SF._uORB_MPU9250_G_Fixed_Z / DF._flag_MPU9250_LSB);
 			SF._Tmp_Real_Pitch += SF._Tmp_Gryo_RTSpeed_Pitch / TF._flag_IMUThreadFreq;
 			SF._Tmp_Real__Roll += SF._Tmp_Gryo_RTSpeed__Roll / TF._flag_IMUThreadFreq;
-			SF._Tmp_Real_Pitch -= SF._Tmp_Real__Roll * sin((SF._uORB_Gryo___Yaw / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
-			SF._Tmp_Real__Roll += SF._Tmp_Real_Pitch * sin((SF._uORB_Gryo___Yaw / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
+			SF._Tmp_Real_Pitch += SF._Tmp_Real__Roll * sin((SF._uORB_MPU9250_G_Fixed_Z / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
+			SF._Tmp_Real__Roll -= SF._Tmp_Real_Pitch * sin((SF._uORB_MPU9250_G_Fixed_Z / TF._flag_IMUThreadFreq / DF._flag_MPU9250_LSB) * (3.14 / 180));
 			//ACCEL---------------------------------------------------------------------//
 			SF._Tmp_IMU_Accel_Vector = sqrt((SF._uORB_MPU9250_A_X * SF._uORB_MPU9250_A_X) + (SF._uORB_MPU9250_A_Y * SF._uORB_MPU9250_A_Y) + (SF._uORB_MPU9250_A_Z * SF._uORB_MPU9250_A_Z));
 			if (abs(SF._uORB_MPU9250_A_X) < SF._Tmp_IMU_Accel_Vector)
@@ -1398,7 +1398,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
 
 		//Yaw PID Mix
-		PID_Caculate(SF._uORB_Gryo___Yaw - RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
+		PID_Caculate(SF._uORB_Gryo___Yaw + RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
 					 PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
 					 PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
 		if (PF._uORB_Leveling___Yaw > PF._flag_PID_Level_Max)
