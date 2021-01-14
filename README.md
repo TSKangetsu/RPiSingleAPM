@@ -49,17 +49,28 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
 ```
 
 # Configure RaspberryPi For Controller
+  - ### If you are RaspberryPi4B, and want to use GPS or FlowSensor. You can check <a href="https://raspberrypi.stackexchange.com/questions/104464/where-are-the-uarts-on-the-raspberry-pi-4">here</a>
 ```R
     # Edit /boot/config.txt
     core_freq = 250 
     # If you want to use software Serial for RC controller
     # If RC use hardware serial can be higher
-    # If using Analog Video Outpu on PI4 should be 360 and use hardware serial
+    # If using Analog Video Output on PI4 should be 360 and use hardware serial
     dtparam=i2c_arm=on
     dtparam=i2c_baudrate=400000 #RaspberryPi3 Is max to 400khz,Pi4 can Up to 1MHZ
     dtparam=spi=on
     # This set i2c and spi enable for RaspberryPi 
     # or you can use sudo raspi-config to configure
+    enable_uart=1
+    dtoverlay=pi3-miniuart-bt # Disable Software Serial for GPIO
+    dtoverlay=uart3 # if you are Pi4 that you can use more than 4 GPIO Uart
+    dtoverlay=uart5 
+    # Set Uart enable and use Hardware serial
+
+    # Attention: If config.txt exist same object ,replase it
+    # AfterChange Save and reboot RaspberryPi to effect the settings
 ```
+  - ### AddOn: You need to Disable GPIO UART Login TTY. You can check <a href="https://www.raspberrypi.org/documentation/configuration/uart.md#:~:text=Disable%20Linux%20serial%20console&text=This%20can%20be%20done%20by,Select%20option%20P6%20%2D%20Serial%20Port.">here</a>
 
 # Sensor Device CheckOut
+<img src="https://github.com/TSKangetsu/RPiSingleAPM/blob/NDTask_Ver/Document/DebugInfo.jpg">
