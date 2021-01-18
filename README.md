@@ -23,7 +23,7 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
     sudo make install
     cd ../.. #Please make sure what things you are doing
     #Build RPiSingleAPM
-    git clone https://github.com/TSKangetsu/RPiSingleAPM.git
+    git clone https://github.com/TSKangetsu/RPiSingleAPM.git --recursive
     cd RPiSingleAPM && mkdir build
     cd build && cmake ..
     make -j1 && cp SingleAPM /usr/bin
