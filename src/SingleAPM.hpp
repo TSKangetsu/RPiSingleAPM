@@ -26,12 +26,6 @@
 #define CaliESCStart 0
 #define CaliESCUserDefine 2
 #define ACCELCalibration 11
-#define CaliACCELHeadNormal 0
-#define CaliACCELHeadUpsideDown 1
-#define CaliACCELHeadUp 2
-#define CaliACCELHeadDown 3
-#define CaliACCELHeadright 4
-#define CaliACCELHeadLeft 5
 #define COMPASSCalibration 12;
 
 #define USERDEBUGINPUTSIZE 5
@@ -85,6 +79,9 @@ namespace SingleAPMAPI
 		double _flag_MPU9250_A_X_Cali;
 		double _flag_MPU9250_A_Y_Cali;
 		double _flag_MPU9250_A_Z_Cali;
+		double _flag_MPU9250_A_X_Scal;
+		double _flag_MPU9250_A_Y_Scal;
+		double _flag_MPU9250_A_Z_Scal;
 		double _flag_MPU9250_M_X_Offset;
 		double _flag_MPU9250_M_Y_Offset;
 		double _flag_MPU9250_M_Z_Offset;
@@ -221,9 +218,10 @@ namespace SingleAPMAPI
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
 			MPUData _uORB_MPU_Data;
+			double _flag_MPU_Accel_Cali[20];
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
-			double _Tmp_MS5611_Data[10] = {1000,1000,1000};
+			double _Tmp_MS5611_Data[10] = {1000, 1000, 1000};
 			double _Tmp_MS5611_Pressure = 0;
 			double _Tmp_MS5611_PressureFast = 0;
 			double _Tmp_MS5611_PressureFill = 0;

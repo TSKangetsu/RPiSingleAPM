@@ -110,7 +110,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
 #endif
-		MPUDevice->MPUGryoCalibration();
+		MPUDevice->MPUCalibration(SF._flag_MPU_Accel_Cali);
 #ifdef RPiDEBUGStart
 		std::cout << "Done!"
 				  << "\n";
@@ -828,9 +828,7 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 	}
 	else if (controller == ACCELCalibration)
 	{
-		if (action == CaliACCELHeadNormal)
-		{
-		}
+		MPUDevice->MPUAccelCalibration(action, data);
 	}
 	// else if (type == 1)
 	// {
@@ -1018,6 +1016,13 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
 	PF._flag_PID_GPS_Level_Max = APMInit._flag_PID_GPS_Level_Max;
 	//==============================================================Sensors cofig==/
+	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit._flag_MPU9250_A_X_Cali;
+	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit._flag_MPU9250_A_Y_Cali;
+	SF._flag_MPU_Accel_Cali[MPUAccelCaliZ] = APMInit._flag_MPU9250_A_Z_Cali;
+	SF._flag_MPU_Accel_Cali[MPUAccelScalX] = APMInit._flag_MPU9250_A_X_Scal;
+	SF._flag_MPU_Accel_Cali[MPUAccelScalY] = APMInit._flag_MPU9250_A_Y_Scal;
+	SF._flag_MPU_Accel_Cali[MPUAccelScalZ] = APMInit._flag_MPU9250_A_Z_Scal;
+
 	SF._flag_QMC5883L_Head_Asix = APMInit._flag_QMC5883L_Head_Asix;
 	SF._flag_QMC5883L_M_X_Offset = APMInit._flag_QMC5883L_M_X_Offset;
 	SF._flag_QMC5883L_M_Y_Offset = APMInit._flag_QMC5883L_M_Y_Offset;
@@ -1260,9 +1265,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " AccePitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel_Pitch << "    "
 			  << " AcceRoll:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel__Roll << "    "
-			  << " MPURawAX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_AFQ_X << "    "
-			  << " MPURawAY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_AFQ_Y << "    "
-			  << " MPURawAZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_AFQ_Z << "    "
+			  << " MPURawAX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_AFQ2_X << "    "
+			  << " MPURawAY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_AFQ2_Y << "    "
+			  << " MPURawAZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_AFQ2_Z << "    "
 			  << "                        "
 			  << std::endl;
 	std::cout << " RealPitch:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real_Pitch << "    "
@@ -1272,10 +1277,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " MPURawGZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_G_Z << "    "
 			  << "                        "
 			  << std::endl;
-	std::cout << " AccelVX :   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_Accel_Vector_X << "    "
-			  << " AccelVY :   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_Accel_Vector_Y << "    "
-			  << " StaticAX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_Accel_To_Static_X << "    "
-			  << " StaticAY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_Accel_To_Static_Y << "    "
+	std::cout << " StaticAX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_A_Static_X << "    "
+			  << " StaticAY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_A_Static_Y << "    "
+			  << " StaticAZ:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_A_Static_Z << "    "
+			  << " StaticXAng:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_Accel_Static_Angle_X << "    "
+			  << " StaticYAng:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_Accel_Static_Angle_Y << "    "
 			  << "                        "
 			  << std::endl;
 	// std::cout << " CompassX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU9250_M_X << "    "

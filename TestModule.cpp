@@ -61,13 +61,47 @@ int main(int argc, char *argv[])
 		break;
 		case 'a':
 		{
+			int a;
+			double tmp[50];
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", setting);
 			APM_Settle.RPiSingleAPMInit(setting);
-			APM_Settle.APMCalibrator(ACCELCalibration, CaliACCELHeadNormal, 0, data);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_X_Cali", data[0]);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Y_Cali", data[1]);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Z_Cali", data[2]);
+			std::cout << "start calibration Nose Up and Type int and enter:"
+					  << " \n";
+			std::cin >> a;
+			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseUp, a, tmp);
+			std::cout << "start calibration Nose Down and Type int and enter:"
+					  << " \n";
+			std::cin >> a;
+			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseDown, a, tmp);
+			std::cout << "start calibration Nose Right Up and Type int and enter:"
+					  << " \n";
+			std::cin >> a;
+			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseRight, a, tmp);
+			std::cout << "start calibration Nose Left Up and Type int and enter:"
+					  << " \n";
+			std::cin >> a;
+			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseLeft, a, tmp);
+			std::cout << "start calibration Nose Top  and Type int and enter:"
+					  << " \n";
+			std::cin >> a;
+			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseTop, a, tmp);
+			std::cout << "start calibration Nose Rev and Type int and enter:"
+					  << " \n";
+			std::cin >> a;
+			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseRev, a, tmp);
+			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelCaliGet, a, tmp);
+			for (size_t i = 0; i < 15; i++)
+			{
+				std::cout << tmp[i] << " \n";
+			}
+
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_X_Cali", tmp[MPUAccelCaliX]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Y_Cali", tmp[MPUAccelCaliY]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Z_Cali", tmp[MPUAccelCaliZ]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_X_Scal", tmp[MPUAccelScalX]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Y_Scal", tmp[MPUAccelScalY]);
+			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Z_Scal", tmp[MPUAccelScalZ]);
 		}
 		break;
 		//--------------------------------------------------------------------------------//
@@ -147,15 +181,9 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_MPU9250_A_X_Cali = Configdata["_flag_MPU9250_A_X_Cali"].get<double>();
 	APMInit._flag_MPU9250_A_Y_Cali = Configdata["_flag_MPU9250_A_Y_Cali"].get<double>();
 	APMInit._flag_MPU9250_A_Z_Cali = Configdata["_flag_MPU9250_A_Z_Cali"].get<double>();
-	APMInit._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
-	APMInit._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
-
-	APMInit._flag_MPU9250_Head_Asix = Configdata["_flag_MPU9250_Head_Asix"].get<double>();
-	APMInit._flag_MPU9250_M_X_Offset = Configdata["_flag_MPU9250_M_X_Offset"].get<double>();
-	APMInit._flag_MPU9250_M_Y_Offset = Configdata["_flag_MPU9250_M_Y_Offset"].get<double>();
-	APMInit._flag_MPU9250_M_Z_Offset = Configdata["_flag_MPU9250_M_Z_Offset"].get<double>();
-	APMInit._flag_MPU9250_M_Y_Scaler = Configdata["_flag_MPU9250_M_Y_Scaler"].get<double>();
-	APMInit._flag_MPU9250_M_Z_Scaler = Configdata["_flag_MPU9250_M_Z_Scaler"].get<double>();
+	APMInit._flag_MPU9250_A_X_Scal = Configdata["_flag_MPU9250_A_X_Scal"].get<double>();
+	APMInit._flag_MPU9250_A_Y_Scal = Configdata["_flag_MPU9250_A_Y_Scal"].get<double>();
+	APMInit._flag_MPU9250_A_Z_Scal = Configdata["_flag_MPU9250_A_Z_Scal"].get<double>();
 
 	APMInit._flag_QMC5883L_Head_Asix = Configdata["_flag_QMC5883L_Head_Asix"].get<double>();
 	APMInit._flag_QMC5883L_M_X_Offset = Configdata["_flag_QMC5883L_M_X_Offset"].get<double>();
