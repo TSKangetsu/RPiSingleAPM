@@ -219,6 +219,15 @@ namespace SingleAPMAPI
 			int IMUMixFilter_Type;
 			MPUData _uORB_MPU_Data;
 			double _flag_MPU_Accel_Cali[20];
+			double _uORB_MPU_A_Static_Last_X = 0;
+			double _uORB_MPU_A_Static_Last_Y = 0;
+			double _uORB_MPU_A_Static_Last_Z = 0;
+			double _uORB_MPU_Speed_X = 0;
+			double _uORB_MPU_Speed_Y = 0;
+			double _uORB_MPU_Speed_Z = 0;
+			double _uORB_MPU_Movement_X = 0;
+			double _uORB_MPU_Movement_Y = 0;
+			double _uORB_MPU_Movement_Z = 0;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
 			double _Tmp_MS5611_Data[10] = {1000, 1000, 1000};

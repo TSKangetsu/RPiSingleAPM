@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		case 'a':
 		{
 			int a;
-			double tmp[50];
+			double tmp[50] = {0};
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", setting);
 			APM_Settle.RPiSingleAPMInit(setting);
