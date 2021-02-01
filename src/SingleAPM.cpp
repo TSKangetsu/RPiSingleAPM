@@ -376,44 +376,45 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			{
 				if (!AF._flag_ESC_ARMED && (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold))
 				{
+					AF._flag_IsAltHoldSet = true;
 					if (!AF._flag_IsFlowAvalible || !DF._IsFlowEnable)
 					{
-						AF._flag_IsAltHoldSet = true;
+						// AF._flag_IsAltHoldSet = true;
 					}
 					else
 					{
-						AF._flag_IsAltHoldSet = false;
+						// AF._flag_IsAltHoldSet = false;
 					}
 					if (AF.AutoPilotMode == APModeINFO::PositionHold)
 					{
-						if (RF._uORB_RC_Out__Roll == 0 && RF._uORB_RC_Out_Pitch == 0)
-						{
-							if (!AF._flag_GPS_Error || !AF._flag_IsFlowAvalible)
-							{
-								AF._flag_IsGPSHoldSet = true;
-								AF._flag_IsFlowHoldSet = false;
-							}
-							else if (AF._flag_IsFlowAvalible && DF._IsFlowEnable)
-							{
-								AF._flag_IsFlowHoldSet = true;
-								AF._flag_IsGPSHoldSet = false;
-							}
-							else
-							{
-								AF._flag_IsFlowHoldSet = false;
-								AF._flag_IsGPSHoldSet = false;
-							}
-						}
-						else
-						{
-							AF._flag_IsFlowHoldSet = false;
-							AF._flag_IsGPSHoldSet = false;
-						}
+						// if (RF._uORB_RC_Out__Roll == 0 && RF._uORB_RC_Out_Pitch == 0)
+						// {
+						// 	if (!AF._flag_GPS_Error || !AF._flag_IsFlowAvalible)
+						// 	{
+						// 		AF._flag_IsGPSHoldSet = true;
+						// 		AF._flag_IsFlowHoldSet = false;
+						// 	}
+						// 	else if (AF._flag_IsFlowAvalible && DF._IsFlowEnable)
+						// 	{
+						// 		AF._flag_IsFlowHoldSet = true;
+						// 		AF._flag_IsGPSHoldSet = false;
+						// 	}
+						// 	else
+						// 	{
+						// 		AF._flag_IsFlowHoldSet = false;
+						// 		AF._flag_IsGPSHoldSet = false;
+						// 	}
+						// }
+						// else
+						// {
+						// 	AF._flag_IsFlowHoldSet = false;
+						// 	AF._flag_IsGPSHoldSet = false;
+						// }
 
-						if (!AF._flag_IsFlowAvalible)
-						{
-							AF._flag_IsFlowHoldSet = false;
-						}
+						// if (!AF._flag_IsFlowAvalible)
+						// {
+						// 	AF._flag_IsFlowHoldSet = false;
+						// }
 					}
 				}
 			}
