@@ -185,11 +185,7 @@ namespace SingleAPMAPI
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
 			bool _flag_FlowData_Async;
-
-			bool _flag_IsAltHoldSet;
 			bool _flag_IsGPSHoldSet;
-			bool _flag_IsFlowHoldSet;
-
 			bool _flag_IsFlowAvalible;
 		} AF;
 
@@ -332,15 +328,16 @@ namespace SingleAPMAPI
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
 			int _flag_PID_SOOMTH_Clock = 0;
-			float _Tmp_PID_D_Alt_Var[30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			float _Tmp_PID_D_Alt_Var[30] = {0};
 
 			float _uORB_PID_AltInput = 0;
 			float _uORB_PID_Alt_Throttle = 0;
 			float _uORB_PID_AltHold_Target = 0;
 
+			float _Tmp_PID_D_Last_Value_Alt = 0;
 			float _uORB_PID_I_Last_Value_Alt = 0;
 			float _uORB_PID_D_Last_Value_Alt = 0;
-			float _uORB_PID_D_Toat_Value_Alt = 0;
+			float _uORB_PID_D_Total_Value_Alt = 0;
 
 			float _flag_PID_P_Alt_Gain;
 			float _flag_PID_I_Alt_Gain;
@@ -352,8 +349,8 @@ namespace SingleAPMAPI
 			unsigned int _uORB_PID_TAsix_Ouput = 0;
 			//==========PositionHoldPID=========//
 			int _Tmp_PID_D_GPS_AvaClock = 0;
-			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			int _Tmp_PID_D_GPS_Lng_AvaData[35] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0};
+			int _Tmp_PID_D_GPS_Lng_AvaData[35] = {0};
 
 			int _Tmp_PID_D_GPS_Lat_Ouput = 0;
 			int _Tmp_PID_D_GPS_Lng_Ouput = 0;
@@ -378,7 +375,7 @@ namespace SingleAPMAPI
 		struct RCINFO
 		{
 			int RC_Type;
-			int _Tmp_RC_Data[36] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _Tmp_RC_Data[36] = {0};
 			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1000, 1500, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _flag_RC_Max_PWM_Value;
 			int _flag_RC_Mid_PWM_Value;
