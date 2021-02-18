@@ -152,17 +152,16 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
 	APMInit._flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
 	//==================================================================PID cofig==/
-	APMInit._flag_PID_P_TAsix_Gain = Configdata["_flag_PID_P_TAsix_Gain"].get<float>();
 	APMInit._flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
 	APMInit._flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();
 	APMInit._flag_PID_P___Yaw_Gain = Configdata["_flag_PID_P___Yaw_Gain"].get<float>();
-	APMInit._flag_PID_P_Alt_Gain = Configdata["_flag_PID_P_Alt_Gain"].get<float>();
+	APMInit._flag_PID_P_SpeedZ_Gain = Configdata["_flag_PID_P_SpeedZ_Gain"].get<float>();
 	APMInit._flag_PID_P_GPS_Gain = Configdata["_flag_PID_P_GPS_Gain"].get<float>();
 
 	APMInit._flag_PID_I__Roll_Gain = Configdata["_flag_PID_I__Roll_Gain"].get<float>();
 	APMInit._flag_PID_I_Pitch_Gain = Configdata["_flag_PID_I_Pitch_Gain"].get<float>();
 	APMInit._flag_PID_I___Yaw_Gain = Configdata["_flag_PID_I___Yaw_Gain"].get<float>();
-	APMInit._flag_PID_I_Alt_Gain = Configdata["_flag_PID_I_Alt_Gain"].get<float>();
+	APMInit._flag_PID_I_SpeedZ_Gain = Configdata["_flag_PID_I_SpeedZ_Gain"].get<float>();
 	APMInit._flag_PID_I__Roll_Max__Value = Configdata["_flag_PID_I__Roll_Max__Value"].get<float>();
 	APMInit._flag_PID_I_Pitch_Max__Value = Configdata["_flag_PID_I_Pitch_Max__Value"].get<float>();
 	APMInit._flag_PID_I___Yaw_Max__Value = Configdata["_flag_PID_I___Yaw_Max__Value"].get<float>();
@@ -170,7 +169,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_PID_D__Roll_Gain = Configdata["_flag_PID_D__Roll_Gain"].get<float>();
 	APMInit._flag_PID_D_Pitch_Gain = Configdata["_flag_PID_D_Pitch_Gain"].get<float>();
 	APMInit._flag_PID_D___Yaw_Gain = Configdata["_flag_PID_D___Yaw_Gain"].get<float>();
-	APMInit._flag_PID_D_Alt_Gain = Configdata["_flag_PID_D_Alt_Gain"].get<float>();
+	APMInit._flag_PID_D_SpeedZ_Gain = Configdata["_flag_PID_D_SpeedZ_Gain"].get<float>();
 	APMInit._flag_PID_D_GPS_Gain = Configdata["_flag_PID_D_GPS_Gain"].get<float>();
 
 	APMInit._flag_PID_Hover_Throttle = Configdata["_flag_PID_Hover_Throttle"].get<float>();

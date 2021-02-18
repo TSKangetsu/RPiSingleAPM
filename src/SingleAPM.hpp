@@ -51,23 +51,22 @@ namespace SingleAPMAPI
 		bool _IsRCSafeEnable;
 		bool _IsMS5611Enable;
 
-		float _flag_PID_P_TAsix_Gain;
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
 		float _flag_PID_P___Yaw_Gain;
-		float _flag_PID_P_Alt_Gain;
+		float _flag_PID_P_SpeedZ_Gain;
 		float _flag_PID_P_GPS_Gain;
 		float _flag_PID_I__Roll_Gain;
 		float _flag_PID_I_Pitch_Gain;
 		float _flag_PID_I___Yaw_Gain;
-		float _flag_PID_I_Alt_Gain;
+		float _flag_PID_I_SpeedZ_Gain;
 		float _flag_PID_I__Roll_Max__Value;
 		float _flag_PID_I_Pitch_Max__Value;
 		float _flag_PID_I___Yaw_Max__Value;
 		float _flag_PID_D__Roll_Gain;
 		float _flag_PID_D_Pitch_Gain;
 		float _flag_PID_D___Yaw_Gain;
-		float _flag_PID_D_Alt_Gain;
+		float _flag_PID_D_SpeedZ_Gain;
 		float _flag_PID_D_GPS_Gain;
 		float _flag_PID_Level_Max;
 		float _flag_PID_Hover_Throttle;
@@ -215,9 +214,6 @@ namespace SingleAPMAPI
 			int IMUMixFilter_Type;
 			MPUData _uORB_MPU_Data;
 			double _flag_MPU_Accel_Cali[20];
-			double _uORB_MPU_A_Static_Last_X = 0;
-			double _uORB_MPU_A_Static_Last_Y = 0;
-			double _uORB_MPU_A_Static_Last_Z = 0;
 			double _uORB_MPU_Speed_X = 0;
 			double _uORB_MPU_Speed_Y = 0;
 			double _uORB_MPU_Speed_Z = 0;
@@ -226,11 +222,15 @@ namespace SingleAPMAPI
 			double _uORB_MPU_Movement_Z = 0;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
-			double _Tmp_MS5611_Data[10] = {1000, 1000, 1000};
+			double _Tmp_MS5611_Data[10] = {1000, 1000, 1000, 0};
 			double _Tmp_MS5611_Pressure = 0;
 			double _Tmp_MS5611_PressureFast = 0;
 			double _Tmp_MS5611_PressureFill = 0;
 			double _uORB_MS5611_PressureFinal = 0;
+			int _uORB_MS5611_Altitude = 0;
+			int _uORB_MS5611_Last_Altitude = 0;
+			double _Tmp_MS5611_ClimbeRate = 0;
+			double _uORB_MS5611_ClimbeRate = 0;
 			//=========================GPS=========//
 			float _Tmp_QMC5883L_M_XH = 0;
 			float _Tmp_QMC5883L_M_YH = 0;
@@ -327,26 +327,21 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
-			int _flag_PID_SOOMTH_Clock = 0;
-			float _Tmp_PID_D_Alt_Var[30] = {0};
-
+			double _uORB_MS5611_AltDiff = 0;
+			double _uORB_Alt_Dynamic_Beta = 0.993;
 			float _uORB_PID_AltInput = 0;
 			float _uORB_PID_Alt_Throttle = 0;
 			float _uORB_PID_AltHold_Target = 0;
 
-			float _Tmp_PID_D_Last_Value_Alt = 0;
-			float _uORB_PID_I_Last_Value_Alt = 0;
-			float _uORB_PID_D_Last_Value_Alt = 0;
-			float _uORB_PID_D_Total_Value_Alt = 0;
-
-			float _flag_PID_P_Alt_Gain;
-			float _flag_PID_I_Alt_Gain;
-			float _flag_PID_D_Alt_Gain;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
 
-			float _flag_PID_P_TAsix_Gain;
-			unsigned int _uORB_PID_TAsix_Ouput = 0;
+			float _flag_PID_P_SpeedZ_Gain;
+			float _flag_PID_I_SpeedZ_Gain;
+			float _flag_PID_D_SpeedZ_Gain;
+			float _uORB_PID_I_Last_Value_SpeedZ = 0;
+			float _uORB_PID_D_Last_Value_SpeedZ = 0;
+			float _uORB_PID_Speed_Z_Output;
 			//==========PositionHoldPID=========//
 			int _Tmp_PID_D_GPS_AvaClock = 0;
 			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0};
