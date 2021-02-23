@@ -27,8 +27,8 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
     cd RPiSingleAPM && mkdir build
     cd build && cmake ..
     make -j1 && cp SingleAPM /usr/bin
-    cd .. && cp APMconfig.json /etc/
-    SingleAPM -r
+    cd .. && cp APMconfig.json /etc/ #Copy APMConfig.json to /etc/ , this file has flying controller settings,like pid tunning
+    SingleAPM -r # Run APM Programe If data fresh at screen , you can try to fly
 ```
 ### Use RPiSingleAPM for developing
 ```CMAKE
