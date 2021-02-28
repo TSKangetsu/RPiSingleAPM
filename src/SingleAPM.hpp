@@ -184,6 +184,7 @@ namespace SingleAPMAPI
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
 			bool _flag_FlowData_Async;
+			bool _flag_SonarData_Async;
 			bool _flag_IsGPSHoldSet;
 			bool _flag_IsFlowAvalible;
 		} AF;
@@ -265,32 +266,16 @@ namespace SingleAPMAPI
 			int _uORB_GPS_Lng_Smooth = 0;
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
-			int _Tmp_Flow_XOuput_Total = 0;
-			int _Tmp_Flow_YOuput_Total = 0;
-			int _Tmp_Flow_Filter_XOutput_Total = 0;
-			int _Tmp_Flow_Filter_YOutput_Total = 0;
-			int _Tmp_Flow_Altitude_Final = 0;
-
-			float _Tmp_Flow_XOutput_Total_Diff = 0;
-			float _Tmp_Flow_YOutput_Total_Diff = 0;
-			int _Tmp_Flow_XOutput_Total_Smooth_Diff = 0;
-			int _Tmp_Flow_YOutput_Total_Smooth_Diff = 0;
-			int _Tmp_Flow_XOutput_Total_Last_Data = 0;
-			int _Tmp_Flow_YOutput_Total_Last_Data = 0;
 
 			int _uORB_Flow_XOutput = 0;
 			int _uORB_Flow_YOutput = 0;
+			double _uORB_Flow_Filter_XOutput = 0;
+			double _uORB_Flow_Filter_YOutput = 0;
 			int _uORB_Flow_Altitude = 0;
-			int _uORB_Flow_Altitude_Final = 0;
+			double _uORB_Flow_Altitude_Final = 0;
 
-			int _uORB_Flow_Fix_XOutput = 0;
-			int _uORB_Flow_Fix_YOutput = 0;
-
-			int _Tmp_Flow_XOutput_Total_Smooth = 0;
-			int _Tmp_Flow_YOutput_Total_Smooth = 0;
-			int _uORB_Flow_XOutput_Total_Smooth = 0;
-			int _uORB_Flow_YOutput_Total_Smooth = 0;
-
+			int _uORB_Flow_XOutput_Total = 0;
+			int _uORB_Flow_YOutput_Total = 0;
 		} SF;
 
 		struct PIDINFO
@@ -328,14 +313,16 @@ namespace SingleAPMAPI
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
 			double _uORB_MS5611_AltDiff = 0;
-			double _uORB_Alt_Dynamic_Beta = 0.993;
+			double _uORB_Alt_Dynamic_Beta = 0.998;
 			float _uORB_PID_AltInput = 0;
 			float _uORB_PID_Alt_Throttle = 0;
 			float _uORB_PID_AltHold_Target = 0;
 
+			float _flag_PID_Alt_Speed_Max = 50.f; //cm/s
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
 
+			float _flag_PID_P_Alt_Gain = 0.8;
 			float _flag_PID_P_SpeedZ_Gain;
 			float _flag_PID_I_SpeedZ_Gain;
 			float _flag_PID_D_SpeedZ_Gain;
