@@ -13,13 +13,13 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
 
 # BuildConfigure 
 ### Build Test Module And Fly On RaspberryPi:
-```R
+```SHELL
     #TestModule Is using Json lib for FlightController configure
     #You need to compile and install nlohmann/json in you RaspberryPi OS
     git clone https://github.com/nlohmann/json
     cd json && git checkout v3.7.0
     mkdir build && cd build
-    cmake .. & make -j1 #prevent 1GB device OOM,if your Pi is over 2gb can use -j4
+    cmake .. && make -j1 #prevent 1GB device OOM,if your Pi is over 2gb can use -j4
     sudo make install
     cd ../.. #Please make sure what things you are doing
     #Build RPiSingleAPM
@@ -27,11 +27,11 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
     cd RPiSingleAPM && mkdir build
     cd build && cmake ..
     make -j1 && cp SingleAPM /usr/bin
-    cd .. && cp APMconfig.json
-    SingleAPM -r
+    cd .. && cp APMconfig.json /etc/ #Copy APMConfig.json to /etc/ , this file has flying controller settings,like pid tunning
+    SingleAPM -r # Run APM Programe If data fresh at screen , you can try to fly
 ```
 ### Use RPiSingleAPM for developing
-```R
+```CMAKE
     #Do this in you git project if you using CMake
     git submodule add https://github.com/TSKangetsu/RPiSingleAPM [Dir-Where-you-want]
     #In CMAKE
