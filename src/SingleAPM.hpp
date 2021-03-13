@@ -271,8 +271,11 @@ namespace SingleAPMAPI
 			int _uORB_Flow_YOutput = 0;
 			double _uORB_Flow_Filter_XOutput = 0;
 			double _uORB_Flow_Filter_YOutput = 0;
+
 			int _uORB_Flow_Altitude = 0;
 			double _uORB_Flow_Altitude_Final = 0;
+			double _uORB_Flow_Altitude_Last_Final = 0;
+			double _uORB_Flow_ClimbeRate = 0;
 
 			int _uORB_Flow_XOutput_Total = 0;
 			int _uORB_Flow_YOutput_Total = 0;
@@ -312,9 +315,11 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
+			double _uORB_Sonar_AltDiff = 0;
 			double _uORB_MS5611_AltDiff = 0;
 			double _uORB_Alt_Dynamic_Beta = 0.998;
 			float _uORB_PID_AltInput = 0;
+			float _uORB_PID_Sonar_AltInput = 0;
 			float _uORB_PID_Alt_Throttle = 0;
 			float _uORB_PID_AltHold_Target = 0;
 
