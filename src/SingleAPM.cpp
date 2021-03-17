@@ -198,7 +198,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				SF._uORB_MS5611_PressureFinal = SF._Tmp_MS5611_PressureFill;
 				//
 				SF._uORB_MS5611_Last_Altitude = SF._uORB_MS5611_Altitude;
-				SF._uORB_MS5611_Altitude = ((int)(SF._Tmp_MS5611_Data[4] * 10.f) * 10);
+				SF._uORB_MS5611_Altitude = (int)(SF._Tmp_MS5611_Data[4] * 100.f);
 				SF._Tmp_MS5611_ClimbeRate = (SF._uORB_MS5611_Altitude - SF._uORB_MS5611_Last_Altitude) / (TF._flag_ALTThreadTimeMax / 1000000.f);
 				SF._uORB_MS5611_ClimbeRate = SF._uORB_MS5611_ClimbeRate * 0.95 + SF._Tmp_MS5611_ClimbeRate * 0.05;
 				//
@@ -599,12 +599,12 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._Tmp_FlowThreadTimeNext = TF._Tmp_FlowThreadTimeStart - TF._Tmp_FlowThreadTimeEnd;
 				{
 					TF._Tmp_FlowThreadSMooth++;
-					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._uORB_Flow_Altitude);
+					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._Tmp_Flow_Altitude);
 					//
 					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
 					{
-						SF._uORB_Flow_Altitude = SF._uORB_Flow_Altitude * (1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real_Pitch) * 3.14 / 180.f) *
-																					 (1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real__Roll) * 3.14 / 180.f)));
+						SF._uORB_Flow_Altitude = SF._Tmp_Flow_Altitude * (1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real_Pitch) * 3.14 / 180.f) *
+																					(1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real__Roll) * 3.14 / 180.f)));
 						SF._uORB_Flow_Altitude_Last_Final = SF._uORB_Flow_Altitude_Final;
 						SF._uORB_Flow_Altitude_Final += ((float)SF._uORB_Flow_Altitude - SF._uORB_Flow_Altitude_Final) * 0.2;
 						SF._uORB_Flow_ClimbeRate = ((SF._uORB_Flow_Altitude_Final / 10.f) -
@@ -897,48 +897,22 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_PID_Alt_Throttle = 0;
 			PF._uORB_PID_I_Last_Value_SpeedZ = 0;
 			PF._uORB_PID_D_Last_Value_SpeedZ = 0;
-			if (AF._flag_IsFlowAvalible)
-				PF._uORB_PID_AltHold_Target = PF._uORB_PID_Sonar_AltInput;
-			else
-				PF._uORB_PID_AltHold_Target = PF._uORB_PID_AltInput;
 		}
 		//AltHold Caculate
 		{
-			if (AF._flag_IsFlowAvalible)
+			if (AF._flag_SonarData_Async)
 			{
-				if (AF._flag_SonarData_Async)
-				{
-					PF._uORB_PID_Sonar_AltInput = SF._uORB_Flow_Altitude_Final / 10.f;
-					PF._uORB_Sonar_AltDiff = PF._uORB_PID_AltHold_Target - PF._uORB_PID_Sonar_AltInput;
-					if (PF._uORB_Sonar_AltDiff - SF._uORB_MPU_Movement_Z > 30.f || PF._uORB_Sonar_AltDiff - SF._uORB_MPU_Movement_Z < -30.f)
-					{
-						SF._uORB_MPU_Movement_Z = PF._uORB_Sonar_AltDiff;
-					}
-					AF._flag_SonarData_Async = false;
-				}
-				SF._uORB_MPU_Speed_Z = SF._uORB_MPU_Speed_Z * PF._uORB_Alt_Dynamic_Beta +
-									   SF._uORB_Flow_ClimbeRate * (1.f - PF._uORB_Alt_Dynamic_Beta);
-				SF._uORB_MPU_Movement_Z = SF._uORB_MPU_Movement_Z * PF._uORB_Alt_Dynamic_Beta +
-										  PF._uORB_Sonar_AltDiff * (1.f - PF._uORB_Alt_Dynamic_Beta);
+				PF._uORB_PID_Sonar_AltInput = SF._uORB_Flow_Altitude_Final / 10.f;
+				AF._flag_SonarData_Async = false;
 			}
-			else
+			if (AF._flag_MS5611_Async)
 			{
-				if (AF._flag_MS5611_Async)
-				{
-					PF._uORB_PID_AltInput = SF._uORB_MS5611_Altitude;
-					PF._uORB_MS5611_AltDiff = PF._uORB_PID_AltHold_Target - PF._uORB_PID_AltInput;
-					//Update MPU Error
-					if (PF._uORB_MS5611_AltDiff - SF._uORB_MPU_Movement_Z > 30.f || PF._uORB_MS5611_AltDiff - SF._uORB_MPU_Movement_Z < -30.f)
-					{
-						SF._uORB_MPU_Movement_Z = PF._uORB_MS5611_AltDiff;
-					}
-					AF._flag_MS5611_Async = false;
-				}
-				SF._uORB_MPU_Speed_Z = SF._uORB_MPU_Speed_Z * PF._uORB_Alt_Dynamic_Beta +
-									   SF._uORB_MS5611_ClimbeRate * (1.f - PF._uORB_Alt_Dynamic_Beta);
-				SF._uORB_MPU_Movement_Z = SF._uORB_MPU_Movement_Z * PF._uORB_Alt_Dynamic_Beta +
-										  PF._uORB_MS5611_AltDiff * (1.f - PF._uORB_Alt_Dynamic_Beta);
+				PF._uORB_PID_MS5611_AltInput = SF._uORB_MS5611_Altitude;
+				AF._flag_MS5611_Async = false;
 			}
+			double AltitudeMessurement[2] = {PF._uORB_PID_Sonar_AltInput, PF._uORB_PID_MS5611_AltInput};
+			AltitudeEKFDevice.step(AltitudeMessurement);
+			PF._uORB_PID_AltInput_Final = AltitudeEKFDevice.getX(0);
 
 			double TargetSpeed = (SF._uORB_MPU_Movement_Z * PF._flag_PID_P_Alt_Gain);
 			TargetSpeed = TargetSpeed >= PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
@@ -947,59 +921,6 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 						 PF._uORB_PID_Alt_Throttle, PF._uORB_PID_I_Last_Value_SpeedZ, PF._uORB_PID_D_Last_Value_SpeedZ,
 						 PF._flag_PID_P_SpeedZ_Gain, PF._flag_PID_I_SpeedZ_Gain / 100.f, PF._flag_PID_D_SpeedZ_Gain,
 						 PF._flag_PID_Alt_Level_Max);
-		}
-		//Position Caculate
-		{
-			if (AF._flag_GPSData_Async)
-			{
-				if (!AF._flag_IsGPSHoldSet)
-				{
-					PF._uORB_PID_GPS_Lat_Local_Target = SF._uORB_GPS_Lat_Smooth;
-					PF._uORB_PID_GPS_Lng_Local_Target = SF._uORB_GPS_Lng_Smooth;
-				}
-
-				PF._uORB_PID_GPS_Lng_Local_Diff = PF._uORB_PID_GPS_Lng_Local_Target - SF._uORB_GPS_Lng_Smooth;
-				PF._uORB_PID_GPS_Lat_Local_Diff = SF._uORB_GPS_Lat_Smooth - PF._uORB_PID_GPS_Lat_Local_Target;
-
-				PF._Tmp_PID_D_GPS_Lat_Ouput -= PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-				PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lat_Local_Diff - PF._uORB_PID_D_GPS_Lat_LastValue;
-				PF._Tmp_PID_D_GPS_Lat_Ouput += PF._Tmp_PID_D_GPS_Lat_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-
-				PF._Tmp_PID_D_GPS_Lng_Ouput -= PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-				PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock] = PF._uORB_PID_GPS_Lng_Local_Diff - PF._uORB_PID_D_GPS_Lng_LastValue;
-				PF._Tmp_PID_D_GPS_Lng_Ouput += PF._Tmp_PID_D_GPS_Lng_AvaData[PF._Tmp_PID_D_GPS_AvaClock];
-				PF._Tmp_PID_D_GPS_AvaClock++;
-				if (PF._Tmp_PID_D_GPS_AvaClock == 35)
-				{
-					PF._Tmp_PID_D_GPS_AvaClock = 0;
-				}
-
-				PF._uORB_PID_D_GPS_Lat_LastValue = PF._uORB_PID_GPS_Lat_Local_Diff;
-				PF._uORB_PID_D_GPS_Lng_LastValue = PF._uORB_PID_GPS_Lng_Local_Diff;
-
-				PF._uORB_PID_GPS_Lat_Ouput = (float)PF._uORB_PID_GPS_Lat_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._Tmp_PID_D_GPS_Lat_Ouput * PF._flag_PID_D_GPS_Gain;
-				PF._uORB_PID_GPS_Lng_Ouput = (float)PF._uORB_PID_GPS_Lng_Local_Diff * PF._flag_PID_P_GPS_Gain + PF._Tmp_PID_D_GPS_Lng_Ouput * PF._flag_PID_D_GPS_Gain;
-
-				PF._uORB_PID_GPS_Lat_Ouput = !SF._uORB_GPS_Data.lat_North_Mode ? PF._uORB_PID_GPS_Lat_Ouput * -1 : PF._uORB_PID_GPS_Lat_Ouput;
-				PF._uORB_PID_GPS_Lng_Ouput = !SF._uORB_GPS_Data.lat_East_Mode ? PF._uORB_PID_GPS_Lng_Ouput * -1 : PF._uORB_PID_GPS_Lng_Ouput;
-
-				if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsGPSHoldSet)
-				{
-					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS_Lng_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lat_Ouput * cos((SF._uORB_QMC5883L_Head - 90.f) * 3.14 / 180.f);
-					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Lat_Ouput * cos(SF._uORB_QMC5883L_Head * 3.14 / 180.f) + PF._uORB_PID_GPS_Lng_Ouput * cos((SF._uORB_QMC5883L_Head + 90.f) * 3.14 / 180.f);
-
-					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
-					PF._uORB_PID_GPS__Roll_Ouput = PF._uORB_PID_GPS__Roll_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS__Roll_Ouput;
-					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Pitch_Ouput > PF._flag_PID_GPS_Level_Max ? PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS_Pitch_Ouput;
-					PF._uORB_PID_GPS_Pitch_Ouput = PF._uORB_PID_GPS_Pitch_Ouput < -1 * PF._flag_PID_GPS_Level_Max ? -1 * PF._flag_PID_GPS_Level_Max : PF._uORB_PID_GPS_Pitch_Ouput;
-				}
-				else
-				{
-					PF._uORB_PID_GPS__Roll_Ouput = 0;
-					PF._uORB_PID_GPS_Pitch_Ouput = 0;
-				}
-				AF._flag_GPSData_Async = false;
-			}
 		}
 		//Roll PID Mix
 		{
@@ -1165,10 +1086,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		<< "\n";
 	std::cout << " FlowXOut:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput;
 	std::cout << " ||FlowYOut:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput;
-	std::cout << " ||FlowAltitude:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Altitude_Final << "            \n";
+	std::cout << " ||FlowAltitude:" << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_Flow_Altitude << "            \n";
 	std::cout << " FlowXOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput_Total;
 	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput_Total;
 	std::cout << " ||FlowSpeed" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_ClimbeRate << "cm/s          \n";
+
+	std::cout << "FinalAltitude:" << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltInput_Final << "          \n";
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";

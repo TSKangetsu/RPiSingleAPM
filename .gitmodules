@@ -7,3 +7,6 @@
 [submodule "src/_thirdparty/RaspberryPiMPU"]
 	path = src/_thirdparty/RaspberryPiMPU
 	url = https://github.com/TSKangetsu/RaspberryPiMPU.git
+[submodule "src/_thirdparty/EKFImplement"]
+	path = src/_thirdparty/EKFImplement
+	url = https://github.com/simondlevy/TinyEKF

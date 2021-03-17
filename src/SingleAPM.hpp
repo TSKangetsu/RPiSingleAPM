@@ -12,6 +12,7 @@
 #include <iostream>
 #include <linux/i2c-dev.h>
 #include "_thirdparty/pca9685.h"
+#include "_thirdparty/EKFImpement.hpp"
 #include "_thirdparty/RPiMS5611LIB/src/MS5611LIB.h"
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
@@ -146,6 +147,7 @@ namespace SingleAPMAPI
 		MSPUartFlow *FlowInit;
 		int DEBUGOuputCleaner = 0;
 		GPSI2CCompass_QMC5883L *GPSMAGInit;
+		AltitudeEKF AltitudeEKFDevice;
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
@@ -272,7 +274,8 @@ namespace SingleAPMAPI
 			double _uORB_Flow_Filter_XOutput = 0;
 			double _uORB_Flow_Filter_YOutput = 0;
 
-			int _uORB_Flow_Altitude = 0;
+			int _Tmp_Flow_Altitude = 0;
+			double _uORB_Flow_Altitude = 0;
 			double _uORB_Flow_Altitude_Final = 0;
 			double _uORB_Flow_Altitude_Last_Final = 0;
 			double _uORB_Flow_ClimbeRate = 0;
@@ -315,15 +318,14 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
-			double _uORB_Sonar_AltDiff = 0;
-			double _uORB_MS5611_AltDiff = 0;
 			double _uORB_Alt_Dynamic_Beta = 0.998;
-			float _uORB_PID_AltInput = 0;
 			float _uORB_PID_Sonar_AltInput = 0;
+			float _uORB_PID_MS5611_AltInput = 0;
+			float _uORB_PID_AltInput_Final = 0;
 			float _uORB_PID_Alt_Throttle = 0;
 			float _uORB_PID_AltHold_Target = 0;
 
-			float _flag_PID_Alt_Speed_Max = 50.f; //cm/s
+			float _flag_PID_Alt_Speed_Max = 50.f;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
 
