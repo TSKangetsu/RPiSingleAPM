@@ -7,16 +7,16 @@ class AltitudeEKF : public TinyEKF
 public:
     AltitudeEKF()
     {
-        this->setQ(0, 0, .0005);
-        this->setQ(1, 1, .0005);
+        this->setQ(0, 0, .033);
+        this->setQ(1, 1, .033);
 
         this->setR(0, 0, .5);
-        this->setR(1, 1, .02);
-        this->setR(2, 2, .1);
+        this->setR(1, 1, .05);
+        this->setR(2, 2, .08);
 
         this->setR(3, 3, .5);
-        this->setR(4, 4, .02);
-        this->setR(5, 5, .1);
+        this->setR(4, 4, .05);
+        this->setR(5, 5, .08);
     }
 
 protected:
@@ -36,12 +36,12 @@ protected:
         hx[4] = this->x[1];
         hx[5] = this->x[1];
 
-        H[0][0] = 0.933;
-        H[1][0] = 0.120131 * pow((1 - 2.2577e-7 * x[0]), 4.25588);
-        H[2][0] = 0.933;
+        H[0][0] = 1;
+        H[1][0] = 1;
+        H[2][0] = 1;
 
-        H[3][1] = 0.933;
-        H[4][1] = 0.120131 * pow((1 - 2.2577e-7 * x[0]), 4.25588);
-        H[5][1] = 0.933;
+        H[3][1] = 1;
+        H[4][1] = 1;
+        H[5][1] = 1;
     }
 };

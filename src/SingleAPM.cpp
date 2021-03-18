@@ -923,7 +923,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			double TargetSpeed = ((SF._uORB_MPU_Movement_Z - PF._uORB_PID_AltHold_Target) * PF._flag_PID_P_Alt_Gain);
 			TargetSpeed = TargetSpeed >= PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			TargetSpeed = TargetSpeed <= -1 * PF._flag_PID_Alt_Speed_Max ? -1 * PF._flag_PID_Alt_Speed_Max : TargetSpeed;
-			PID_Caculate(TargetSpeed - SF._uORB_MPU_Speed_Z,
+			PID_Caculate((-1 * TargetSpeed) - SF._uORB_MPU_Speed_Z,
 						 PF._uORB_PID_Alt_Throttle, PF._uORB_PID_I_Last_Value_SpeedZ, PF._uORB_PID_D_Last_Value_SpeedZ,
 						 PF._flag_PID_P_SpeedZ_Gain, PF._flag_PID_I_SpeedZ_Gain / 100.f, PF._flag_PID_D_SpeedZ_Gain,
 						 PF._flag_PID_Alt_Level_Max);
