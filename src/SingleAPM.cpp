@@ -891,12 +891,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			SF._uORB_MPU_Speed_Z = 0;
 			SF._uORB_MPU_Movement_X = 0;
 			SF._uORB_MPU_Movement_Y = 0;
-			SF._uORB_MPU_Movement_Z = 0;
+			SF._uORB_MPU_Movement_Z = PF._uORB_PID_AltInput_Final;
 			SF._uORB_Flow_XOutput_Total = 0;
 			SF._uORB_Flow_YOutput_Total = 0;
 			PF._uORB_PID_Alt_Throttle = 0;
 			PF._uORB_PID_I_Last_Value_SpeedZ = 0;
 			PF._uORB_PID_D_Last_Value_SpeedZ = 0;
+			PF._uORB_PID_AltHold_Target = PF._uORB_PID_AltInput_Final;
 		}
 		//AltHold Caculate
 		{
@@ -910,11 +911,16 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_PID_MS5611_AltInput = SF._uORB_MS5611_Altitude;
 				AF._flag_MS5611_Async = false;
 			}
-			double AltitudeMessurement[2] = {PF._uORB_PID_Sonar_AltInput, PF._uORB_PID_MS5611_AltInput};
+			double AltitudeMessurement[6] = {PF._uORB_PID_Sonar_AltInput, PF._uORB_PID_MS5611_AltInput, SF._uORB_MPU_Movement_Z,
+											 SF._uORB_Flow_ClimbeRate, SF._uORB_MS5611_ClimbeRate, SF._uORB_MPU_Speed_Z};
 			AltitudeEKFDevice.step(AltitudeMessurement);
 			PF._uORB_PID_AltInput_Final = AltitudeEKFDevice.getX(0);
-
-			double TargetSpeed = (SF._uORB_MPU_Movement_Z * PF._flag_PID_P_Alt_Gain);
+			PF._uORB_PID_SpeedZ_Final = AltitudeEKFDevice.getX(1);
+			//
+			SF._uORB_MPU_Movement_Z = SF._uORB_MPU_Movement_Z * PF._uORB_Alt_Dynamic_Beta + PF._uORB_PID_AltInput_Final * (1.f - PF._uORB_Alt_Dynamic_Beta);
+			SF._uORB_MPU_Speed_Z = SF._uORB_MPU_Speed_Z * PF._uORB_Alt_Dynamic_Beta + PF._uORB_PID_SpeedZ_Final * (1.f - PF._uORB_Alt_Dynamic_Beta);
+			//
+			double TargetSpeed = ((SF._uORB_MPU_Movement_Z - PF._uORB_PID_AltHold_Target) * PF._flag_PID_P_Alt_Gain);
 			TargetSpeed = TargetSpeed >= PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			TargetSpeed = TargetSpeed <= -1 * PF._flag_PID_Alt_Speed_Max ? -1 * PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			PID_Caculate(TargetSpeed - SF._uORB_MPU_Speed_Z,
@@ -1091,7 +1097,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput_Total;
 	std::cout << " ||FlowSpeed" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_ClimbeRate << "cm/s          \n";
 
-	std::cout << "FinalAltitude:" << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltInput_Final << "          \n";
+	std::cout << "EKFINFO: EKFAltitude:" << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltInput_Final << "||"
+			  << "EKFZSPEED:" << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_SpeedZ_Final << "          \n";
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";

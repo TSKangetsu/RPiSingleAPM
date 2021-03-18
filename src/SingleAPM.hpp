@@ -318,10 +318,11 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
-			double _uORB_Alt_Dynamic_Beta = 0.998;
+			double _uORB_Alt_Dynamic_Beta = 0.995;
 			float _uORB_PID_Sonar_AltInput = 0;
 			float _uORB_PID_MS5611_AltInput = 0;
 			float _uORB_PID_AltInput_Final = 0;
+			float _uORB_PID_SpeedZ_Final = 0;
 			float _uORB_PID_Alt_Throttle = 0;
 			float _uORB_PID_AltHold_Target = 0;
 
