@@ -7,6 +7,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		AF.RC_Lose_Clocking = 0;
 		AF.GPS_Lose_Clocking = 0;
+		AF.Flow_Lose_Clocking = 0;
 		AF._flag_ESC_ARMED = true;
 		AF._flag_IsFlowAvalible = false;
 		AF._flag_MPU9250_first_StartUp = true;
@@ -605,14 +606,35 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					{
 						SF._uORB_Flow_Altitude = SF._Tmp_Flow_Altitude * (1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real_Pitch) * 3.14 / 180.f) *
 																					(1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real__Roll) * 3.14 / 180.f)));
+						if (30.f < SF._Tmp_Flow_Altitude && SF._Tmp_Flow_Altitude < 1800.f)
+						{
+							AF.Flow_Lose_Clocking--;
+							if (AF.Flow_Lose_Clocking < 0)
+							{
+								AF._flag_IsFlowAvalible = true;
+								AF.Flow_Lose_Clocking = 0;
+							}
+						}
+						else
+						{
+							SF._uORB_Flow_Altitude = SF._uORB_Flow_Altitude_Last_Final;
+							AF.Flow_Lose_Clocking++;
+						}
 						SF._uORB_Flow_Altitude_Last_Final = SF._uORB_Flow_Altitude_Final;
 						SF._uORB_Flow_Altitude_Final += ((float)SF._uORB_Flow_Altitude - SF._uORB_Flow_Altitude_Final) * 0.2;
+						//
 						SF._uORB_Flow_ClimbeRate = ((SF._uORB_Flow_Altitude_Final / 10.f) -
 													(SF._uORB_Flow_Altitude_Last_Final / 10.f)) /
 												   (35000.f / 1000000.f);
+						if (AF.Flow_Lose_Clocking > 5)
+						{
+							AF._flag_IsFlowAvalible = false;
+							SF._uORB_Flow_Altitude_Final = 0;
+							SF._uORB_Flow_ClimbeRate = 0;
+							AF.Flow_Lose_Clocking = 5;
+						}
 						AF._flag_SonarData_Async = true;
 					}
-					//
 					if (SF._Tmp_Flow___Status == 2 || SF._Tmp_Flow___Status == 3)
 					{
 						SF._uORB_Flow_Filter_XOutput = SF._uORB_Flow_Filter_XOutput * 0.9 + ((float)SF._uORB_Flow_XOutput * SF._uORB_Flow_Altitude_Final / 100.f) * 0.1;
@@ -622,18 +644,9 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						TF._Tmp_FlowThreadSMooth = 0;
 						AF._flag_FlowData_Async = true;
 					}
-					//
 					if (TF._Tmp_FlowThreadSMooth >= 12)
 					{
 						TF._flag_FlowErrorTimes++;
-					}
-					if (20.f < SF._uORB_Flow_Altitude_Final && SF._uORB_Flow_Altitude_Final < 1800.f)
-					{
-						AF._flag_IsFlowAvalible = true;
-					}
-					else
-					{
-						AF._flag_IsFlowAvalible = false;
 					}
 				}
 				TF._Tmp_FlowThreadTimeEnd = micros();
@@ -911,11 +924,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_PID_MS5611_AltInput = SF._uORB_MS5611_Altitude;
 				AF._flag_MS5611_Async = false;
 			}
-			double AltitudeMessurement[6] = {PF._uORB_PID_Sonar_AltInput, PF._uORB_PID_MS5611_AltInput, SF._uORB_MPU_Movement_Z,
-											 SF._uORB_Flow_ClimbeRate, SF._uORB_MS5611_ClimbeRate, SF._uORB_MPU_Speed_Z};
-			AltitudeEKFDevice.step(AltitudeMessurement);
-			PF._uORB_PID_AltInput_Final = AltitudeEKFDevice.getX(0);
-			PF._uORB_PID_SpeedZ_Final = AltitudeEKFDevice.getX(1);
+			double EKFMessurement[6] = {PF._uORB_PID_Sonar_AltInput, PF._uORB_PID_MS5611_AltInput, SF._uORB_MPU_Movement_Z,
+										SF._uORB_Flow_ClimbeRate, SF._uORB_MS5611_ClimbeRate, SF._uORB_MPU_Speed_Z};
+			EKFDevice.step(EKFMessurement);
+			PF._uORB_PID_AltInput_Final = EKFDevice.getX(0);
+			PF._uORB_PID_SpeedZ_Final = EKFDevice.getX(1);
 			//
 			SF._uORB_MPU_Movement_Z = SF._uORB_MPU_Movement_Z * PF._uORB_Alt_Dynamic_Beta + PF._uORB_PID_AltInput_Final * (1.f - PF._uORB_Alt_Dynamic_Beta);
 			SF._uORB_MPU_Speed_Z = SF._uORB_MPU_Speed_Z * PF._uORB_Alt_Dynamic_Beta + PF._uORB_PID_SpeedZ_Final * (1.f - PF._uORB_Alt_Dynamic_Beta);
@@ -1092,7 +1105,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		<< "\n";
 	std::cout << " FlowXOut:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput;
 	std::cout << " ||FlowYOut:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput;
-	std::cout << " ||FlowAltitude:" << std::setw(7) << std::setfill(' ') << (int)SF._Tmp_Flow_Altitude << "            \n";
+	std::cout << " ||FlowAltitude:" << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Sonar_AltInput << "            \n";
 	std::cout << " FlowXOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput_Total;
 	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput_Total;
 	std::cout << " ||FlowSpeed" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_ClimbeRate << "cm/s          \n";
@@ -1136,6 +1149,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_GPS_Error:         " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Error << "           \n";
 	std::cout << " Flag_ClockingTime_Error:" << std::setw(3) << std::setfill(' ') << AF._flag_ClockingTime_Error << " |";
 	std::cout << " Flag_RC_Disconnected:   " << std::setw(3) << std::setfill(' ') << AF._flag_RC_Disconnected << " |";
+	std::cout << " Flag_Flow_ErrorClock:   " << std::setw(3) << std::setfill(' ') << AF.Flow_Lose_Clocking << " |";
 	std::cout << " Flag_GPS_Disconnected:  " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Disconnected << "         \n";
 	std::cout << " Flag_IsGPSHoldSet:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsGPSHoldSet << " |";
 	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";

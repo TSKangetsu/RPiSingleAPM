@@ -147,7 +147,7 @@ namespace SingleAPMAPI
 		MSPUartFlow *FlowInit;
 		int DEBUGOuputCleaner = 0;
 		GPSI2CCompass_QMC5883L *GPSMAGInit;
-		AltitudeEKF AltitudeEKFDevice;
+		TotalEKF EKFDevice;
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
@@ -182,6 +182,7 @@ namespace SingleAPMAPI
 			bool _flag_GPS_Disconnected;
 			long int RC_Lose_Clocking;
 			long int GPS_Lose_Clocking;
+			long int Flow_Lose_Clocking;
 
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
@@ -231,6 +232,7 @@ namespace SingleAPMAPI
 			double _Tmp_MS5611_PressureFill = 0;
 			double _uORB_MS5611_PressureFinal = 0;
 			int _uORB_MS5611_Altitude = 0;
+			double _uORB_MS5611_AltitudeOffset = 0;
 			int _uORB_MS5611_Last_Altitude = 0;
 			double _Tmp_MS5611_ClimbeRate = 0;
 			double _uORB_MS5611_ClimbeRate = 0;

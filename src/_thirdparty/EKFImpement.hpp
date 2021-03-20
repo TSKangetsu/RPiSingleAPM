@@ -2,21 +2,24 @@
 #define Mobs 6
 #include "EKFImplement/src/TinyEKF.h"
 
-class AltitudeEKF : public TinyEKF
+class TotalEKF : public TinyEKF
 {
 public:
-    AltitudeEKF()
+    TotalEKF()
     {
-        this->setQ(0, 0, .033);
-        this->setQ(1, 1, .033);
+        this->setQ(0, 0, .0001);
+        this->setR(0, 0, 5);
+        this->setQ(1, 1, .0001);
+        this->setR(1, 1, .5);
+        this->setQ(2, 2, .08);
+        this->setR(2, 2, .5);
 
-        this->setR(0, 0, .5);
-        this->setR(1, 1, .05);
-        this->setR(2, 2, .08);
-
-        this->setR(3, 3, .5);
-        this->setR(4, 4, .05);
-        this->setR(5, 5, .08);
+        this->setQ(3, 3, .0001);
+        this->setR(3, 3, .9);
+        this->setQ(4, 4, .001);
+        this->setR(4, 4, .5);
+        this->setQ(5, 5, .005);
+        this->setR(5, 5, .1);
     }
 
 protected:
