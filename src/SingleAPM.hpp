@@ -153,9 +153,9 @@ namespace SingleAPMAPI
 						  float &last_I_Data, float &last_D_Data,
 						  float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
-		void PIDSoomth_Caculate(float TargetData, float inputData, float &outputData,
-								float &Last_I_Data, float &Total_D_Data, float &Last_D_Data, float (&Ava_D_Data)[30],
-								float P_Gain, float I_Gain, float D_Gain, float outputMax, bool StartPIDFlag);
+		void PID_CaculateExtend(float inputDataP, float inputDataI, float inputDataD, float &outputData,
+								float &last_I_Data, float &last_D_Data,
+								float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
 		void ConfigReader(APMSettinngs APMInit);
 
@@ -232,7 +232,6 @@ namespace SingleAPMAPI
 			double _Tmp_MS5611_PressureFill = 0;
 			double _uORB_MS5611_PressureFinal = 0;
 			int _uORB_MS5611_Altitude = 0;
-			double _uORB_MS5611_AltitudeOffset = 0;
 			int _uORB_MS5611_Last_Altitude = 0;
 			double _Tmp_MS5611_ClimbeRate = 0;
 			double _uORB_MS5611_ClimbeRate = 0;
@@ -320,25 +319,32 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			//===============AltHoldPID=========//
-			double _uORB_Alt_Dynamic_Beta = 0.995;
+			//Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
+			float _uORB_PID_Sonar_GroundOffset = 0;
 			float _uORB_PID_MS5611_AltInput = 0;
 			float _uORB_PID_AltInput_Final = 0;
-			float _uORB_PID_SpeedZ_Final = 0;
-			float _uORB_PID_Alt_Throttle = 0;
 			float _uORB_PID_AltHold_Target = 0;
-
+			//Target Speed
+			float _uORB_PID_InputTarget = 0;
+			float _uORB_PID_Smooth_InputTarget = 0;
+			float _uORB_PID_SpeedZ_Final = 0;
+			//Target Output
+			float _uORB_PID_Alt_Throttle = 0;
+			//AltHold Gain
+			double _flag_Alt_Dynamic_Beta = 0.986;
 			float _flag_PID_Alt_Speed_Max = 50.f;
+			float _flag_PID_P_TAsix_Gain = 1.f;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
-
+			//
 			float _flag_PID_P_Alt_Gain = 0.8;
 			float _flag_PID_P_SpeedZ_Gain;
 			float _flag_PID_I_SpeedZ_Gain;
 			float _flag_PID_D_SpeedZ_Gain;
 			float _uORB_PID_I_Last_Value_SpeedZ = 0;
 			float _uORB_PID_D_Last_Value_SpeedZ = 0;
-			float _uORB_PID_Speed_Z_Output;
+
 			//==========PositionHoldPID=========//
 			int _Tmp_PID_D_GPS_AvaClock = 0;
 			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0};
