@@ -65,7 +65,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 			else
 			{
-				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data);
+				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, false);
 				MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[2], 5);
 #ifdef RPiDEBUGStart
 				std::cout << "Done! "
@@ -199,17 +199,16 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				TF._Tmp_ALTThreadTimeStart = micros();
 				TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-				SF._Tmp_MS5611_Error = MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
+				SF._Tmp_MS5611_Error = MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 				//
-				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[0];
-				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_Data[1];
-				SF._Tmp_MS5611_PressureFill = SF._Tmp_MS5611_Data[2];
+				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[MS5611RawPressure];
+				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_Data[MS5611FastPressure];
+				SF._Tmp_MS5611_PressureFill = SF._Tmp_MS5611_Data[MS5611FilterPressure];
 				SF._uORB_MS5611_PressureFinal = SF._Tmp_MS5611_PressureFill;
 				//
 				SF._uORB_MS5611_Last_Altitude = SF._uORB_MS5611_Altitude;
 				SF._uORB_MS5611_Altitude = ((int)(SF._Tmp_MS5611_Data[4] * 100.f));
-				SF._Tmp_MS5611_ClimbeRate = (SF._uORB_MS5611_Altitude - SF._uORB_MS5611_Last_Altitude) / (TF._flag_ALTThreadTimeMax / 1000000.f);
-				SF._uORB_MS5611_ClimbeRate = SF._uORB_MS5611_ClimbeRate * 0.95 + SF._Tmp_MS5611_ClimbeRate * 0.05;
+				SF._uORB_MS5611_ClimbeRate = (SF._uORB_MS5611_Altitude - SF._uORB_MS5611_Last_Altitude) / (TF._flag_ALTThreadTimeMax / 1000000.f);
 				//
 				AF._flag_MS5611_Async = true;
 
@@ -380,7 +379,26 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					AF.AutoPilotMode = APModeINFO::AutoStable;
 				}
 			}
-
+			//
+			if (AF.AutoPilotMode == APModeINFO::AltHold)
+			{
+				if (RF._flag_RC_Mid_PWM_Value + 100 < RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle < RF._flag_RC_Max_PWM_Value + 100)
+				{
+					RF._uORB_RC_Out_AltHoldSpeed = ((500.f - (RF._flag_RC_Max_PWM_Value - RF._uORB_RC_Out_Throttle)) / 500.f) * PF._flag_PID_Alt_Speed_Max * -1;
+				}
+				else if (RF._flag_RC_Mid_PWM_Value - 100 > RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value - 100)
+				{
+					RF._uORB_RC_Out_AltHoldSpeed = ((500.f - (RF._uORB_RC_Out_Throttle - RF._flag_RC_Min_PWM_Value)) / 500.f) * PF._flag_PID_Alt_Speed_Max;
+				}
+				else
+				{
+					RF._uORB_RC_Out_AltHoldSpeed = 0;
+				}
+			}
+			else
+			{
+				RF._uORB_RC_Out_AltHoldSpeed = 0;
+			}
 			TF._Tmp_RXTThreadTimeEnd = micros();
 			TF._Tmp_RXTThreadTimeLoop = TF._Tmp_RXTThreadTimeEnd - TF._Tmp_RXTThreadTimeStart;
 			if (TF._Tmp_RXTThreadTimeLoop + TF._Tmp_RXTThreadTimeNext > TF._flag_RXTThreadTimeMax | TF._Tmp_RXTThreadTimeNext < 0)
@@ -928,15 +946,17 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		{
 			SF._uORB_MPU_Speed_X = 0;
 			SF._uORB_MPU_Speed_Y = 0;
-			SF._uORB_MPU_Speed_Z = 0;
 			SF._uORB_MPU_Movement_X = 0;
 			SF._uORB_MPU_Movement_Y = 0;
+			PF._uORB_PID_Alt_Throttle = 0;
 			SF._uORB_Flow_XOutput_Total = 0;
 			SF._uORB_Flow_YOutput_Total = 0;
-			PF._uORB_PID_Alt_Throttle = 0;
 			PF._uORB_PID_I_Last_Value_SpeedZ = 0;
 			PF._uORB_PID_D_Last_Value_SpeedZ = 0;
-			SF._uORB_MPU_Movement_Z = PF._uORB_PID_AltInput_Final;
+			PF._uORB_PID_AltHold_Target = PF._uORB_PID_AltInput_Final;
+		}
+		if (RF._uORB_RC_Out_AltHoldSpeed != 0)
+		{
 			PF._uORB_PID_AltHold_Target = PF._uORB_PID_AltInput_Final;
 		}
 		//AltHold Caculate
@@ -944,6 +964,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			if (AF._flag_MS5611_Async)
 			{
 				PF._uORB_PID_MS5611_AltInput = SF._uORB_MS5611_Altitude;
+				if (AF._flag_IsFlowAvalible)
+				{
+					PF._uORB_PID_MS5611_AltInput = PF._uORB_PID_Sonar_AltInput;
+					SF._uORB_MS5611_ClimbeRate = SF._uORB_Flow_ClimbeRate;
+				}
 				AF._flag_MS5611_Async = false;
 			}
 			if (AF._flag_SonarData_Async)
@@ -957,8 +982,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				AF._flag_SonarData_Async = false;
 			}
 			//
-			double EKFMessurement[4] = {PF._uORB_PID_Sonar_AltInput, PF._uORB_PID_MS5611_AltInput,
-										SF._uORB_Flow_ClimbeRate, SF._uORB_MS5611_ClimbeRate};
+			double EKFMessurement[6] = {PF._uORB_PID_Sonar_AltInput, PF._uORB_PID_MS5611_AltInput, SF._uORB_MPU_Movement_Z,
+										SF._uORB_Flow_ClimbeRate, SF._uORB_MS5611_ClimbeRate, SF._uORB_MPU_Speed_Z};
 			EKFDevice.step(EKFMessurement);
 			PF._uORB_PID_AltInput_Final = EKFDevice.getX(0);
 			PF._uORB_PID_SpeedZ_Final = EKFDevice.getX(1);
@@ -966,17 +991,20 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			SF._uORB_MPU_Movement_Z = SF._uORB_MPU_Movement_Z * PF._flag_Alt_Dynamic_Beta + PF._uORB_PID_AltInput_Final * (1.f - PF._flag_Alt_Dynamic_Beta);
 			SF._uORB_MPU_Speed_Z = SF._uORB_MPU_Speed_Z * PF._flag_Alt_Dynamic_Beta + PF._uORB_PID_SpeedZ_Final * (1.f - PF._flag_Alt_Dynamic_Beta);
 			//
-			double TargetSpeed = -1 * (SF._uORB_MPU_Movement_Z - PF._uORB_PID_AltHold_Target) * PF._flag_PID_P_Alt_Gain;
-			TargetSpeed = TargetSpeed >= PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
-			TargetSpeed = TargetSpeed <= -1 * PF._flag_PID_Alt_Speed_Max ? -1 * PF._flag_PID_Alt_Speed_Max : TargetSpeed;
+			double TargetSpeed = -1 * (SF._uORB_MPU_Movement_Z - PF._uORB_PID_AltHold_Target) * PF._flag_PID_P_Alt_Gain - RF._uORB_RC_Out_AltHoldSpeed;
+			TargetSpeed = TargetSpeed > PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
+			TargetSpeed = TargetSpeed < -1 * PF._flag_PID_Alt_Speed_Max ? -1 * PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			PF._uORB_PID_InputTarget = TargetSpeed - SF._uORB_MPU_Speed_Z;
-			PF._uORB_PID_Smooth_InputTarget += (PF._uORB_PID_InputTarget - PF._uORB_PID_Smooth_InputTarget) * 0.9;
-			PID_CaculateExtend(PF._uORB_PID_InputTarget, PF._uORB_PID_InputTarget, PF._uORB_PID_Smooth_InputTarget,
-							   PF._uORB_PID_Alt_Throttle, PF._uORB_PID_I_Last_Value_SpeedZ, PF._uORB_PID_D_Last_Value_SpeedZ,
-							   PF._flag_PID_P_SpeedZ_Gain, PF._flag_PID_I_SpeedZ_Gain / 100.f, PF._flag_PID_D_SpeedZ_Gain,
-							   PF._flag_PID_Alt_Level_Max);
-			PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle >= PF._flag_PID_Alt_Level_Max ? PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
-			PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle <= -1 * PF._flag_PID_Alt_Level_Max ? -1 * PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
+			PF._uORB_PID_Smooth_InputTarget += (PF._uORB_PID_InputTarget - PF._uORB_PID_Smooth_InputTarget) * 0.155;
+			if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold)
+			{
+				PID_CaculateExtend(PF._uORB_PID_InputTarget, PF._uORB_PID_InputTarget, PF._uORB_PID_Smooth_InputTarget,
+								   PF._uORB_PID_Alt_Throttle, PF._uORB_PID_I_Last_Value_SpeedZ, PF._uORB_PID_D_Last_Value_SpeedZ,
+								   PF._flag_PID_P_SpeedZ_Gain, PF._flag_PID_I_SpeedZ_Gain / 100.f, PF._flag_PID_D_SpeedZ_Gain,
+								   PF._flag_PID_Alt_Level_Max);
+				PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle > PF._flag_PID_Alt_Level_Max ? PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
+				PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle < -1 * PF._flag_PID_Alt_Level_Max ? -1 * PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
+			}
 		}
 		//Roll PID Mix
 		{

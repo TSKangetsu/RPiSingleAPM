@@ -233,7 +233,6 @@ namespace SingleAPMAPI
 			double _uORB_MS5611_PressureFinal = 0;
 			int _uORB_MS5611_Altitude = 0;
 			int _uORB_MS5611_Last_Altitude = 0;
-			double _Tmp_MS5611_ClimbeRate = 0;
 			double _uORB_MS5611_ClimbeRate = 0;
 			//=========================GPS=========//
 			float _Tmp_QMC5883L_M_XH = 0;
@@ -386,6 +385,7 @@ namespace SingleAPMAPI
 			int _uORB_RC_Out___Yaw;
 			int _uORB_RC_Out___ARM;
 			int _uORB_RC_Out_FlyMod;
+			int _uORB_RC_Out_AltHoldSpeed = 0;
 
 			int _flag_RCIsReserv__Roll = 1;
 			int _flag_RCIsReserv_Pitch = 1;
@@ -453,7 +453,7 @@ namespace SingleAPMAPI
 			int _Tmp_ALTThreadTimeNext = 0;
 			int _Tmp_ALTThreadTimeLoop = 0;
 			int _Tmp_ALTThreadError = 0;
-			int _flag_ALTThreadTimeMax = (float)1 / 85 * 1000000;
+			int _flag_ALTThreadTimeMax = (float)1 / 45 * 1000000;
 			int _flag_ALTErrorTimes = 0;
 			std::thread *ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;
