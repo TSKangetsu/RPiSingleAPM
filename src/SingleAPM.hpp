@@ -56,7 +56,6 @@ namespace SingleAPMAPI
 		float _flag_PID_P_Pitch_Gain;
 		float _flag_PID_P___Yaw_Gain;
 		float _flag_PID_P_SpeedZ_Gain;
-		float _flag_PID_P_GPS_Gain;
 		float _flag_PID_I__Roll_Gain;
 		float _flag_PID_I_Pitch_Gain;
 		float _flag_PID_I___Yaw_Gain;
@@ -68,7 +67,6 @@ namespace SingleAPMAPI
 		float _flag_PID_D_Pitch_Gain;
 		float _flag_PID_D___Yaw_Gain;
 		float _flag_PID_D_SpeedZ_Gain;
-		float _flag_PID_D_GPS_Gain;
 		float _flag_PID_Level_Max;
 		float _flag_PID_Hover_Throttle;
 		float _flag_PID_Alt_Level_Max;
@@ -271,6 +269,10 @@ namespace SingleAPMAPI
 
 			int _uORB_Flow_XOutput = 0;
 			int _uORB_Flow_YOutput = 0;
+			double _uORB_Gryo_Body_Asix_X = 0;
+			double _uORB_Gryo_Body_Asix_Y = 0;
+			double _uORB_Flow_Body_Asix_X = 0;
+			double _uORB_Flow_Body_Asix_Y = 0;
 			double _uORB_Flow_Filter_XOutput = 0;
 			double _uORB_Flow_Filter_YOutput = 0;
 
@@ -331,7 +333,7 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			double _flag_Alt_Dynamic_Beta = 0.986;
+			double _flag_Alt_Dynamic_Beta = 0.996;
 			float _flag_PID_Alt_Speed_Max = 50.f;
 			float _flag_PID_P_TAsix_Gain = 1.f;
 			float _flag_PID_Alt_Level_Max;
@@ -343,30 +345,7 @@ namespace SingleAPMAPI
 			float _flag_PID_D_SpeedZ_Gain;
 			float _uORB_PID_I_Last_Value_SpeedZ = 0;
 			float _uORB_PID_D_Last_Value_SpeedZ = 0;
-
 			//==========PositionHoldPID=========//
-			int _Tmp_PID_D_GPS_AvaClock = 0;
-			int _Tmp_PID_D_GPS_Lat_AvaData[35] = {0};
-			int _Tmp_PID_D_GPS_Lng_AvaData[35] = {0};
-
-			int _Tmp_PID_D_GPS_Lat_Ouput = 0;
-			int _Tmp_PID_D_GPS_Lng_Ouput = 0;
-
-			int _uORB_PID_GPS_Lat_Local_Diff = 0;
-			int _uORB_PID_GPS_Lng_Local_Diff = 0;
-			int _uORB_PID_D_GPS_Lat_LastValue = 0;
-			int _uORB_PID_D_GPS_Lng_LastValue = 0;
-			int _uORB_PID_GPS_Lat_Local_Target = 0;
-			int _uORB_PID_GPS_Lng_Local_Target = 0;
-			float _uORB_PID_GPS_Lat_Ouput = 0;
-			float _uORB_PID_GPS_Lng_Ouput = 0;
-			float _uORB_PID_GPS_Pitch_Ouput = 0;
-			float _uORB_PID_GPS__Roll_Ouput = 0;
-
-			float _flag_PID_P_GPS_Gain;
-			float _flag_PID_D_GPS_Gain;
-			float _flag_PID_GPS_Level_Max;
-			//==========//
 		} PF;
 
 		struct RCINFO

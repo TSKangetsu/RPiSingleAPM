@@ -7,19 +7,19 @@ class TotalEKF : public TinyEKF
 public:
     TotalEKF()
     {
-        this->setQ(0, 0, .02);
+        this->setQ(0, 0, .0001);
         this->setR(0, 0, .5);
 
-        this->setQ(1, 1, .02);
+        this->setQ(1, 1, .0001);
         this->setR(1, 1, .5);
 
         this->setQ(2, 2, .0001);
         this->setR(2, 2, .2);
         //=======================================//
-        this->setQ(3, 3, .02);
+        this->setQ(3, 3, .0001);
         this->setR(3, 3, .5);
 
-        this->setQ(4, 4, .02);
+        this->setQ(4, 4, .0001);
         this->setR(4, 4, .5);
 
         this->setQ(5, 5, .0001);
