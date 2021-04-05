@@ -55,11 +55,18 @@ namespace SingleAPMAPI
 		float _flag_PID_P__Roll_Gain;
 		float _flag_PID_P_Pitch_Gain;
 		float _flag_PID_P___Yaw_Gain;
+		float _flag_PID_P_Alt_Gain;
+		float _flag_PID_P_PosX_Gain;
+		float _flag_PID_P_PosY_Gain;
 		float _flag_PID_P_SpeedZ_Gain;
+		float _flag_PID_P_SpeedX_Gain;
+		float _flag_PID_P_SpeedY_Gain;
 		float _flag_PID_I__Roll_Gain;
 		float _flag_PID_I_Pitch_Gain;
 		float _flag_PID_I___Yaw_Gain;
 		float _flag_PID_I_SpeedZ_Gain;
+		float _flag_PID_I_SpeedX_Gain;
+		float _flag_PID_I_SpeedY_Gain;
 		float _flag_PID_I__Roll_Max__Value;
 		float _flag_PID_I_Pitch_Max__Value;
 		float _flag_PID_I___Yaw_Max__Value;
@@ -67,10 +74,12 @@ namespace SingleAPMAPI
 		float _flag_PID_D_Pitch_Gain;
 		float _flag_PID_D___Yaw_Gain;
 		float _flag_PID_D_SpeedZ_Gain;
+		float _flag_PID_D_SpeedX_Gain;
+		float _flag_PID_D_SpeedY_Gain;
 		float _flag_PID_Level_Max;
 		float _flag_PID_Hover_Throttle;
 		float _flag_PID_Alt_Level_Max;
-		float _flag_PID_GPS_Level_Max;
+		float _flag_PID_Pos_Level_Max;
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
@@ -275,6 +284,8 @@ namespace SingleAPMAPI
 			double _uORB_Flow_Body_Asix_Y = 0;
 			double _uORB_Flow_Filter_XOutput = 0;
 			double _uORB_Flow_Filter_YOutput = 0;
+			double _uORB_Flow_Speed_X = 0;
+			double _uORB_Flow_Speed_Y = 0;
 
 			int _Tmp_Flow_Altitude = 0;
 			double _uORB_Flow_Altitude = 0;
@@ -339,13 +350,40 @@ namespace SingleAPMAPI
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
 			//
-			float _flag_PID_P_Alt_Gain = 0.8;
+			float _flag_PID_P_Alt_Gain;
 			float _flag_PID_P_SpeedZ_Gain;
 			float _flag_PID_I_SpeedZ_Gain;
 			float _flag_PID_D_SpeedZ_Gain;
 			float _uORB_PID_I_Last_Value_SpeedZ = 0;
 			float _uORB_PID_D_Last_Value_SpeedZ = 0;
 			//==========PositionHoldPID=========//
+			float _uORB_PID_Flow_PosInput_X = 0;
+			float _uORB_PID_Flow_PosInput_Y = 0;
+
+			float _uORB_PID_PosXTarget = 0;
+			float _uORB_PID_PosYTarget = 0;
+
+			float _uORB_PID_PosX_Output = 0;
+			float _uORB_PID_PosY_Output = 0;
+
+			float _flag_PID_P_PosX_Gain = 0;
+			float _flag_PID_P_SpeedX_Gain = 0;
+			float _flag_PID_I_SpeedX_Gain = 0;
+			float _flag_PID_D_SpeedX_Gain = 0;
+
+			float _flag_PID_P_PosY_Gain = 0;
+			float _flag_PID_P_SpeedY_Gain = 0;
+			float _flag_PID_I_SpeedY_Gain = 0;
+			float _flag_PID_D_SpeedY_Gain = 0;
+
+			float _flag_PID_PosMan_Speed_Max = 30.f;
+			float _flag_PID_Pos_Speed_Max = 50.f;
+			float _flag_PID_Pos_Level_Max;
+
+			float _uORB_PID_I_Last_Value_SpeedX = 0;
+			float _uORB_PID_D_Last_Value_SpeedX = 0;
+			float _uORB_PID_I_Last_Value_SpeedY = 0;
+			float _uORB_PID_D_Last_Value_SpeedY = 0;
 		} PF;
 
 		struct RCINFO
@@ -365,6 +403,8 @@ namespace SingleAPMAPI
 			int _uORB_RC_Out___ARM;
 			int _uORB_RC_Out_FlyMod;
 			int _uORB_RC_Out_AltHoldSpeed = 0;
+			int _uORB_RC_Out_PosHoldSpeedX = 0;
+			int _uORB_RC_Out_PosHoldSpeedY = 0;
 
 			int _flag_RCIsReserv__Roll = 1;
 			int _flag_RCIsReserv_Pitch = 1;
@@ -459,7 +499,7 @@ namespace SingleAPMAPI
 			int _Tmp_FlowThreadTimeNext = 0;
 			int _Tmp_FlowThreadTimeLoop = 0;
 			int _Tmp_FlowThreadError = 0;
-			int _flag_FlowThreadTimeMax = (float)1 / 100 * 1000000;
+			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000; //Flow is 9HZ
 			int _flag_FlowErrorTimes = 0;
 			std::thread *FlowTask;
 		} TF;
