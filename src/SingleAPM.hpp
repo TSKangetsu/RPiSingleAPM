@@ -175,6 +175,7 @@ namespace SingleAPMAPI
 		struct SafyINFO
 		{
 			APModeINFO AutoPilotMode;
+			bool _flag_IsAutoTakeoffRequire;
 
 			bool _flag_Error;
 			bool _flag_GPS_Error;
@@ -390,7 +391,7 @@ namespace SingleAPMAPI
 		{
 			int RC_Type;
 			int _Tmp_RC_Data[36] = {0};
-			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1000, 1500, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _flag_RC_Max_PWM_Value;
 			int _flag_RC_Mid_PWM_Value;
 			int _flag_RC_Min_PWM_Value;
