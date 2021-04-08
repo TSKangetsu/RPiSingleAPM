@@ -156,6 +156,11 @@ namespace SingleAPMAPI
 
 		int APMCalibrator(int controller, int action, int input, double *data);
 
+		//=========APMUserControllerFunction===========//
+		void APMControllerARMED();
+
+		void APMControllerDISARM(APModeINFO APMode);
+
 	protected:
 		Sbus *SbusInit;
 		Ibus *IbusInit;
