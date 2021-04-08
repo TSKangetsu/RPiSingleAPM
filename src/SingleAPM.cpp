@@ -725,10 +725,10 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						SF._uORB_Flow_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y * 10.f;
 						SF._uORB_Flow_Filter_XOutput = ((float)SF._uORB_Flow_XOutput + SF._uORB_Flow_Body_Asix_X) * SF._uORB_Flow_Altitude / 100.f;
 						SF._uORB_Flow_Filter_YOutput = ((float)SF._uORB_Flow_YOutput + SF._uORB_Flow_Body_Asix_Y) * SF._uORB_Flow_Altitude / 100.f;
-						SF._uORB_Flow_Speed_X = (SF._uORB_Flow_Filter_XOutput / 50.f) / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
-						SF._uORB_Flow_Speed_Y = (SF._uORB_Flow_Filter_YOutput / 50.f) / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
-						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
-						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
+						SF._uORB_Flow_Speed_X = (SF._uORB_Flow_Filter_XOutput / 50.f) / ((float)TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
+						SF._uORB_Flow_Speed_Y = (SF._uORB_Flow_Filter_YOutput / 50.f) / ((float)TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
+						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X * ((float)TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
+						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y * ((float)TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
 
 						TF._Tmp_FlowThreadSMooth = 0;
 						AF._flag_FlowData_Async = true;

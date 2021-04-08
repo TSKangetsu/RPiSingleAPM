@@ -307,8 +307,8 @@ namespace SingleAPMAPI
 			double _uORB_Flow_Altitude_Last_Final = 0;
 			double _uORB_Flow_ClimbeRate = 0;
 
-			int _uORB_Flow_XOutput_Total = 0;
-			int _uORB_Flow_YOutput_Total = 0;
+			double _uORB_Flow_XOutput_Total = 0;
+			double _uORB_Flow_YOutput_Total = 0;
 		} SF;
 
 		struct PIDINFO
