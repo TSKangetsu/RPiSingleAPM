@@ -151,6 +151,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_A2_Pin = Configdata["_flag_A2_Pin"].get<int>();
 	APMInit._flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
 	APMInit._flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
+	APMInit._flag_YAWOut_Reverse = Configdata["_flag_YAWOut_Reverse"].get<float>();
 	//==================================================================PID cofig==/
 	APMInit._flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
 	APMInit._flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();
@@ -183,6 +184,11 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
 	APMInit._flag_PID_Alt_Level_Max = Configdata["_flag_PID_Alt_Level_Max"].get<float>();
 	APMInit._flag_PID_Pos_Level_Max = Configdata["_flag_PID_Pos_Level_Max"].get<float>();
+
+	APMInit._flag_PID_Takeoff_Altitude = Configdata["_flag_PID_Takeoff_Altitude"].get<float>();
+	APMInit._flag_PID_Alt_Speed_Max = Configdata["_flag_PID_Alt_Speed_Max"].get<float>();
+	APMInit._flag_PID_PosMan_Speed_Max = Configdata["_flag_PID_PosMan_Speed_Max"].get<float>();
+	APMInit._flag_PID_Pos_Speed_Max = Configdata["_flag_PID_Pos_Speed_Max"].get<float>();
 	//==============================================================Sensors cofig==/
 	APMInit._flag_MPU9250_A_X_Cali = Configdata["_flag_MPU9250_A_X_Cali"].get<double>();
 	APMInit._flag_MPU9250_A_Y_Cali = Configdata["_flag_MPU9250_A_Y_Cali"].get<double>();

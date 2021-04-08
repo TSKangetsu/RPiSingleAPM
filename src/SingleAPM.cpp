@@ -10,6 +10,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF.Flow_Lose_Clocking = 0;
 		AF._flag_ESC_ARMED = true;
 		AF._flag_IsFlowAvalible = false;
+		AF._flag_IsSonarAvalible = false;
 		AF._flag_StartUP_Protect = true;
 		AF._flag_MPU9250_first_StartUp = true;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
@@ -389,10 +390,12 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				{
 					AF.AutoPilotMode = APModeINFO::AltHold;
 				}
-				else if (RF._flag_RC_Max_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Max_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod &&
-						 DF._IsGPSEnable && DF._IsMS5611Enable)
+				else if (RF._flag_RC_Max_PWM_Value + 50 > RF._uORB_RC_Out_FlyMod && RF._flag_RC_Max_PWM_Value - 50 < RF._uORB_RC_Out_FlyMod)
 				{
-					AF.AutoPilotMode = APModeINFO::PositionHold;
+					if ((DF._IsGPSEnable || DF._IsFlowEnable) && DF._IsMS5611Enable)
+						AF.AutoPilotMode = APModeINFO::PositionHold;
+					else
+						AF.AutoPilotMode = APModeINFO::AltHold;
 				}
 				else
 				{
@@ -676,7 +679,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._Tmp_FlowThreadTimeNext = TF._Tmp_FlowThreadTimeStart - TF._Tmp_FlowThreadTimeEnd;
 				{
 					TF._Tmp_FlowThreadSMooth++;
-					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._Tmp_Flow_Altitude);
+					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._Tmp_Flow_Altitude, SF._uORB_Flow_Quality);
 					//
 					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
 					{
@@ -687,7 +690,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 							AF.Flow_Lose_Clocking--;
 							if (AF.Flow_Lose_Clocking < 0)
 							{
-								AF._flag_IsFlowAvalible = true;
+								AF._flag_IsSonarAvalible = true;
 								AF.Flow_Lose_Clocking = 0;
 							}
 						}
@@ -704,7 +707,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 												   (35000.f / 1000000.f);
 						if (AF.Flow_Lose_Clocking > 5)
 						{
-							AF._flag_IsFlowAvalible = false;
+							AF._flag_IsSonarAvalible = false;
 							SF._uORB_Flow_Altitude_Final = 0;
 							SF._uORB_Flow_ClimbeRate = 0;
 							AF.Flow_Lose_Clocking = 5;
@@ -713,14 +716,19 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					}
 					if (SF._Tmp_Flow___Status == 2 || SF._Tmp_Flow___Status == 3)
 					{
+						if (SF._uORB_Flow_Quality < 105.f)
+							AF._flag_IsFlowAvalible = false;
+						else
+							AF._flag_IsFlowAvalible = true;
+
 						SF._uORB_Flow_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X * 10.f;
 						SF._uORB_Flow_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y * 10.f;
 						SF._uORB_Flow_Filter_XOutput = ((float)SF._uORB_Flow_XOutput + SF._uORB_Flow_Body_Asix_X) * SF._uORB_Flow_Altitude / 100.f;
 						SF._uORB_Flow_Filter_YOutput = ((float)SF._uORB_Flow_YOutput + SF._uORB_Flow_Body_Asix_Y) * SF._uORB_Flow_Altitude / 100.f;
 						SF._uORB_Flow_Speed_X = (SF._uORB_Flow_Filter_XOutput / 50.f) / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
 						SF._uORB_Flow_Speed_Y = (SF._uORB_Flow_Filter_YOutput / 50.f) / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
-						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Filter_XOutput;
-						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Filter_YOutput;
+						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
+						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y / (TF._flag_FlowThreadTimeMax * 3.f / 1000000.f);
 
 						TF._Tmp_FlowThreadSMooth = 0;
 						AF._flag_FlowData_Async = true;
@@ -943,6 +951,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	EF._flag_A2_Pin = APMInit._flag_A2_Pin;
 	EF._flag_B1_Pin = APMInit._flag_B1_Pin;
 	EF._flag_B2_Pin = APMInit._flag_B2_Pin;
+	EF._flag_YAWOut_Reverse = APMInit._flag_YAWOut_Reverse;
 	//==================================================================PID cofig==/
 	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
@@ -975,6 +984,11 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
 	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
 	PF._flag_PID_Pos_Level_Max = APMInit._flag_PID_Pos_Level_Max;
+
+	PF._flag_PID_Takeoff_Altitude = APMInit._flag_PID_Takeoff_Altitude;
+	PF._flag_PID_Alt_Speed_Max = APMInit._flag_PID_Alt_Speed_Max;
+	PF._flag_PID_PosMan_Speed_Max = APMInit._flag_PID_PosMan_Speed_Max;
+	PF._flag_PID_Pos_Speed_Max = APMInit._flag_PID_Pos_Speed_Max;
 	//==============================================================Sensors cofig==/
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit._flag_MPU9250_A_X_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit._flag_MPU9250_A_Y_Cali;
@@ -1043,8 +1057,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		}
 		else
 		{
-			PF._uORB_PID_AltHold_Target = 80.f;
-			if (PF._uORB_PID_AltInput_Final > 80.f)
+			PF._uORB_PID_AltHold_Target = PF._flag_PID_Takeoff_Altitude;
+			if (PF._uORB_PID_AltInput_Final > PF._flag_PID_Takeoff_Altitude)
 			{
 				AF._flag_IsAutoTakeoffRequire = false;
 			}
@@ -1056,20 +1070,15 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		}
 
 		if (RF._uORB_RC_Out_PosHoldSpeedX != 0)
-		{
-			SF._uORB_Flow_XOutput_Total = 0;
-		}
-		if (RF._uORB_RC_Out_PosHoldSpeedY != 0)
-		{
 			SF._uORB_Flow_YOutput_Total = 0;
-		}
-
+		if (RF._uORB_RC_Out_PosHoldSpeedY != 0)
+			SF._uORB_Flow_XOutput_Total = 0;
 		//AltHold Caculate
 		{
 			if (AF._flag_MS5611_Async)
 			{
 				PF._uORB_PID_MS5611_AltInput = SF._uORB_MS5611_Altitude;
-				if (AF._flag_IsFlowAvalible)
+				if (AF._flag_IsSonarAvalible)
 				{
 					PF._uORB_PID_MS5611_AltInput = PF._uORB_PID_Sonar_AltInput;
 					SF._uORB_MS5611_ClimbeRate = SF._uORB_Flow_ClimbeRate;
@@ -1079,7 +1088,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			if (AF._flag_SonarData_Async)
 			{
 				PF._uORB_PID_Sonar_AltInput = SF._uORB_Flow_Altitude_Final / 10.f;
-				if (!AF._flag_IsFlowAvalible)
+				if (!AF._flag_IsSonarAvalible)
 				{
 					PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_MS5611_AltInput;
 					SF._uORB_Flow_ClimbeRate = SF._uORB_MS5611_ClimbeRate;
@@ -1100,7 +1109,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			TargetSpeed = TargetSpeed > PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			TargetSpeed = TargetSpeed < -1 * PF._flag_PID_Alt_Speed_Max ? -1 * PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			PF._uORB_PID_InputTarget = TargetSpeed - SF._uORB_MPU_Speed_Z;
-			PF._uORB_PID_Smooth_InputTarget += (PF._uORB_PID_InputTarget - PF._uORB_PID_Smooth_InputTarget) * 0.155;
+			PF._uORB_PID_Smooth_InputTarget += (PF._uORB_PID_InputTarget - PF._uORB_PID_Smooth_InputTarget) * 0.255;
 			if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
 				PID_CaculateExtend(PF._uORB_PID_InputTarget, PF._uORB_PID_InputTarget, PF._uORB_PID_Smooth_InputTarget,
@@ -1115,8 +1124,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		{
 			if (AF._flag_FlowData_Async)
 			{
-				PF._uORB_PID_Flow_PosInput_X = SF._uORB_Flow_YOutput_Total / 50.f;
-				PF._uORB_PID_Flow_PosInput_Y = SF._uORB_Flow_XOutput_Total / 50.f;
+				PF._uORB_PID_Flow_PosInput_X = SF._uORB_Flow_YOutput_Total;
+				PF._uORB_PID_Flow_PosInput_Y = SF._uORB_Flow_XOutput_Total;
 				AF._flag_FlowData_Async = false;
 			}
 			//
@@ -1136,24 +1145,39 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			TargetSpeedY = TargetSpeedY < -1 * PF._flag_PID_Pos_Speed_Max ? -1 * PF._flag_PID_Pos_Speed_Max : TargetSpeedY;
 			PF._uORB_PID_PosYTarget = TargetSpeedY + SF._uORB_MPU_Speed_Y;
 			//
-			if (AF.AutoPilotMode == APModeINFO::PositionHold)
+			if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowAvalible)
 			{
-				PID_CaculateExtend(PF._uORB_PID_PosXTarget, PF._uORB_PID_PosXTarget, PF._uORB_PID_PosXTarget,
+				PF._uORB_PID_Smooth_PosXTarget += (PF._uORB_PID_PosXTarget - PF._uORB_PID_Smooth_PosXTarget) * 0.255;
+				PID_CaculateExtend(PF._uORB_PID_PosXTarget, PF._uORB_PID_PosXTarget, PF._uORB_PID_Smooth_PosXTarget,
 								   PF._uORB_PID_PosX_Output, PF._uORB_PID_I_Last_Value_SpeedX, PF._uORB_PID_D_Last_Value_SpeedX,
 								   PF._flag_PID_P_SpeedX_Gain, PF._flag_PID_I_SpeedX_Gain / 100.f, PF._flag_PID_D_SpeedX_Gain, PF._flag_PID_Pos_Level_Max);
 				PF._uORB_PID_PosX_Output = PF._uORB_PID_PosX_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosX_Output;
 				PF._uORB_PID_PosX_Output = PF._uORB_PID_PosX_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosX_Output;
-				PID_CaculateExtend(PF._uORB_PID_PosYTarget, PF._uORB_PID_PosYTarget, PF._uORB_PID_PosYTarget,
+				PF._uORB_PID_Smooth_PosYTarget += (PF._uORB_PID_PosYTarget - PF._uORB_PID_Smooth_PosYTarget) * 0.255;
+				PID_CaculateExtend(PF._uORB_PID_PosYTarget, PF._uORB_PID_PosYTarget, PF._uORB_PID_Smooth_PosYTarget,
 								   PF._uORB_PID_PosY_Output, PF._uORB_PID_I_Last_Value_SpeedY, PF._uORB_PID_D_Last_Value_SpeedY,
 								   PF._flag_PID_P_SpeedY_Gain, PF._flag_PID_I_SpeedY_Gain / 100.f, PF._flag_PID_D_SpeedY_Gain, PF._flag_PID_Pos_Level_Max);
 				PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
 				PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
 			}
 		}
-		//Roll PID Mix
+		//Leveling PID MIX
 		{
-			PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + SF._uORB_MPU_Data._uORB_Real__Roll * 15 -
-									   RF._uORB_RC_Out__Roll + PF._uORB_PID_PosX_Output;
+			if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowAvalible)
+			{
+				PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + SF._uORB_MPU_Data._uORB_Real__Roll * 15 +
+										   PF._uORB_PID_PosX_Output;
+				PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + SF._uORB_MPU_Data._uORB_Real_Pitch * 15 +
+										   PF._uORB_PID_PosY_Output;
+			}
+			else
+			{
+				PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + SF._uORB_MPU_Data._uORB_Real__Roll * 15 -
+										   RF._uORB_RC_Out__Roll;
+				PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + SF._uORB_MPU_Data._uORB_Real_Pitch * 15 -
+										   RF._uORB_RC_Out_Pitch;
+			}
+			//Roll PID Mix
 			PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
 						 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
 						 PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
@@ -1163,8 +1187,6 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max * -1;
 
 			//Pitch PID Mix
-			PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + SF._uORB_MPU_Data._uORB_Real_Pitch * 15 -
-									   RF._uORB_RC_Out_Pitch + PF._uORB_PID_PosY_Output;
 			PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
 						 PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
 						 PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
@@ -1187,17 +1209,17 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold)
 	{
-		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_B2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+		EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+		EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+		EF._Tmp_B2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
 	}
 	else
 	{
-		EF._Tmp_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-		EF._Tmp_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		EF._Tmp_B1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+		EF._Tmp_A1_Speed = RF._uORB_RC_Out_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+		EF._Tmp_A2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+		EF._Tmp_B2_Speed = RF._uORB_RC_Out_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
 	}
 
 	EF._uORB_A1_Speed = (700 * (((float)EF._Tmp_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
@@ -1312,13 +1334,14 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout
 		<< "FlowParseDataINFO:"
 		<< "\n";
-	std::cout << " FlowXOut:       " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput;
-	std::cout << " ||FlowYOut:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput;
-	std::cout << " ||FlowAltitude: " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Sonar_AltInput;
+	std::cout << " FlowXOut:       " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput << "    ";
+	std::cout << " ||FlowYOut:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput << "    ";
+	std::cout << " ||FlowAltitude: " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Sonar_AltInput << "    ";
 	std::cout << " ||FlowSpeedX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Speed_X << "cm/s            \n";
-	std::cout << " FlowXOutTotal:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput_Total;
-	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput_Total;
-	std::cout << " ||FlowSpeed:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_ClimbeRate << "cm/s";
+	std::cout << " FlowXOutTotal:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput_Total << "    ";
+	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput_Total << "    ";
+	std::cout << " ||FlowSpeed:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_ClimbeRate << "cm/s";
+	std::cout << " ||FlowQuality:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Quality << "    ";
 	std::cout << " ||FlowSpeedY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Speed_Y << "cm/s            \n";
 
 	std::cout << "EKFINFO:\n"
@@ -1366,6 +1389,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_GPS_Disconnected:  " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Disconnected << "         \n";
 	std::cout << " Flag_IsGPSHoldSet:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsGPSHoldSet << " |";
 	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";
+	std::cout << " Flag_IsSonarAvalible:   " << std::setw(3) << std::setfill(' ') << AF._flag_IsSonarAvalible << " |";
 	std::cout << " GPS_Lose_Clocking:      " << std::setw(3) << std::setfill(' ') << AF.GPS_Lose_Clocking << " |";
 	std::cout << " RC_Lose_Clocking:       " << std::setw(3) << std::setfill(' ') << AF.RC_Lose_Clocking << "                        \n\n";
 

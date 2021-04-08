@@ -76,10 +76,16 @@ namespace SingleAPMAPI
 		float _flag_PID_D_SpeedZ_Gain;
 		float _flag_PID_D_SpeedX_Gain;
 		float _flag_PID_D_SpeedY_Gain;
-		float _flag_PID_Level_Max;
 		float _flag_PID_Hover_Throttle;
+
+		float _flag_PID_Level_Max;
 		float _flag_PID_Alt_Level_Max;
 		float _flag_PID_Pos_Level_Max;
+
+		float _flag_PID_Takeoff_Altitude;
+		float _flag_PID_Alt_Speed_Max;
+		float _flag_PID_PosMan_Speed_Max;
+		float _flag_PID_Pos_Speed_Max;
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
@@ -107,6 +113,7 @@ namespace SingleAPMAPI
 		int _flag_A2_Pin;
 		int _flag_B1_Pin;
 		int _flag_B2_Pin;
+		float _flag_YAWOut_Reverse;
 
 		int _flag_RC_ARM_PWM_Value;
 		int _flag_RC_Min_PWM_Value;
@@ -120,10 +127,14 @@ namespace SingleAPMAPI
 
 	enum APModeINFO
 	{
+		//AutoPilot Bank0
 		ManuallHold,
-		AltHold,
+		//AutoPilot Bank1
 		AutoStable,
+		AltHold,
+		//AutoPilot Bank2
 		PositionHold,
+		SpeedHold,
 	};
 
 	class RPiSingleAPM
@@ -197,6 +208,7 @@ namespace SingleAPMAPI
 			bool _flag_FlowData_Async;
 			bool _flag_SonarData_Async;
 			bool _flag_IsGPSHoldSet;
+			bool _flag_IsSonarAvalible;
 			bool _flag_IsFlowAvalible;
 		} AF;
 
@@ -279,6 +291,7 @@ namespace SingleAPMAPI
 
 			int _uORB_Flow_XOutput = 0;
 			int _uORB_Flow_YOutput = 0;
+			int _uORB_Flow_Quality = 0;
 			double _uORB_Gryo_Body_Asix_X = 0;
 			double _uORB_Gryo_Body_Asix_Y = 0;
 			double _uORB_Flow_Body_Asix_X = 0;
@@ -346,8 +359,9 @@ namespace SingleAPMAPI
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
 			double _flag_Alt_Dynamic_Beta = 0.996;
-			float _flag_PID_Alt_Speed_Max = 50.f;
-			float _flag_PID_P_TAsix_Gain = 1.f;
+			float _flag_PID_Alt_Speed_Max = 0;
+			float _flag_PID_Takeoff_Altitude = 0;
+			float _flag_PID_P_TAsix_Gain = 0;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
 			//
@@ -360,6 +374,8 @@ namespace SingleAPMAPI
 			//==========PositionHoldPID=========//
 			float _uORB_PID_Flow_PosInput_X = 0;
 			float _uORB_PID_Flow_PosInput_Y = 0;
+			float _uORB_PID_Smooth_PosXTarget = 0;
+			float _uORB_PID_Smooth_PosYTarget = 0;
 
 			float _uORB_PID_PosXTarget = 0;
 			float _uORB_PID_PosYTarget = 0;
@@ -377,8 +393,8 @@ namespace SingleAPMAPI
 			float _flag_PID_I_SpeedY_Gain = 0;
 			float _flag_PID_D_SpeedY_Gain = 0;
 
-			float _flag_PID_PosMan_Speed_Max = 30.f;
-			float _flag_PID_Pos_Speed_Max = 50.f;
+			float _flag_PID_PosMan_Speed_Max = 0;
+			float _flag_PID_Pos_Speed_Max = 0;
 			float _flag_PID_Pos_Level_Max;
 
 			float _uORB_PID_I_Last_Value_SpeedX = 0;
@@ -437,6 +453,7 @@ namespace SingleAPMAPI
 			const int _Flag_Lazy_Throttle = 2300;
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;
+			float _flag_YAWOut_Reverse = 1.f;
 		} EF;
 
 		struct TaskThread
