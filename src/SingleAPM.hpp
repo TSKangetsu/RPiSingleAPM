@@ -305,15 +305,14 @@ namespace SingleAPMAPI
 			double _uORB_Flow_Filter_YOutput = 0;
 			double _uORB_Flow_Speed_X = 0;
 			double _uORB_Flow_Speed_Y = 0;
+			float _uORB_Flow_XOutput_Total = 0;
+			float _uORB_Flow_YOutput_Total = 0;
 
 			int _Tmp_Flow_Altitude = 0;
 			double _uORB_Flow_Altitude = 0;
 			double _uORB_Flow_Altitude_Final = 0;
 			double _uORB_Flow_Altitude_Last_Final = 0;
 			double _uORB_Flow_ClimbeRate = 0;
-
-			double _uORB_Flow_XOutput_Total = 0;
-			double _uORB_Flow_YOutput_Total = 0;
 		} SF;
 
 		struct PIDINFO
