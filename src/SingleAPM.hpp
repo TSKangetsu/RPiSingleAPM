@@ -115,10 +115,24 @@ namespace SingleAPMAPI
 		int _flag_B2_Pin;
 		float _flag_YAWOut_Reverse;
 
-		int _flag_RC_ARM_PWM_Value;
 		int _flag_RC_Min_PWM_Value;
 		int _flag_RC_Mid_PWM_Value;
 		int _flag_RC_Max_PWM_Value;
+
+		int _flag_RC_ARM_PWM_Value;
+		int _flag_RC_ARM_PWM_Channel;
+		int _flag_RC_AP_ManualHold_PWM_Value;
+		int _flag_RC_AP_ManualHold_PWM_Channel;
+		int _flag_RC_AP_AutoStable_PWM_Value;
+		int _flag_RC_AP_AutoStable_PWM_Channel;
+		int _flag_RC_AP_AltHold_PWM_Value;
+		int _flag_RC_AP_AltHold_PWM_Channel;
+		int _flag_RC_AP_PositionHold_PWM_Value;
+		int _flag_RC_AP_PositionHold_PWM_Channel;
+		int _flag_RC_AP_SpeedHold_PWM_Value;
+		int _flag_RC_AP_SpeedHold_PWM_Channel;
+		int _flag_RC_AP_UserAuto_PWM_Value;
+		int _flag_RC_AP_UserAuto_PWM_Channel;
 
 		int _flag_RCIsReserv__Roll;
 		int _flag_RCIsReserv_Pitch;
@@ -128,13 +142,15 @@ namespace SingleAPMAPI
 	enum APModeINFO
 	{
 		//AutoPilot Bank0
-		ManuallHold,
+		ManualHold,
 		//AutoPilot Bank1
 		AutoStable,
 		AltHold,
 		//AutoPilot Bank2
 		PositionHold,
 		SpeedHold,
+		//AutoPilot Bank3
+		UserAuto
 	};
 
 	class RPiSingleAPM
@@ -415,25 +431,34 @@ namespace SingleAPMAPI
 			int _flag_RC_Max_PWM_Value;
 			int _flag_RC_Mid_PWM_Value;
 			int _flag_RC_Min_PWM_Value;
-			int _flag_RC_ARM_PWM_Value;
 
 			int _uORB_RC_Out__Roll;
 			int _uORB_RC_Out_Pitch;
 			int _uORB_RC_Out_Throttle;
 			int _uORB_RC_Out___Yaw;
-			int _uORB_RC_Out___ARM;
-			int _uORB_RC_Out_FlyMod;
+
 			int _uORB_RC_Out_AltHoldSpeed = 0;
 			int _uORB_RC_Out_PosHoldSpeedX = 0;
 			int _uORB_RC_Out_PosHoldSpeedY = 0;
 
+			int _flag_RC_ARM_PWM_Value;
+			int _flag_RC_ARM_PWM_Channel;
+			int _flag_RC_AP_ManualHold_PWM_Value;
+			int _flag_RC_AP_ManualHold_PWM_Channel;
+			int _flag_RC_AP_AutoStable_PWM_Value;
+			int _flag_RC_AP_AutoStable_PWM_Channel;
+			int _flag_RC_AP_AltHold_PWM_Value;
+			int _flag_RC_AP_AltHold_PWM_Channel;
+			int _flag_RC_AP_PositionHold_PWM_Value;
+			int _flag_RC_AP_PositionHold_PWM_Channel;
+			int _flag_RC_AP_SpeedHold_PWM_Value;
+			int _flag_RC_AP_SpeedHold_PWM_Channel;
+			int _flag_RC_AP_UserAuto_PWM_Value;
+			int _flag_RC_AP_UserAuto_PWM_Channel;
+
 			int _flag_RCIsReserv__Roll = 1;
 			int _flag_RCIsReserv_Pitch = 1;
 			int _flag_RCIsReserv___Yaw = 1;
-
-			int _Tmp_UserInput__Roll;
-			int _Tmp_UserInput_Pitch;
-			int _Tmp_UserInput___Yaw;
 
 			const int _flag_RC_PWM_Fixed_Min = 1000;
 			const int _flag_RC_PWM_Fixed_Mid = 1500;
