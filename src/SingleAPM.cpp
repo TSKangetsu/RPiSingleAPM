@@ -1129,7 +1129,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_PID_InputTarget = TargetSpeed - SF._uORB_MPU_Speed_Z;
 			PF._uORB_PID_Smooth_InputTarget += (PF._uORB_PID_InputTarget - PF._uORB_PID_Smooth_InputTarget) * 0.255;
 			if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
-				AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::UserAuto)
+				AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto)
 			{
 				PID_CaculateExtend(PF._uORB_PID_InputTarget, PF._uORB_PID_InputTarget, PF._uORB_PID_Smooth_InputTarget,
 								   PF._uORB_PID_Alt_Throttle, PF._uORB_PID_I_Last_Value_SpeedZ, PF._uORB_PID_D_Last_Value_SpeedZ,
