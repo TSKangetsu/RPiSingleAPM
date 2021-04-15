@@ -177,6 +177,10 @@ namespace SingleAPMAPI
 
 		void APMControllerDISARM(APModeINFO APMode);
 
+		void APMControllerPosition(int x, int y, int z, bool resetHome);
+
+		void APMControllerSpeed(int x, int y, int z);
+
 	protected:
 		Sbus *SbusInit;
 		Ibus *IbusInit;
@@ -400,6 +404,11 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosXTarget = 0;
 			float _uORB_PID_PosYTarget = 0;
 
+			float _uORB_PID_PosXUserSpeed = 0;
+			float _uORB_PID_PosYUserSpeed = 0;
+			float _uORB_PID_PosXUserTarget = 0;
+			float _uORB_PID_PosYUserTarget = 0;
+
 			float _uORB_PID_PosX_Output = 0;
 			float _uORB_PID_PosY_Output = 0;
 
@@ -549,6 +558,7 @@ namespace SingleAPMAPI
 			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000; //Flow is 9HZ
 			int _flag_FlowErrorTimes = 0;
 			std::thread *FlowTask;
+			std::thread LEDSignalTask;
 		} TF;
 	};
 } // namespace SingleAPMAPI

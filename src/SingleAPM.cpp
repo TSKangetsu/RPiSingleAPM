@@ -2,7 +2,23 @@
 
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
-	wiringPiSetupSys();
+	wiringPiSetup();
+	TF.LEDSignalTask = std::thread([&] {
+		pinMode(27, OUTPUT);
+		while (true)
+		{
+			digitalWrite(27, HIGH);
+			if (AF._flag_Device_setupFailed)
+				digitalWrite(28, HIGH);
+			usleep(200000);
+			digitalWrite(27, LOW);
+			if (AF._flag_Device_setupFailed)
+				digitalWrite(28, LOW);
+			usleep(200000);
+			if (!AF._flag_Device_setupFailed)
+				digitalWrite(28, LOW);
+		}
+	});
 	piHiPri(99);
 	{
 		AF.RC_Lose_Clocking = 0;
@@ -13,6 +29,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_IsSonarAvalible = false;
 		AF._flag_StartUP_Protect = true;
 		AF._flag_MPU9250_first_StartUp = true;
+		AF._flag_Device_setupFailed = true;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 	}
 	ConfigReader(APMInit);
@@ -1063,6 +1080,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			SF._uORB_Flow_YOutput_Total = 0;
 			PF._uORB_PID_PosX_Output = 0;
 			PF._uORB_PID_PosY_Output = 0;
+			PF._uORB_PID_PosXUserTarget = 0;
+			PF._uORB_PID_PosYUserTarget = 0;
 			PF._uORB_PID_I_Last_Value_SpeedX = 0;
 			PF._uORB_PID_D_Last_Value_SpeedX = 0;
 			PF._uORB_PID_I_Last_Value_SpeedY = 0;
@@ -1143,6 +1162,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		{
 			if (AF.AutoPilotMode == APModeINFO::SpeedHold)
 			{
+				PF._uORB_PID_PosXUserTarget = 0;
+				PF._uORB_PID_PosYUserTarget = 0;
 				if (RF._uORB_RC_Out_PosHoldSpeedX != 0)
 					SF._uORB_Flow_YOutput_Total = 0;
 				if (RF._uORB_RC_Out_PosHoldSpeedY != 0)
@@ -1150,6 +1171,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			}
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
+				PF._uORB_PID_PosXUserTarget = 0;
+				PF._uORB_PID_PosYUserTarget = 0;
 				RF._uORB_RC_Out_PosHoldSpeedX = 0;
 				RF._uORB_RC_Out_PosHoldSpeedY = 0;
 				if (RF._uORB_RC_Out__Roll != 0)
@@ -1164,6 +1187,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			}
 			else
 			{
+				PF._uORB_PID_PosXUserTarget = 0;
+				PF._uORB_PID_PosYUserTarget = 0;
 				RF._uORB_RC_Out_PosHoldSpeedX = 0;
 				RF._uORB_RC_Out_PosHoldSpeedY = 0;
 			}
@@ -1181,12 +1206,14 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			SF._uORB_MPU_Speed_X = SF._uORB_MPU_Speed_X * PF._flag_Alt_Dynamic_Beta + SF._uORB_Flow_Speed_Y * (1.f - PF._flag_Alt_Dynamic_Beta);
 			SF._uORB_MPU_Speed_Y = SF._uORB_MPU_Speed_Y * PF._flag_Alt_Dynamic_Beta + SF._uORB_Flow_Speed_X * (1.f - PF._flag_Alt_Dynamic_Beta);
 			//
-			double TargetSpeedX = (SF._uORB_MPU_Movement_X) * PF._flag_PID_P_PosX_Gain - RF._uORB_RC_Out_PosHoldSpeedX;
+			double TargetSpeedX = (SF._uORB_MPU_Movement_X - PF._uORB_PID_PosXUserTarget) * PF._flag_PID_P_PosX_Gain -
+								  RF._uORB_RC_Out_PosHoldSpeedX - PF._uORB_PID_PosXUserSpeed;
 			TargetSpeedX = TargetSpeedX > PF._flag_PID_Pos_Speed_Max ? PF._flag_PID_Pos_Speed_Max : TargetSpeedX;
 			TargetSpeedX = TargetSpeedX < -1 * PF._flag_PID_Pos_Speed_Max ? -1 * PF._flag_PID_Pos_Speed_Max : TargetSpeedX;
 			PF._uORB_PID_PosXTarget = TargetSpeedX + SF._uORB_MPU_Speed_X;
 
-			double TargetSpeedY = (SF._uORB_MPU_Movement_Y) * PF._flag_PID_P_PosY_Gain - RF._uORB_RC_Out_PosHoldSpeedY;
+			double TargetSpeedY = (SF._uORB_MPU_Movement_Y - PF._uORB_PID_PosYUserTarget) * PF._flag_PID_P_PosY_Gain -
+								  RF._uORB_RC_Out_PosHoldSpeedY - PF._uORB_PID_PosYUserSpeed;
 			TargetSpeedY = TargetSpeedY > PF._flag_PID_Pos_Speed_Max ? PF._flag_PID_Pos_Speed_Max : TargetSpeedY;
 			TargetSpeedY = TargetSpeedY < -1 * PF._flag_PID_Pos_Speed_Max ? -1 * PF._flag_PID_Pos_Speed_Max : TargetSpeedY;
 			PF._uORB_PID_PosYTarget = TargetSpeedY + SF._uORB_MPU_Speed_Y;
@@ -1551,3 +1578,28 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)
 		}
 	}
 };
+
+void SingleAPMAPI::RPiSingleAPM::APMControllerPosition(int x, int y, int z, bool resetHome)
+{
+	if (AF.AutoPilotMode == APModeINFO::UserAuto)
+	{
+		if (resetHome)
+		{
+			SF._uORB_Flow_XOutput_Total = 0;
+			SF._uORB_Flow_YOutput_Total = 0;
+		}
+		PF._uORB_PID_PosXUserTarget = x;
+		PF._uORB_PID_PosYUserTarget = y;
+		PF._uORB_PID_AltHold_Target = z;
+	}
+}
+
+void SingleAPMAPI::RPiSingleAPM::APMControllerSpeed(int x, int y, int z)
+{
+	if (AF.AutoPilotMode == APModeINFO::UserAuto)
+	{
+		PF._uORB_PID_PosXUserSpeed = x;
+		PF._uORB_PID_PosYUserSpeed = y;
+		RF._uORB_RC_Out_AltHoldSpeed = z;
+	}
+}
