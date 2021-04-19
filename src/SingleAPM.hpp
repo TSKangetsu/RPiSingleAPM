@@ -177,6 +177,8 @@ namespace SingleAPMAPI
 
 		void APMControllerDISARM(APModeINFO APMode);
 
+		void APMControllerServo(int pin, int on, int off);
+
 		void APMControllerPosition(int x, int y, int z, bool resetHome);
 
 		void APMControllerSpeed(int x, int y, int z);

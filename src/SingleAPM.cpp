@@ -1603,3 +1603,8 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerSpeed(int x, int y, int z)
 		RF._uORB_RC_Out_AltHoldSpeed = z;
 	}
 }
+
+void SingleAPMAPI::RPiSingleAPM::APMControllerServo(int pin, int on, int off)
+{
+	pca9685PWMWrite(DF.PCA9658_fd, pin, on, off);
+}
