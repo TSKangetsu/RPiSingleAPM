@@ -1106,11 +1106,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 					AF._flag_IsAutoTakeoffRequire = false;
 				}
 
-				if (RF._uORB_RC_Out_AltHoldSpeed != 0)
+				if (RF._uORB_RC_Out_AltHoldSpeed != 0 || PF._uORB_PID_PosZUserSpeed != 0)
 				{
 					AF._flag_IsAutoTakeoffRequire = false;
 				}
 			}
+			if (AF.AutoPilotMode != APModeINFO::UserAuto)
+				PF._uORB_PID_PosZUserSpeed = 0;
 			//
 			if (AF._flag_MS5611_Async)
 			{
@@ -1142,7 +1144,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			SF._uORB_MPU_Movement_Z = SF._uORB_MPU_Movement_Z * PF._flag_Alt_Dynamic_Beta + PF._uORB_PID_AltInput_Final * (1.f - PF._flag_Alt_Dynamic_Beta);
 			SF._uORB_MPU_Speed_Z = SF._uORB_MPU_Speed_Z * PF._flag_Alt_Dynamic_Beta + PF._uORB_PID_SpeedZ_Final * (1.f - PF._flag_Alt_Dynamic_Beta);
 			//
-			double TargetSpeed = -1 * (SF._uORB_MPU_Movement_Z - PF._uORB_PID_AltHold_Target) * PF._flag_PID_P_Alt_Gain - RF._uORB_RC_Out_AltHoldSpeed;
+			double TargetSpeed = -1 * (SF._uORB_MPU_Movement_Z - PF._uORB_PID_AltHold_Target) * PF._flag_PID_P_Alt_Gain -
+								 RF._uORB_RC_Out_AltHoldSpeed - PF._uORB_PID_PosZUserSpeed;
 			TargetSpeed = TargetSpeed > PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			TargetSpeed = TargetSpeed < -1 * PF._flag_PID_Alt_Speed_Max ? -1 * PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			PF._uORB_PID_InputTarget = TargetSpeed - SF._uORB_MPU_Speed_Z;
@@ -1162,6 +1165,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		{
 			if (AF.AutoPilotMode == APModeINFO::SpeedHold)
 			{
+				PF._uORB_PID_PosXUserSpeed = 0;
+				PF._uORB_PID_PosYUserSpeed = 0;
 				PF._uORB_PID_PosXUserTarget = 0;
 				PF._uORB_PID_PosYUserTarget = 0;
 				if (RF._uORB_RC_Out_PosHoldSpeedX != 0)
@@ -1171,6 +1176,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			}
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
+				PF._uORB_PID_PosXUserSpeed = 0;
+				PF._uORB_PID_PosYUserSpeed = 0;
 				PF._uORB_PID_PosXUserTarget = 0;
 				PF._uORB_PID_PosYUserTarget = 0;
 				RF._uORB_RC_Out_PosHoldSpeedX = 0;
@@ -1187,6 +1194,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			}
 			else
 			{
+				PF._uORB_PID_PosXUserSpeed = 0;
+				PF._uORB_PID_PosYUserSpeed = 0;
 				PF._uORB_PID_PosXUserTarget = 0;
 				PF._uORB_PID_PosYUserTarget = 0;
 				RF._uORB_RC_Out_PosHoldSpeedX = 0;
@@ -1600,7 +1609,7 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerSpeed(int x, int y, int z)
 	{
 		PF._uORB_PID_PosXUserSpeed = x;
 		PF._uORB_PID_PosYUserSpeed = y;
-		RF._uORB_RC_Out_AltHoldSpeed = z;
+		PF._uORB_PID_PosZUserSpeed = z;
 	}
 }
 

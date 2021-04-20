@@ -377,6 +377,7 @@ namespace SingleAPMAPI
 			float _uORB_PID_MS5611_AltInput = 0;
 			float _uORB_PID_AltInput_Final = 0;
 			float _uORB_PID_AltHold_Target = 0;
+			float _uORB_PID_PosZUserSpeed = 0;
 			//Target Speed
 			float _uORB_PID_InputTarget = 0;
 			float _uORB_PID_Smooth_InputTarget = 0;
