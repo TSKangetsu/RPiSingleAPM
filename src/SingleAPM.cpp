@@ -1093,7 +1093,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			if (!AF._flag_IsAutoTakeoffRequire)
 			{
 				//Vertical SpeedControll
-				if (RF._uORB_RC_Out_AltHoldSpeed != 0)
+				if (RF._uORB_RC_Out_AltHoldSpeed != 0 || PF._uORB_PID_PosZUserSpeed != 0)
 				{
 					PF._uORB_PID_AltHold_Target = PF._uORB_PID_AltInput_Final;
 				}
