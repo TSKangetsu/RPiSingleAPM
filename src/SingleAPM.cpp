@@ -371,9 +371,20 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] &&
 					RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] < RF._flag_RC_ARM_PWM_Value + 50)
 				{
-					if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
+					if (AF.AutoPilotMode == APModeINFO::AutoStable)
 					{
-						AF._flag_StartUP_Protect = true;
+						if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
+						{
+							AF._flag_StartUP_Protect = true;
+						}
+					}
+					if (AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
+						AF.AutoPilotMode == APModeINFO::UserAuto)
+					{
+						if (!(RF._flag_RC_Mid_PWM_Value - 100 < RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle < RF._flag_RC_Mid_PWM_Value + 100))
+						{
+							AF._flag_StartUP_Protect = true;
+						}
 					}
 				}
 			}
@@ -1557,6 +1568,7 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerARMED()
 	AF._flag_Error = false;
 	AF._flag_GPS_Error = false;
 	AF._flag_ClockingTime_Error = false;
+	AF._flag_IsAutoTakeoffLock = false;
 }
 
 void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)
@@ -1587,7 +1599,11 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)
 			{
 				if (AF._flag_StartUP_Protect == false)
 				{
-					AF._flag_IsAutoTakeoffRequire = true;
+					if (!AF._flag_IsAutoTakeoffLock)
+					{
+						AF._flag_IsAutoTakeoffRequire = true;
+						AF._flag_IsAutoTakeoffLock = true;
+					}
 					AF._flag_ESC_ARMED = false;
 				}
 			}
@@ -1607,6 +1623,7 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerPosition(int x, int y, int z, bool
 		{
 			SF._uORB_Flow_XOutput_Total = 0;
 			SF._uORB_Flow_YOutput_Total = 0;
+			resetHome = false;
 		}
 		PF._uORB_PID_PosXUserTarget = x;
 		PF._uORB_PID_PosYUserTarget = y;
@@ -1621,6 +1638,12 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerSpeed(int x, int y, int z)
 		PF._uORB_PID_PosXUserSpeed = x;
 		PF._uORB_PID_PosYUserSpeed = y;
 		PF._uORB_PID_PosZUserSpeed = z;
+	}
+	else
+	{
+		PF._uORB_PID_PosXUserSpeed = 0;
+		PF._uORB_PID_PosYUserSpeed = 0;
+		PF._uORB_PID_PosZUserSpeed = 0;
 	}
 }
 

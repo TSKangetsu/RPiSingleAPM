@@ -213,6 +213,7 @@ namespace SingleAPMAPI
 		struct SafyINFO
 		{
 			APModeINFO AutoPilotMode;
+			bool _flag_IsAutoTakeoffLock;
 			bool _flag_IsAutoTakeoffRequire;
 
 			bool _flag_Error;
