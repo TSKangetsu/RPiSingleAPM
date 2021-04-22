@@ -30,6 +30,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_StartUP_Protect = true;
 		AF._flag_MPU9250_first_StartUp = true;
 		AF._flag_Device_setupFailed = true;
+		AF._flag_ESC_DISARMED_Request = false;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 	}
 	ConfigReader(APMInit);
@@ -344,7 +345,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					}
 				}
 				else if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
-						 AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto)
+						 AF.AutoPilotMode == APModeINFO::SpeedHold)
 				{
 					if (RF._flag_RC_Mid_PWM_Value - 100 < RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle < RF._flag_RC_Mid_PWM_Value + 100 &&
 						RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] &&
@@ -352,6 +353,15 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					{
 						APMControllerDISARM(AF.AutoPilotMode);
 					}
+				}
+				else if (AF.AutoPilotMode == APModeINFO::UserAuto)
+				{
+					if (AF._flag_ESC_DISARMED_Request &&
+						RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] &&
+						RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] < RF._flag_RC_ARM_PWM_Value + 50)
+						APMControllerDISARM(AF.AutoPilotMode);
+					else if (!AF._flag_ESC_DISARMED_Request)
+						APMControllerARMED();
 				}
 				if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] &&
 					  RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] < RF._flag_RC_ARM_PWM_Value + 50))
@@ -1494,6 +1504,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
 	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";
 	std::cout << " TakeOffing:             " << std::setw(3) << std::setfill(' ') << AF._flag_IsAutoTakeoffRequire << " |";
+	std::cout << " UserARMRequire:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_DISARMED_Request << " |";
 	std::cout << " Flag_GPS_Error:         " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Error << "           \n";
 	std::cout << " Flag_ClockingTime_Error:" << std::setw(3) << std::setfill(' ') << AF._flag_ClockingTime_Error << " |";
 	std::cout << " Flag_RC_Disconnected:   " << std::setw(3) << std::setfill(' ') << AF._flag_RC_Disconnected << " |";

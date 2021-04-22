@@ -218,6 +218,7 @@ namespace SingleAPMAPI
 			bool _flag_Error;
 			bool _flag_GPS_Error;
 			bool _flag_ESC_ARMED;
+			bool _flag_ESC_DISARMED_Request;
 			bool _flag_StartUP_Protect;
 			bool _flag_ClockingTime_Error;
 
