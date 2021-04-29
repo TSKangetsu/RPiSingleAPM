@@ -378,6 +378,7 @@ namespace SingleAPMAPI
 			float _uORB_PID_Sonar_GroundOffset = 0;
 			float _uORB_PID_MS5611_AltInput = 0;
 			float _uORB_PID_AltInput_Final = 0;
+			float _uORB_PID_AltInput_Last_Final = 0;
 			float _uORB_PID_AltHold_Target = 0;
 			float _uORB_PID_PosZUserSpeed = 0;
 			//Target Speed
@@ -387,7 +388,8 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			double _flag_Alt_Dynamic_Beta = 0.996;
+			double _flag_Alt_Dynamic_Beta = 0.995;
+			double _flag_SpeedZ_Dynamic_Beta = 0.999;
 			float _flag_PID_Alt_Speed_Max = 0;
 			float _flag_PID_Takeoff_Altitude = 0;
 			float _flag_PID_P_TAsix_Gain = 0;
@@ -497,6 +499,15 @@ namespace SingleAPMAPI
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;
 			float _flag_YAWOut_Reverse = 1.f;
+
+			int _uORB_Servo1_On_Output = 0;
+			int _uORB_Servo1_Off_Output = 0;
+			int _uORB_Servo2_On_Output = 0;
+			int _uORB_Servo2_Off_Output = 0;
+			int _uORB_Servo3_On_Output = 0;
+			int _uORB_Servo3_Off_Output = 0;
+			int _uORB_Servo4_On_Output = 0;
+			int _uORB_Servo4_Off_Output = 0;
 		} EF;
 
 		struct TaskThread
@@ -527,13 +538,16 @@ namespace SingleAPMAPI
 			int _flag_ESCThreadTimeMax = 0;
 			int _flag_ESCThreadFreq;
 			int _flag_ESCErrorTimes = 0;
+			int _Tmp_SerThreadClock = 0;
+			int _flag_SerThreadFreq = 50;
+			int _flag_SerThreadTimes = 0;
 			std::thread *ESCTask;
 			int _Tmp_ALTThreadTimeStart = 0;
 			int _Tmp_ALTThreadTimeEnd = 0;
 			int _Tmp_ALTThreadTimeNext = 0;
 			int _Tmp_ALTThreadTimeLoop = 0;
 			int _Tmp_ALTThreadError = 0;
-			int _flag_ALTThreadTimeMax = (float)1 / 45 * 1000000;
+			int _flag_ALTThreadTimeMax = (float)1 / 85 * 1000000;
 			int _flag_ALTErrorTimes = 0;
 			std::thread *ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;
