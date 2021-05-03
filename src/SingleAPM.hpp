@@ -388,8 +388,8 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			double _flag_Alt_Dynamic_Beta = 0.995;
-			double _flag_SpeedZ_Dynamic_Beta = 0.999;
+			double _flag_Alt_Dynamic_Beta = 0.9992;
+			double _flag_SpeedZ_Dynamic_Beta = 0.9992;
 			float _flag_PID_Alt_Speed_Max = 0;
 			float _flag_PID_Takeoff_Altitude = 0;
 			float _flag_PID_P_TAsix_Gain = 0;

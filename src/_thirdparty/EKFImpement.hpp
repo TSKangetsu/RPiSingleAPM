@@ -7,14 +7,14 @@ class TotalEKF : public TinyEKF
 public:
     TotalEKF()
     {
-        this->setQ(0, 0, 20.0);
-        this->setR(0, 0, 70.0);
+        this->setQ(0, 0, 25.0);
+        this->setR(0, 0, 50.0);
 
-        this->setQ(1, 1, 0.001);
-        this->setR(1, 1, 45.0);
+        this->setQ(1, 1, 25.0);
+        this->setR(1, 1, 50.0);
 
-        this->setQ(2, 2, 20.0);
-        this->setR(2, 2, 70.0);
+        this->setQ(2, 2, 25.0);
+        this->setR(2, 2, 25.0);
     }
 
 protected:

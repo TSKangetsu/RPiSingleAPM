@@ -88,7 +88,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 			else
 			{
-				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, false);
+				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, true);
 				MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[2], 5);
 #ifdef RPiDEBUGStart
 				std::cout << "Done! "
@@ -1115,34 +1115,34 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			PF._uORB_PID_I_Last_Value_SpeedY = 0;
 			PF._uORB_PID_D_Last_Value_SpeedY = 0;
 		}
+		//AutoTakeOff Function
+		{
+			if (!AF._flag_IsAutoTakeoffRequire)
+			{
+				//Vertical SpeedControll
+				if (RF._uORB_RC_Out_AltHoldSpeed != 0 || PF._uORB_PID_PosZUserSpeed != 0)
+				{
+					PF._uORB_PID_AltHold_Target = SF._uORB_MPU_Movement_Z;
+				}
+			}
+			else
+			{
+				PF._uORB_PID_AltHold_Target = PF._flag_PID_Takeoff_Altitude;
+				if (PF._uORB_PID_AltInput_Final > PF._flag_PID_Takeoff_Altitude)
+				{
+					AF._flag_IsAutoTakeoffRequire = false;
+				}
+
+				if (RF._uORB_RC_Out_AltHoldSpeed != 0 || PF._uORB_PID_PosZUserSpeed != 0)
+				{
+					AF._flag_IsAutoTakeoffRequire = false;
+				}
+			}
+			if (AF.AutoPilotMode != APModeINFO::UserAuto)
+				PF._uORB_PID_PosZUserSpeed = 0;
+		}
 		//AltHold Caculate
 		{
-			//AutoTakeOff Function
-			{
-				if (!AF._flag_IsAutoTakeoffRequire)
-				{
-					//Vertical SpeedControll
-					if (RF._uORB_RC_Out_AltHoldSpeed != 0 || PF._uORB_PID_PosZUserSpeed != 0)
-					{
-						PF._uORB_PID_AltHold_Target = SF._uORB_MPU_Movement_Z;
-					}
-				}
-				else
-				{
-					PF._uORB_PID_AltHold_Target = PF._flag_PID_Takeoff_Altitude;
-					if (PF._uORB_PID_AltInput_Final > PF._flag_PID_Takeoff_Altitude)
-					{
-						AF._flag_IsAutoTakeoffRequire = false;
-					}
-
-					if (RF._uORB_RC_Out_AltHoldSpeed != 0 || PF._uORB_PID_PosZUserSpeed != 0)
-					{
-						AF._flag_IsAutoTakeoffRequire = false;
-					}
-				}
-				if (AF.AutoPilotMode != APModeINFO::UserAuto)
-					PF._uORB_PID_PosZUserSpeed = 0;
-			}
 			if (AF._flag_MS5611_Async)
 			{
 				PF._uORB_PID_MS5611_AltInput = SF._uORB_MS5611_Altitude + PF._uORB_PID_Sonar_GroundOffset;
@@ -1162,7 +1162,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_MS5611_AltInput;
 			}
 			//
-			double EKFMessurement[3] = {PF._uORB_PID_MS5611_AltInput, SF._uORB_MPU_Movement_Z, PF._uORB_PID_Sonar_AltInput};
+			double EKFMessurement[3] = {PF._uORB_PID_MS5611_AltInput, PF._uORB_PID_Sonar_AltInput, SF._uORB_MPU_Movement_Z};
 			EKFDevice.step(EKFMessurement);
 			PF._uORB_PID_AltInput_Final = EKFDevice.getX(0);
 			//
