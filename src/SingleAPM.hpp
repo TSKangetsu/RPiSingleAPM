@@ -388,8 +388,8 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			double _flag_Alt_Dynamic_Beta = 0.9992;
-			double _flag_SpeedZ_Dynamic_Beta = 0.9992;
+			double _flag_Alt_Dynamic_Beta = 0.9995;
+			double _flag_SpeedZ_Dynamic_Beta = 0.9995;
 			float _flag_PID_Alt_Speed_Max = 0;
 			float _flag_PID_Takeoff_Altitude = 0;
 			float _flag_PID_P_TAsix_Gain = 0;
@@ -547,7 +547,7 @@ namespace SingleAPMAPI
 			int _Tmp_ALTThreadTimeNext = 0;
 			int _Tmp_ALTThreadTimeLoop = 0;
 			int _Tmp_ALTThreadError = 0;
-			int _flag_ALTThreadTimeMax = (float)1 / 85 * 1000000;
+			int _flag_ALTThreadTimeMax = (float)1 / 45 * 1000000;
 			int _flag_ALTErrorTimes = 0;
 			std::thread *ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;

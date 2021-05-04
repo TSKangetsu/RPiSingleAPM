@@ -78,7 +78,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			MS5611S = new MS5611();
-			if (!MS5611S->MS5611Init())
+			if (!MS5611S->MS5611Init(20, 0.92, -1))
 			{
 				AF._flag_Device_setupFailed = true;
 #ifdef RPiDEBUGStart
@@ -88,8 +88,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 			else
 			{
-				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, true);
-				MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[2], 5);
+				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, false);
+				MS5611S->LocalPressureSetter(SF._Tmp_MS5611_Data[MS5611FilterPressure]);
 #ifdef RPiDEBUGStart
 				std::cout << "Done! "
 						  << "\n";
@@ -213,7 +213,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				TF._Tmp_ALTThreadTimeStart = micros();
 				TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-				SF._Tmp_MS5611_Error = MS5611S->MS5611FastReader(SF._Tmp_MS5611_Data);
+				SF._Tmp_MS5611_Error = MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 				//
 				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[MS5611RawPressure];
 				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_Data[MS5611FastPressure];
@@ -1467,6 +1467,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		<< "\n";
 	std::cout << " ||FilterPressureFast: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MS5611_PressureFinal << " hpa";
 	std::cout << " ||Altitude:           " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MS5611_Altitude << "  cm";
+	std::cout << " ||Temp:               " << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2)
+			  << (SF._Tmp_MS5611_Data[MS5611Temp] / 100.0) << "   C";
 	std::cout << " ||AltHoldTarget:      " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltHold_Target << "  cm\n";
 	std::cout << " ||AltholdThrottle:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Alt_Throttle << "    ";
 	std::cout << " ||TargetSpeed:        " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_InputTarget << "    "
