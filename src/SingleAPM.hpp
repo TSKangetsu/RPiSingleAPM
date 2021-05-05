@@ -61,6 +61,9 @@ namespace SingleAPMAPI
 		float _flag_PID_P_SpeedZ_Gain;
 		float _flag_PID_P_SpeedX_Gain;
 		float _flag_PID_P_SpeedY_Gain;
+		float _flag_PID_I_Alt_Gain;
+		float _flag_PID_I_PosX_Gain;
+		float _flag_PID_I_PosY_Gain;
 		float _flag_PID_I__Roll_Gain;
 		float _flag_PID_I_Pitch_Gain;
 		float _flag_PID_I___Yaw_Gain;
@@ -84,8 +87,10 @@ namespace SingleAPMAPI
 
 		float _flag_PID_Takeoff_Altitude;
 		float _flag_PID_Alt_Speed_Max;
+		float _flag_PID_Alt_Accel_Max;
 		float _flag_PID_PosMan_Speed_Max;
 		float _flag_PID_Pos_Speed_Max;
+		float _flag_PID_Pos_Accel_Max;
 
 		double _flag_Accel__Roll_Cali;
 		double _flag_Accel_Pitch_Cali;
@@ -391,12 +396,14 @@ namespace SingleAPMAPI
 			double _flag_Alt_Dynamic_Beta = 0.9995;
 			double _flag_SpeedZ_Dynamic_Beta = 0.9995;
 			float _flag_PID_Alt_Speed_Max = 0;
+			float _flag_PID_Alt_Accel_Max = 0;
 			float _flag_PID_Takeoff_Altitude = 0;
 			float _flag_PID_P_TAsix_Gain = 0;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Hover_Throttle;
 			//
 			float _flag_PID_P_Alt_Gain;
+			float _flag_PID_I_Alt_Gain;
 			float _flag_PID_P_SpeedZ_Gain;
 			float _flag_PID_I_SpeedZ_Gain;
 			float _flag_PID_D_SpeedZ_Gain;
@@ -420,17 +427,20 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosY_Output = 0;
 
 			float _flag_PID_P_PosX_Gain = 0;
+			float _flag_PID_I_PosX_Gain = 0;
 			float _flag_PID_P_SpeedX_Gain = 0;
 			float _flag_PID_I_SpeedX_Gain = 0;
 			float _flag_PID_D_SpeedX_Gain = 0;
 
 			float _flag_PID_P_PosY_Gain = 0;
+			float _flag_PID_I_PosY_Gain = 0;
 			float _flag_PID_P_SpeedY_Gain = 0;
 			float _flag_PID_I_SpeedY_Gain = 0;
 			float _flag_PID_D_SpeedY_Gain = 0;
 
 			float _flag_PID_PosMan_Speed_Max = 0;
 			float _flag_PID_Pos_Speed_Max = 0;
+			float _flag_PID_Pos_Accel_Max = 0;
 			float _flag_PID_Pos_Level_Max;
 
 			float _uORB_PID_I_Last_Value_SpeedX = 0;

@@ -78,7 +78,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			MS5611S = new MS5611();
-			if (!MS5611S->MS5611Init(20, 0.92, -1))
+			if (!MS5611S->MS5611Init(10, 0.94, -1))
 			{
 				AF._flag_Device_setupFailed = true;
 #ifdef RPiDEBUGStart
@@ -1025,6 +1025,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_I__Roll_Gain = APMInit._flag_PID_I__Roll_Gain;
 	PF._flag_PID_I_Pitch_Gain = APMInit._flag_PID_I_Pitch_Gain;
 	PF._flag_PID_I___Yaw_Gain = APMInit._flag_PID_I___Yaw_Gain;
+	PF._flag_PID_I_Alt_Gain = APMInit._flag_PID_I_Alt_Gain;
+	PF._flag_PID_I_PosX_Gain = APMInit._flag_PID_I_PosX_Gain;
+	PF._flag_PID_I_PosY_Gain = APMInit._flag_PID_I_PosY_Gain;
 	PF._flag_PID_I_SpeedZ_Gain = APMInit._flag_PID_I_SpeedZ_Gain;
 	PF._flag_PID_I_SpeedX_Gain = APMInit._flag_PID_I_SpeedX_Gain;
 	PF._flag_PID_I_SpeedY_Gain = APMInit._flag_PID_I_SpeedY_Gain;
@@ -1046,8 +1049,10 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 
 	PF._flag_PID_Takeoff_Altitude = APMInit._flag_PID_Takeoff_Altitude;
 	PF._flag_PID_Alt_Speed_Max = APMInit._flag_PID_Alt_Speed_Max;
+	PF._flag_PID_Alt_Accel_Max = APMInit._flag_PID_Alt_Accel_Max;
 	PF._flag_PID_PosMan_Speed_Max = APMInit._flag_PID_PosMan_Speed_Max;
 	PF._flag_PID_Pos_Speed_Max = APMInit._flag_PID_Pos_Speed_Max;
+	PF._flag_PID_Pos_Accel_Max = APMInit._flag_PID_Pos_Accel_Max;
 	//==============================================================Sensors cofig==/
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit._flag_MPU9250_A_X_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit._flag_MPU9250_A_Y_Cali;
@@ -1176,8 +1181,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 								 RF._uORB_RC_Out_AltHoldSpeed - PF._uORB_PID_PosZUserSpeed;
 			TargetSpeed = TargetSpeed > PF._flag_PID_Alt_Speed_Max ? PF._flag_PID_Alt_Speed_Max : TargetSpeed;
 			TargetSpeed = TargetSpeed < -1 * PF._flag_PID_Alt_Speed_Max ? -1 * PF._flag_PID_Alt_Speed_Max : TargetSpeed;
-			PF._uORB_PID_InputTarget = TargetSpeed - SF._uORB_MPU_Speed_Z;
-			PF._uORB_PID_Smooth_InputTarget += (PF._uORB_PID_InputTarget - PF._uORB_PID_Smooth_InputTarget) * 0.255;
+			//
+			double TargetAccel = (TargetSpeed - SF._uORB_MPU_Speed_Z) * PF._flag_PID_I_Alt_Gain;
+			TargetAccel = TargetAccel > PF._flag_PID_Alt_Accel_Max ? PF._flag_PID_Alt_Accel_Max : TargetAccel;
+			TargetAccel = TargetAccel < -1 * PF._flag_PID_Alt_Accel_Max ? -1 * PF._flag_PID_Alt_Accel_Max : TargetAccel;
+			PF._uORB_PID_InputTarget = TargetAccel - SF._uORB_MPU_Data._uORB_Acceleration_Z;
+			//
+			PF._uORB_PID_Smooth_InputTarget += (PF._uORB_PID_InputTarget - PF._uORB_PID_Smooth_InputTarget) * 0.225;
 			if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
 				AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto)
 			{
