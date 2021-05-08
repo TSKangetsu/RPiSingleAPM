@@ -127,8 +127,11 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	//--------------------------------------------------------------------//
 	{
-		MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false, 1, DF.MPU9250_ADDR,
-								   TF._flag_IMUThreadFreq, SF.IMUMixFilter_Type);
+		MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false,
+								   1, DF.MPU9250_ADDR, TF._flag_IMUThreadFreq,
+								   SF.IMUMixFilter_Type, 0.9996,
+								   5, 2,
+								   0.98, 0.9);
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
