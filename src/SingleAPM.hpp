@@ -272,11 +272,11 @@ namespace SingleAPMAPI
 			int IMUMixFilter_Type;
 			MPUData _uORB_MPU_Data;
 			double _flag_MPU_Accel_Cali[20];
-			double _uORB_MPU_Speed_X = 0;
-			double _uORB_MPU_Speed_Y = 0;
+			double _uORB_True_Speed_X = 0;
+			double _uORB_True_Speed_Y = 0;
 			double _uORB_True_Speed_Z = 0;
-			double _uORB_MPU_Movement_X = 0;
-			double _uORB_MPU_Movement_Y = 0;
+			double _uORB_True_Movement_X = 0;
+			double _uORB_True_Movement_Y = 0;
 			double _uORB_True_Movement_Z = 0;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
@@ -382,8 +382,8 @@ namespace SingleAPMAPI
 			float _uORB_PID_Sonar_AltInput = 0;
 			float _uORB_PID_Sonar_GroundOffset = 0;
 			float _uORB_PID_MS5611_AltInput = 0;
-			float _uORB_PID_AltCorrection = 0;
-			float _uORB_PID_SpeedCorrection = 0;
+			float _uORB_PID_MoveZCorrection = 0;
+			float _uORB_PID_SpeedZCorrection = 0;
 			float _uORB_PID_AltInput_Final = 0;
 			float _uORB_PID_AltInput_Last_Final = 0;
 			float _uORB_PID_AltHold_Target = 0;
@@ -392,13 +392,14 @@ namespace SingleAPMAPI
 			float _uORB_PID_InputTarget = 0;
 			float _uORB_PID_Smooth_InputTarget = 0;
 			float _uORB_PID_SpeedZ_Final = 0;
-			float _uORB_PID_AccelBias = 0;
+			float _uORB_PID_AccelZ_Bias = 0;
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			float _flag_Accel_Dynamic_Beta = 0.2f;
-			float _flag_Alt_Dynamic_Beta = 0.35f;
-			float _flag_SpeedZ_Dynamic_Beta = 0.999f;
+			float _uORB_PID_AccelBias_Beta = 0.05f;
+			float _flag_Sonar_Dynamic_Beta = 0.004f;
+			float _flag_Baro_Dynamic_Beta = 0.0005f;
+			float _flag_Accel_Dynamic_Beta = 1.f;
 			float _flag_PID_Alt_Speed_Max = 0;
 			float _flag_PID_Alt_Accel_Max = 0;
 			float _flag_PID_Takeoff_Altitude = 0;
@@ -421,6 +422,12 @@ namespace SingleAPMAPI
 
 			float _uORB_PID_PosXTarget = 0;
 			float _uORB_PID_PosYTarget = 0;
+			float _uORB_PID_AccelX_Bias = 0;
+			float _uORB_PID_AccelY_Bias = 0;
+			float _uORB_PID_MoveXCorrection = 0;
+			float _uORB_PID_SpeedXCorrection = 0;
+			float _uORB_PID_MoveYCorrection = 0;
+			float _uORB_PID_SpeedYCorrection = 0;
 
 			float _uORB_PID_PosXUserSpeed = 0;
 			float _uORB_PID_PosYUserSpeed = 0;
@@ -430,13 +437,18 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosX_Output = 0;
 			float _uORB_PID_PosY_Output = 0;
 
-			float _flag_Hor_Dynamic_Beta = 0.998;
+			float _flag_Flow_Dynamic_Beta = 0.998;
+
+			float _flag_PID_SpeedX_Max = 0;
+			float _flag_PID_AccelX_Max = 0;
 			float _flag_PID_P_PosX_Gain = 0;
 			float _flag_PID_I_PosX_Gain = 0;
 			float _flag_PID_P_SpeedX_Gain = 0;
 			float _flag_PID_I_SpeedX_Gain = 0;
 			float _flag_PID_D_SpeedX_Gain = 0;
 
+			float _flag_PID_SpeedY_Max = 0;
+			float _flag_PID_AccelY_Max = 0;
 			float _flag_PID_P_PosY_Gain = 0;
 			float _flag_PID_I_PosY_Gain = 0;
 			float _flag_PID_P_SpeedY_Gain = 0;
