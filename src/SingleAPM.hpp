@@ -30,7 +30,8 @@
 #define ACCELCalibration 11
 #define COMPASSCalibration 12;
 
-#define USERDEBUGINPUTSIZE 5
+#define FILTERBAROLPFCUTOFF 1.f
+#define FILTERTHROTTLELPFCUTOFF 4.f
 
 namespace SingleAPMAPI
 {
@@ -88,6 +89,7 @@ namespace SingleAPMAPI
 			float _flag_PID_Hover_Throttle;
 
 			float _flag_PID_Level_Max;
+			float _flag_PID_AngleRate_Gain;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Pos_Level_Max;
 
@@ -161,6 +163,20 @@ namespace SingleAPMAPI
 
 		struct FilterConfig
 		{
+			int _flag_Filter_Gryo_Type;
+			int _flag_Filter_Gryo_CutOff;
+			int _flag_Filter_Accel_Type;
+			int _flag_Filter_Accel_CutOff;
+			double _flag_Filter_AngleMix_Alpha;
+
+			float _flag_Baro_Trust_Beta;
+			float _flag_Accel_Trust_Beta;
+			float _flag_Sonar_Trust_Beta;
+			float _flag_GPSAlt_Trust_Beta;
+			float _flag_PID_AccelBias_Trust_Beta;
+
+			float _flag_Filter_RC_CutOff;
+			float _flag_Filter_AngleRate_CutOff;
 		} FC;
 	};
 
@@ -292,6 +308,11 @@ namespace SingleAPMAPI
 			int IMUFilter_Type;
 			int IMUMixFilter_Type;
 			MPUData _uORB_MPU_Data;
+			int _flag_Filter_Gryo_Type;
+			int _flag_Filter_Gryo_CutOff;
+			int _flag_Filter_Accel_Type;
+			int _flag_Filter_Accel_CutOff;
+			double _flag_Filter_AngleMix_Alpha;
 			double _flag_MPU_Accel_Cali[20];
 			double _uORB_True_Speed_X = 0;
 			double _uORB_True_Speed_Y = 0;
@@ -398,6 +419,8 @@ namespace SingleAPMAPI
 			float _flag_PID_D___Yaw_Gain = 0;
 
 			float _flag_PID_Level_Max = 0;
+			float _flag_PID_AngleRate_Gain;
+			float _flag_Filter_AngleRate_CutOff;
 			//===============AltHoldPID=========//
 			//Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
@@ -418,8 +441,9 @@ namespace SingleAPMAPI
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
 			float _flag_PID_AccelBias_Beta = 0.02f;
-			float _flag_Sonar_Dynamic_Beta = 0.35f;
-			float _flag_Baro_Dynamic_Beta = 0.5f;
+			float _flag_Baro_Dynamic_Beta = 0.35f;
+			float _flag_Sonar_Dynamic_Beta = 0.8f;
+			float _flag_GPSAlt_Dynamic_Beta = 0.15f;
 			float _flag_Accel_Dynamic_Beta = 1.f;
 			float _flag_PID_Alt_Speed_Max = 50;
 			float _flag_PID_Alt_Accel_Max = 500;
@@ -491,6 +515,7 @@ namespace SingleAPMAPI
 		{
 			int RC_Type;
 			int _Tmp_RC_Data[36] = {0};
+			float _flag_Filter_RC_CutOff;
 			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _flag_RC_Max_PWM_Value = 2000;
 			int _flag_RC_Mid_PWM_Value = 1500;
