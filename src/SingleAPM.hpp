@@ -18,6 +18,7 @@
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
+#include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 
 #define RCIsIbus 0
@@ -198,6 +199,8 @@ namespace SingleAPMAPI
 		int DEBUGOuputCleaner = 0;
 		GPSI2CCompass_QMC5883L *GPSMAGInit;
 		TotalEKF EKFDevice;
+		pt1Filter_t BAROLPF;
+		pt1Filter_t ThrottleLPF;
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
@@ -285,8 +288,8 @@ namespace SingleAPMAPI
 			double _Tmp_MS5611_PressureFast = 0;
 			double _Tmp_MS5611_PressureFill = 0;
 			double _uORB_MS5611_PressureFinal = 0;
+			int _Tmp_MS5611_Altitude = 0;
 			int _uORB_MS5611_Altitude = 0;
-			int _uORB_MS5611_Last_Altitude = 0;
 			double _uORB_MS5611_ClimbeRate = 0;
 			//=========================GPS=========//
 			float _Tmp_QMC5883L_M_XH = 0;
@@ -396,9 +399,9 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			float _uORB_PID_AccelBias_Beta = 0.05f;
-			float _flag_Sonar_Dynamic_Beta = 0.004f;
-			float _flag_Baro_Dynamic_Beta = 0.0005f;
+			float _uORB_PID_AccelBias_Beta = 0.02f;
+			float _flag_Sonar_Dynamic_Beta = 0.35f;
+			float _flag_Baro_Dynamic_Beta = 0.5f;
 			float _flag_Accel_Dynamic_Beta = 1.f;
 			float _flag_PID_Alt_Speed_Max = 0;
 			float _flag_PID_Alt_Accel_Max = 0;
