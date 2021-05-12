@@ -59,14 +59,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 			std::cout << "[RPiSingleAPM]Controller Ibus config comfirm\n";
 #endif
-			IbusInit = new Ibus(DF.RCDevice.c_str());
+			DF.IbusInit = new Ibus(DF.RCDevice.c_str());
 		}
 		else if (RF.RC_Type == RCIsSbus)
 		{
 #ifdef RPiDEBUGStart
 			std::cout << "[RPiSingleAPM]Controller Sbus config comfirm\n";
 #endif
-			SbusInit = new Sbus(DF.RCDevice.c_str());
+			DF.SbusInit = new Sbus(DF.RCDevice.c_str());
 		}
 	}
 	//--------------------------------------------------------------------//
@@ -77,8 +77,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Checking MS5611 ... ";
 			std::cout.flush();
 #endif
-			MS5611S = new MS5611();
-			if (!MS5611S->MS5611Init(1, 0, -1))
+			DF.MS5611S = new MS5611();
+			if (!DF.MS5611S->MS5611Init(1, 0, -1))
 			{
 				AF._flag_Device_setupFailed = true;
 #ifdef RPiDEBUGStart
@@ -88,8 +88,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 			else
 			{
-				pt1FilterInit(&BAROLPF, 1.f, 0.0f);
-				MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, false);
+				pt1FilterInit(&DF.BAROLPF, 1.f, 0.0f);
+				DF.MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, false);
 #ifdef RPiDEBUGStart
 				std::cout << "Done! "
 						  << "\n";
@@ -105,9 +105,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Waiting for GPS Data ... ";
 			std::cout.flush();
 #endif
-			GPSInit = new GPSUart(DF.GPSDevice.c_str());
-			GPSMAGInit = new GPSI2CCompass_QMC5883L();
-			GPSMAGInit->GPSI2CCompass_QMC5883LInit();
+			DF.GPSInit = new GPSUart(DF.GPSDevice.c_str());
+			DF.GPSMAGInit = new GPSI2CCompass_QMC5883L();
+			DF.GPSMAGInit->GPSI2CCompass_QMC5883LInit();
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
 #endif
@@ -119,7 +119,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Setting UP FlowSensor... ";
 			std::cout.flush();
 #endif
-			FlowInit = new MSPUartFlow(DF.FlowDevice.c_str());
+			DF.FlowInit = new MSPUartFlow(DF.FlowDevice.c_str());
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
 #endif
@@ -127,15 +127,15 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	//--------------------------------------------------------------------//
 	{
-		MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false,
-								   1, DF.MPU9250_ADDR, TF._flag_IMUThreadFreq,
-								   SF.IMUMixFilter_Type, 0.99992, 0.80,
-								   AccelLPFBiquad, 15);
+		DF.MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false,
+									  1, DF.MPU9250_ADDR, TF._flag_IMUThreadFreq,
+									  SF.IMUMixFilter_Type, 0.99992, 0.80,
+									  AccelLPFBiquad, 15);
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
 #endif
-		MPUDevice->MPUCalibration(SF._flag_MPU_Accel_Cali);
+		DF.MPUDevice->MPUCalibration(SF._flag_MPU_Accel_Cali);
 #ifdef RPiDEBUGStart
 		std::cout << "Done!"
 				  << "\n";
@@ -156,7 +156,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			TF._Tmp_IMUThreadTimeStart = micros();
 			TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
-			SF._uORB_MPU_Data = MPUDevice->MPUSensorsDataGet();
+			SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 
 			SF._uORB_MPU_Data._uORB_Acceleration_X -= PF._uORB_PID_AccelX_Bias;
 			SF._uORB_True_Movement_X += (int)SF._uORB_True_Speed_X * (TF._flag_IMUThreadTimeMax / 1000000.f);
@@ -177,7 +177,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			SF._uORB_Gryo_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_Y / 65.5) / TF._flag_IMUThreadFreq;
 			if (AF._flag_MPU9250_first_StartUp)
 			{
-				MPUDevice->ResetMPUMixAngle();
+				DF.MPUDevice->ResetMPUMixAngle();
 				AF._flag_MPU9250_first_StartUp = false;
 			}
 			//IMU SaftyChecking---------------------------------------------------------//
@@ -222,7 +222,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				TF._Tmp_ALTThreadTimeStart = micros();
 				TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-				SF._Tmp_MS5611_Error = MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
+				SF._Tmp_MS5611_Error = DF.MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
 				//
 				SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[MS5611RawPressure];
 				SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_Data[MS5611FastPressure];
@@ -230,8 +230,8 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				SF._uORB_MS5611_PressureFinal = SF._Tmp_MS5611_PressureFill;
 				//
 				float DT = (TF._flag_ALTThreadTimeMax / 1000000.f);
-				SF._Tmp_MS5611_Altitude = ((int)(MS5611S->Pressure2Altitude(SF._Tmp_MS5611_Pressure) * 100.f));
-				SF._uORB_MS5611_Altitude = pt1FilterApply3(&BAROLPF, SF._Tmp_MS5611_Altitude, DT);
+				SF._Tmp_MS5611_Altitude = ((int)(DF.MS5611S->Pressure2Altitude(SF._Tmp_MS5611_Pressure) * 100.f));
+				SF._uORB_MS5611_Altitude = pt1FilterApply3(&DF.BAROLPF, SF._Tmp_MS5611_Altitude, DT);
 				//
 				AF._flag_MS5611_Async = true;
 
@@ -273,7 +273,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			{
 				if (RF.RC_Type == RCIsSbus)
 				{
-					if (SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
+					if (DF.SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 					{
 						for (size_t i = 0; i < 16; i++)
 						{
@@ -288,7 +288,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				}
 				else if (RF.RC_Type == RCIsIbus)
 				{
-					if (IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
+					if (DF.IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 					{
 						for (size_t i = 0; i < 16; i++)
 						{
@@ -529,7 +529,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsGPSEnable)
 	{
 		TF.GPSTask = new std::thread([&] {
-			GPSInit->GPSReOpen();
+			DF.GPSInit->GPSReOpen();
 			TF._Tmp_GPSThreadSMooth = 10;
 			while (true)
 			{
@@ -538,7 +538,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				{
 					if (TF._Tmp_GPSThreadSMooth == 10)
 					{
-						SF._uORB_GPS_Data = GPSInit->GPSParse();
+						SF._uORB_GPS_Data = DF.GPSInit->GPSParse();
 						TF._Tmp_GPSThreadSMooth = 0;
 						if (!SF._uORB_GPS_Data.DataUnCorrect)
 						{
@@ -640,7 +640,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._Tmp_MAGThreadTimeStart = micros();
 				TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 				{
-					GPSMAGInit->GPSI2CCompass_QMC5883LRead(SF._uORB_QMC5883L_M_X, SF._uORB_QMC5883L_M_Y, SF._uORB_QMC5883L_M_Z);
+					DF.GPSMAGInit->GPSI2CCompass_QMC5883LRead(SF._uORB_QMC5883L_M_X, SF._uORB_QMC5883L_M_Y, SF._uORB_QMC5883L_M_Z);
 					SF._uORB_QMC5883L_M_X += SF._flag_QMC5883L_M_X_Offset;
 					SF._uORB_QMC5883L_M_Y += SF._flag_QMC5883L_M_Y_Offset;
 					SF._uORB_QMC5883L_M_Y *= SF._flag_QMC5883L_M_Y_Scaler;
@@ -726,7 +726,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._Tmp_FlowThreadTimeNext = TF._Tmp_FlowThreadTimeStart - TF._Tmp_FlowThreadTimeEnd;
 				{
 					TF._Tmp_FlowThreadSMooth++;
-					SF._Tmp_Flow___Status = FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._Tmp_Flow_Altitude, SF._uORB_Flow_Quality);
+					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._Tmp_Flow_Altitude, SF._uORB_Flow_Quality);
 					//
 					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
 					{
@@ -850,10 +850,10 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 								EF._uORB_B2_Speed);
 			}
 			//
-			TF._Tmp_SerThreadClock++;
-			if (TF._Tmp_SerThreadClock > TF._flag_SerThreadTimes)
+			TF._Tmp_ServoThreadClock++;
+			if (TF._Tmp_ServoThreadClock > TF._flag_ServoThreadTimes)
 			{
-				TF._Tmp_SerThreadClock = 0;
+				TF._Tmp_ServoThreadClock = 0;
 			}
 
 			TF._Tmp_ESCThreadTimeEnd = micros();
@@ -887,11 +887,11 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 	{
 #ifdef RPiDEBUG
 		DebugOutPut();
-		DEBUGOuputCleaner++;
-		if (DEBUGOuputCleaner > 60)
+		TF.DEBUGOuputCleaner++;
+		if (TF.DEBUGOuputCleaner > 60)
 		{
 			system("clear");
-			DEBUGOuputCleaner = 0;
+			TF.DEBUGOuputCleaner = 0;
 		}
 #endif
 		SaftyCheckTaskReg();
@@ -930,7 +930,7 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 	}
 	else if (controller == ACCELCalibration)
 	{
-		MPUDevice->MPUAccelCalibration(action, data);
+		DF.MPUDevice->MPUAccelCalibration(action, data);
 	}
 }
 
@@ -977,113 +977,113 @@ void SingleAPMAPI::RPiSingleAPM::PID_CaculateExtend(float inputDataP, float inpu
 void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 {
 	//==========================================================Device Type=======/
-	RF.RC_Type = APMInit.RC_Type;
-	SF.MPU9250_Type = APMInit.MPU9250_Type;
-	SF.IMUFilter_Type = APMInit.IMUFilter_Type;
-	SF.IMUMixFilter_Type = APMInit.IMUMixFilter_Type;
+	RF.RC_Type = APMInit.DC.RC_Type;
+	SF.MPU9250_Type = APMInit.DC.MPU9250_Type;
+	SF.IMUFilter_Type = APMInit.DC.IMUFilter_Type;
+	SF.IMUMixFilter_Type = APMInit.DC.IMUMixFilter_Type;
 
-	DF.RCDevice = APMInit.__RCDevice;
-	DF.GPSDevice = APMInit.__GPSDevice;
-	DF.FlowDevice = APMInit.__FlowDevice;
+	DF.RCDevice = APMInit.DC.__RCDevice;
+	DF.GPSDevice = APMInit.DC.__GPSDevice;
+	DF.FlowDevice = APMInit.DC.__FlowDevice;
 
-	DF._IsGPSEnable = APMInit._IsGPSEnable;
-	DF._IsFlowEnable = APMInit._IsFlowEnable;
-	DF._IsRCSafeEnable = APMInit._IsRCSafeEnable;
-	DF._IsMS5611Enable = APMInit._IsMS5611Enable;
+	DF._IsGPSEnable = APMInit.DC._IsGPSEnable;
+	DF._IsFlowEnable = APMInit.DC._IsFlowEnable;
+	DF._IsRCSafeEnable = APMInit.DC._IsRCSafeEnable;
+	DF._IsMS5611Enable = APMInit.DC._IsMS5611Enable;
+
+	TF._flag_IMUThreadFreq = APMInit.DC.IMU_Freqeuncy;
+	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
+	TF._flag_RXTThreadFreq = APMInit.DC.RXT_Freqeuncy;
+	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
+	TF._flag_ESCThreadFreq = APMInit.DC.ESC_Freqeuncy;
+	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
+	TF._flag_ServoThreadTimes = TF._flag_ESCThreadFreq / TF._flag_ServoThreadFreq;
 	//==========================================================Controller cofig==/
 
-	RF._flag_RC_Min_PWM_Value = APMInit._flag_RC_Min_PWM_Value;
-	RF._flag_RC_Mid_PWM_Value = APMInit._flag_RC_Mid_PWM_Value;
-	RF._flag_RC_Max_PWM_Value = APMInit._flag_RC_Max_PWM_Value;
+	RF._flag_RC_Min_PWM_Value = APMInit.RC._flag_RC_Min_PWM_Value;
+	RF._flag_RC_Mid_PWM_Value = APMInit.RC._flag_RC_Mid_PWM_Value;
+	RF._flag_RC_Max_PWM_Value = APMInit.RC._flag_RC_Max_PWM_Value;
 
-	RF._flag_RC_ARM_PWM_Value = APMInit._flag_RC_ARM_PWM_Value;
-	RF._flag_RC_ARM_PWM_Channel = APMInit._flag_RC_ARM_PWM_Channel;
-	RF._flag_RC_AP_ManualHold_PWM_Value = APMInit._flag_RC_AP_ManualHold_PWM_Value;
-	RF._flag_RC_AP_ManualHold_PWM_Channel = APMInit._flag_RC_AP_ManualHold_PWM_Channel;
-	RF._flag_RC_AP_AutoStable_PWM_Value = APMInit._flag_RC_AP_AutoStable_PWM_Value;
-	RF._flag_RC_AP_AutoStable_PWM_Channel = APMInit._flag_RC_AP_AutoStable_PWM_Channel;
-	RF._flag_RC_AP_AltHold_PWM_Value = APMInit._flag_RC_AP_AltHold_PWM_Value;
-	RF._flag_RC_AP_AltHold_PWM_Channel = APMInit._flag_RC_AP_AltHold_PWM_Channel;
-	RF._flag_RC_AP_PositionHold_PWM_Value = APMInit._flag_RC_AP_PositionHold_PWM_Value;
-	RF._flag_RC_AP_PositionHold_PWM_Channel = APMInit._flag_RC_AP_PositionHold_PWM_Channel;
-	RF._flag_RC_AP_SpeedHold_PWM_Value = APMInit._flag_RC_AP_SpeedHold_PWM_Value;
-	RF._flag_RC_AP_SpeedHold_PWM_Channel = APMInit._flag_RC_AP_SpeedHold_PWM_Channel;
-	RF._flag_RC_AP_UserAuto_PWM_Value = APMInit._flag_RC_AP_UserAuto_PWM_Value;
-	RF._flag_RC_AP_UserAuto_PWM_Channel = APMInit._flag_RC_AP_UserAuto_PWM_Channel;
+	RF._flag_RC_ARM_PWM_Value = APMInit.RC._flag_RC_ARM_PWM_Value;
+	RF._flag_RC_ARM_PWM_Channel = APMInit.RC._flag_RC_ARM_PWM_Channel;
+	RF._flag_RC_AP_ManualHold_PWM_Value = APMInit.RC._flag_RC_AP_ManualHold_PWM_Value;
+	RF._flag_RC_AP_ManualHold_PWM_Channel = APMInit.RC._flag_RC_AP_ManualHold_PWM_Channel;
+	RF._flag_RC_AP_AutoStable_PWM_Value = APMInit.RC._flag_RC_AP_AutoStable_PWM_Value;
+	RF._flag_RC_AP_AutoStable_PWM_Channel = APMInit.RC._flag_RC_AP_AutoStable_PWM_Channel;
+	RF._flag_RC_AP_AltHold_PWM_Value = APMInit.RC._flag_RC_AP_AltHold_PWM_Value;
+	RF._flag_RC_AP_AltHold_PWM_Channel = APMInit.RC._flag_RC_AP_AltHold_PWM_Channel;
+	RF._flag_RC_AP_PositionHold_PWM_Value = APMInit.RC._flag_RC_AP_AltHold_PWM_Channel;
+	RF._flag_RC_AP_PositionHold_PWM_Channel = APMInit.RC._flag_RC_AP_PositionHold_PWM_Channel;
+	RF._flag_RC_AP_SpeedHold_PWM_Value = APMInit.RC._flag_RC_AP_SpeedHold_PWM_Value;
+	RF._flag_RC_AP_SpeedHold_PWM_Channel = APMInit.RC._flag_RC_AP_SpeedHold_PWM_Channel;
+	RF._flag_RC_AP_UserAuto_PWM_Value = APMInit.RC._flag_RC_AP_UserAuto_PWM_Value;
+	RF._flag_RC_AP_UserAuto_PWM_Channel = APMInit.RC._flag_RC_AP_UserAuto_PWM_Channel;
 
-	RF._flag_RCIsReserv__Roll = APMInit._flag_RCIsReserv__Roll;
-	RF._flag_RCIsReserv_Pitch = APMInit._flag_RCIsReserv_Pitch;
-	RF._flag_RCIsReserv___Yaw = APMInit._flag_RCIsReserv___Yaw;
+	RF._flag_RCIsReserv__Roll = APMInit.RC._flag_RCIsReserv__Roll;
+	RF._flag_RCIsReserv_Pitch = APMInit.RC._flag_RCIsReserv_Pitch;
+	RF._flag_RCIsReserv___Yaw = APMInit.RC._flag_RCIsReserv___Yaw;
 	//==========================================================ESC cofig=========/
-	EF._flag_A1_Pin = APMInit._flag_A1_Pin;
-	EF._flag_A2_Pin = APMInit._flag_A2_Pin;
-	EF._flag_B1_Pin = APMInit._flag_B1_Pin;
-	EF._flag_B2_Pin = APMInit._flag_B2_Pin;
-	EF._flag_YAWOut_Reverse = APMInit._flag_YAWOut_Reverse;
+	EF._flag_A1_Pin = APMInit.OC._flag_A1_Pin;
+	EF._flag_A2_Pin = APMInit.OC._flag_A2_Pin;
+	EF._flag_B1_Pin = APMInit.OC._flag_B1_Pin;
+	EF._flag_B2_Pin = APMInit.OC._flag_B2_Pin;
+	EF._flag_YAWOut_Reverse = APMInit.OC._flag_YAWOut_Reverse;
 	//==================================================================PID cofig==/
-	PF._flag_PID_P__Roll_Gain = APMInit._flag_PID_P__Roll_Gain;
-	PF._flag_PID_P_Pitch_Gain = APMInit._flag_PID_P_Pitch_Gain;
-	PF._flag_PID_P___Yaw_Gain = APMInit._flag_PID_P___Yaw_Gain;
-	PF._flag_PID_P_Alt_Gain = APMInit._flag_PID_P_Alt_Gain;
-	PF._flag_PID_P_PosX_Gain = APMInit._flag_PID_P_PosX_Gain;
-	PF._flag_PID_P_PosY_Gain = APMInit._flag_PID_P_PosY_Gain;
-	PF._flag_PID_P_SpeedZ_Gain = APMInit._flag_PID_P_SpeedZ_Gain;
-	PF._flag_PID_P_SpeedX_Gain = APMInit._flag_PID_P_SpeedX_Gain;
-	PF._flag_PID_P_SpeedY_Gain = APMInit._flag_PID_P_SpeedY_Gain;
+	PF._flag_PID_P__Roll_Gain = APMInit.PC._flag_PID_P__Roll_Gain;
+	PF._flag_PID_P_Pitch_Gain = APMInit.PC._flag_PID_P_Pitch_Gain;
+	PF._flag_PID_P___Yaw_Gain = APMInit.PC._flag_PID_P___Yaw_Gain;
+	PF._flag_PID_P_Alt_Gain = APMInit.PC._flag_PID_P_Alt_Gain;
+	PF._flag_PID_P_PosX_Gain = APMInit.PC._flag_PID_P_PosX_Gain;
+	PF._flag_PID_P_PosY_Gain = APMInit.PC._flag_PID_P_PosY_Gain;
+	PF._flag_PID_P_SpeedZ_Gain = APMInit.PC._flag_PID_P_SpeedZ_Gain;
+	PF._flag_PID_P_SpeedX_Gain = APMInit.PC._flag_PID_P_SpeedX_Gain;
+	PF._flag_PID_P_SpeedY_Gain = APMInit.PC._flag_PID_P_SpeedY_Gain;
 
-	PF._flag_PID_I__Roll_Gain = APMInit._flag_PID_I__Roll_Gain;
-	PF._flag_PID_I_Pitch_Gain = APMInit._flag_PID_I_Pitch_Gain;
-	PF._flag_PID_I___Yaw_Gain = APMInit._flag_PID_I___Yaw_Gain;
-	PF._flag_PID_I_Alt_Gain = APMInit._flag_PID_I_Alt_Gain;
-	PF._flag_PID_I_PosX_Gain = APMInit._flag_PID_I_PosX_Gain;
-	PF._flag_PID_I_PosY_Gain = APMInit._flag_PID_I_PosY_Gain;
-	PF._flag_PID_I_SpeedZ_Gain = APMInit._flag_PID_I_SpeedZ_Gain;
-	PF._flag_PID_I_SpeedX_Gain = APMInit._flag_PID_I_SpeedX_Gain;
-	PF._flag_PID_I_SpeedY_Gain = APMInit._flag_PID_I_SpeedY_Gain;
-	PF._flag_PID_I__Roll_Max__Value = APMInit._flag_PID_I__Roll_Max__Value;
-	PF._flag_PID_I_Pitch_Max__Value = APMInit._flag_PID_I_Pitch_Max__Value;
-	PF._flag_PID_I___Yaw_Max__Value = APMInit._flag_PID_I___Yaw_Max__Value;
+	PF._flag_PID_I__Roll_Gain = APMInit.PC._flag_PID_I__Roll_Gain;
+	PF._flag_PID_I_Pitch_Gain = APMInit.PC._flag_PID_I_Pitch_Gain;
+	PF._flag_PID_I___Yaw_Gain = APMInit.PC._flag_PID_I___Yaw_Gain;
+	PF._flag_PID_I_Alt_Gain = APMInit.PC._flag_PID_I_Alt_Gain;
+	PF._flag_PID_I_PosX_Gain = APMInit.PC._flag_PID_I_PosX_Gain;
+	PF._flag_PID_I_PosY_Gain = APMInit.PC._flag_PID_I_PosY_Gain;
+	PF._flag_PID_I_SpeedZ_Gain = APMInit.PC._flag_PID_I_SpeedZ_Gain;
+	PF._flag_PID_I_SpeedX_Gain = APMInit.PC._flag_PID_I_SpeedX_Gain;
+	PF._flag_PID_I_SpeedY_Gain = APMInit.PC._flag_PID_I_SpeedY_Gain;
+	PF._flag_PID_I__Roll_Max__Value = APMInit.PC._flag_PID_I__Roll_Max__Value;
+	PF._flag_PID_I_Pitch_Max__Value = APMInit.PC._flag_PID_I_Pitch_Max__Value;
+	PF._flag_PID_I___Yaw_Max__Value = APMInit.PC._flag_PID_I___Yaw_Max__Value;
 
-	PF._flag_PID_D__Roll_Gain = APMInit._flag_PID_D__Roll_Gain;
-	PF._flag_PID_D_Pitch_Gain = APMInit._flag_PID_D_Pitch_Gain;
-	PF._flag_PID_D___Yaw_Gain = APMInit._flag_PID_D___Yaw_Gain;
-	PF._flag_PID_D_SpeedZ_Gain = APMInit._flag_PID_D_SpeedZ_Gain;
-	PF._flag_PID_D_SpeedX_Gain = APMInit._flag_PID_D_SpeedX_Gain;
-	PF._flag_PID_D_SpeedY_Gain = APMInit._flag_PID_D_SpeedY_Gain;
+	PF._flag_PID_D__Roll_Gain = APMInit.PC._flag_PID_D__Roll_Gain;
+	PF._flag_PID_D_Pitch_Gain = APMInit.PC._flag_PID_D_Pitch_Gain;
+	PF._flag_PID_D___Yaw_Gain = APMInit.PC._flag_PID_D___Yaw_Gain;
+	PF._flag_PID_D_SpeedZ_Gain = APMInit.PC._flag_PID_D_SpeedZ_Gain;
+	PF._flag_PID_D_SpeedX_Gain = APMInit.PC._flag_PID_D_SpeedX_Gain;
+	PF._flag_PID_D_SpeedY_Gain = APMInit.PC._flag_PID_D_SpeedY_Gain;
 
-	PF._flag_PID_Hover_Throttle = APMInit._flag_PID_Hover_Throttle;
-	PF._flag_PID_Level_Max = APMInit._flag_PID_Level_Max;
-	PF._flag_PID_Alt_Level_Max = APMInit._flag_PID_Alt_Level_Max;
-	PF._flag_PID_Pos_Level_Max = APMInit._flag_PID_Pos_Level_Max;
+	PF._flag_PID_Hover_Throttle = APMInit.PC._flag_PID_Hover_Throttle;
+	PF._flag_PID_Level_Max = APMInit.PC._flag_PID_Level_Max;
+	PF._flag_PID_Alt_Level_Max = APMInit.PC._flag_PID_Alt_Level_Max;
+	PF._flag_PID_Pos_Level_Max = APMInit.PC._flag_PID_Pos_Level_Max;
 
-	PF._flag_PID_Takeoff_Altitude = APMInit._flag_PID_Takeoff_Altitude;
-	PF._flag_PID_Alt_Speed_Max = APMInit._flag_PID_Alt_Speed_Max;
-	PF._flag_PID_Alt_Accel_Max = APMInit._flag_PID_Alt_Accel_Max;
-	PF._flag_PID_PosMan_Speed_Max = APMInit._flag_PID_PosMan_Speed_Max;
-	PF._flag_PID_Pos_Speed_Max = APMInit._flag_PID_Pos_Speed_Max;
-	PF._flag_PID_Pos_Accel_Max = APMInit._flag_PID_Pos_Accel_Max;
+	PF._flag_PID_Takeoff_Altitude = APMInit.PC._flag_PID_Takeoff_Altitude;
+	PF._flag_PID_Alt_Speed_Max = APMInit.PC._flag_PID_Alt_Speed_Max;
+	PF._flag_PID_Alt_Accel_Max = APMInit.PC._flag_PID_Alt_Accel_Max;
+	PF._flag_PID_PosMan_Speed_Max = APMInit.PC._flag_PID_PosMan_Speed_Max;
+	PF._flag_PID_Pos_Speed_Max = APMInit.PC._flag_PID_Pos_Speed_Max;
+	PF._flag_PID_Pos_Accel_Max = APMInit.PC._flag_PID_Pos_Accel_Max;
 	//==============================================================Sensors cofig==/
-	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit._flag_MPU9250_A_X_Cali;
-	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit._flag_MPU9250_A_Y_Cali;
-	SF._flag_MPU_Accel_Cali[MPUAccelCaliZ] = APMInit._flag_MPU9250_A_Z_Cali;
-	SF._flag_MPU_Accel_Cali[MPUAccelScalX] = APMInit._flag_MPU9250_A_X_Scal;
-	SF._flag_MPU_Accel_Cali[MPUAccelScalY] = APMInit._flag_MPU9250_A_Y_Scal;
-	SF._flag_MPU_Accel_Cali[MPUAccelScalZ] = APMInit._flag_MPU9250_A_Z_Scal;
+	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit.SC._flag_MPU9250_A_X_Cali;
+	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit.SC._flag_MPU9250_A_Y_Cali;
+	SF._flag_MPU_Accel_Cali[MPUAccelCaliZ] = APMInit.SC._flag_MPU9250_A_Z_Cali;
+	SF._flag_MPU_Accel_Cali[MPUAccelScalX] = APMInit.SC._flag_MPU9250_A_X_Scal;
+	SF._flag_MPU_Accel_Cali[MPUAccelScalY] = APMInit.SC._flag_MPU9250_A_Y_Scal;
+	SF._flag_MPU_Accel_Cali[MPUAccelScalZ] = APMInit.SC._flag_MPU9250_A_Z_Scal;
 
-	SF._flag_QMC5883L_Head_Asix = APMInit._flag_QMC5883L_Head_Asix;
-	SF._flag_QMC5883L_M_X_Offset = APMInit._flag_QMC5883L_M_X_Offset;
-	SF._flag_QMC5883L_M_Y_Offset = APMInit._flag_QMC5883L_M_Y_Offset;
-	SF._flag_QMC5883L_M_Z_Offset = APMInit._flag_QMC5883L_M_Z_Offset;
-	SF._flag_QMC5883L_M_Y_Scaler = APMInit._flag_QMC5883L_M_Y_Scaler;
-	SF._flag_QMC5883L_M_Z_Scaler = APMInit._flag_QMC5883L_M_Z_Scaler;
-	//===============================================================Update cofig==/
-	TF._flag_IMUThreadFreq = APMInit.IMU_Freqeuncy;
-	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
-	TF._flag_RXTThreadFreq = APMInit.RXT_Freqeuncy;
-	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
-	TF._flag_ESCThreadFreq = APMInit.ESC_Freqeuncy;
-	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
-	TF._flag_SerThreadTimes = TF._flag_ESCThreadFreq / TF._flag_SerThreadFreq;
+	SF._flag_QMC5883L_Head_Asix = APMInit.SC._flag_QMC5883L_Head_Asix;
+	SF._flag_QMC5883L_M_X_Offset = APMInit.SC._flag_QMC5883L_M_X_Offset;
+	SF._flag_QMC5883L_M_Y_Offset = APMInit.SC._flag_QMC5883L_M_Y_Offset;
+	SF._flag_QMC5883L_M_Z_Offset = APMInit.SC._flag_QMC5883L_M_Z_Offset;
+	SF._flag_QMC5883L_M_Y_Scaler = APMInit.SC._flag_QMC5883L_M_Y_Scaler;
+	SF._flag_QMC5883L_M_Z_Scaler = APMInit.SC._flag_QMC5883L_M_Z_Scaler;
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
@@ -1187,7 +1187,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 												 pow(PF._flag_Sonar_Dynamic_Beta, 2) *
 												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
-											pow(PF._flag_Sonar_Dynamic_Beta, 2) * PF._uORB_PID_AccelBias_Beta *
+											pow(PF._flag_Sonar_Dynamic_Beta, 2) * PF._flag_PID_AccelBias_Beta *
 											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				//
 				PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;
@@ -1201,7 +1201,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 												 pow(PF._flag_Baro_Dynamic_Beta, 2) *
 												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
-											pow(PF._flag_Baro_Dynamic_Beta, 2) * PF._uORB_PID_AccelBias_Beta *
+											pow(PF._flag_Baro_Dynamic_Beta, 2) * PF._flag_PID_AccelBias_Beta *
 											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				//
 				PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_MS5611_AltInput;
@@ -1226,7 +1226,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 								   PF._uORB_PID_Alt_Throttle, PF._uORB_PID_I_Last_Value_SpeedZ, PF._uORB_PID_D_Last_Value_SpeedZ,
 								   PF._flag_PID_P_SpeedZ_Gain, PF._flag_PID_I_SpeedZ_Gain / 100.f, PF._flag_PID_D_SpeedZ_Gain,
 								   PF._flag_PID_Alt_Level_Max);
-				PF._uORB_PID_Alt_Throttle = pt1FilterApply4(&ThrottleLPF, PF._uORB_PID_Alt_Throttle, 4.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				PF._uORB_PID_Alt_Throttle = pt1FilterApply4(&DF.ThrottleLPF, PF._uORB_PID_Alt_Throttle, 4.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 				PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle > PF._flag_PID_Alt_Level_Max ? PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
 				PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle < -1 * PF._flag_PID_Alt_Level_Max ? -1 * PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
 			}
@@ -1572,7 +1572,6 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_RC_Disconnected:   " << std::setw(3) << std::setfill(' ') << AF._flag_RC_Disconnected << " |";
 	std::cout << " Flag_Flow_ErrorClock:   " << std::setw(3) << std::setfill(' ') << AF.Flow_Lose_Clocking << " |";
 	std::cout << " Flag_GPS_Disconnected:  " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Disconnected << "         \n";
-	std::cout << " Flag_IsGPSHoldSet:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsGPSHoldSet << " |";
 	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";
 	std::cout << " Flag_IsSonarAvalible:   " << std::setw(3) << std::setfill(' ') << AF._flag_IsSonarAvalible << " |";
 	std::cout << " GPS_Lose_Clocking:      " << std::setw(3) << std::setfill(' ') << AF.GPS_Lose_Clocking << " |";

@@ -36,113 +36,132 @@ namespace SingleAPMAPI
 {
 	struct APMSettinngs
 	{
-		int RC_Type;
-		int MPU9250_Type;
-		int IMU_Freqeuncy;
-		int RXT_Freqeuncy;
-		int ESC_Freqeuncy;
-		int IMUFilter_Type;
-		int IMUMixFilter_Type;
+		struct DeviceConfig
+		{
+			int RC_Type;
+			int MPU9250_Type;
+			int IMU_Freqeuncy;
+			int RXT_Freqeuncy;
+			int ESC_Freqeuncy;
+			int IMUFilter_Type;
+			int IMUMixFilter_Type;
 
-		std::string __RCDevice;
-		std::string __GPSDevice;
-		std::string __FlowDevice;
+			std::string __RCDevice;
+			std::string __GPSDevice;
+			std::string __FlowDevice;
 
-		bool _IsGPSEnable;
-		bool _IsFlowEnable;
-		bool _IsRCSafeEnable;
-		bool _IsMS5611Enable;
+			bool _IsGPSEnable;
+			bool _IsFlowEnable;
+			bool _IsRCSafeEnable;
+			bool _IsMS5611Enable;
+		} DC;
 
-		float _flag_PID_P__Roll_Gain;
-		float _flag_PID_P_Pitch_Gain;
-		float _flag_PID_P___Yaw_Gain;
-		float _flag_PID_P_Alt_Gain;
-		float _flag_PID_P_PosX_Gain;
-		float _flag_PID_P_PosY_Gain;
-		float _flag_PID_P_SpeedZ_Gain;
-		float _flag_PID_P_SpeedX_Gain;
-		float _flag_PID_P_SpeedY_Gain;
-		float _flag_PID_I_Alt_Gain;
-		float _flag_PID_I_PosX_Gain;
-		float _flag_PID_I_PosY_Gain;
-		float _flag_PID_I__Roll_Gain;
-		float _flag_PID_I_Pitch_Gain;
-		float _flag_PID_I___Yaw_Gain;
-		float _flag_PID_I_SpeedZ_Gain;
-		float _flag_PID_I_SpeedX_Gain;
-		float _flag_PID_I_SpeedY_Gain;
-		float _flag_PID_I__Roll_Max__Value;
-		float _flag_PID_I_Pitch_Max__Value;
-		float _flag_PID_I___Yaw_Max__Value;
-		float _flag_PID_D__Roll_Gain;
-		float _flag_PID_D_Pitch_Gain;
-		float _flag_PID_D___Yaw_Gain;
-		float _flag_PID_D_SpeedZ_Gain;
-		float _flag_PID_D_SpeedX_Gain;
-		float _flag_PID_D_SpeedY_Gain;
-		float _flag_PID_Hover_Throttle;
+		struct PIDConfig
+		{
+			float _flag_PID_P__Roll_Gain;
+			float _flag_PID_P_Pitch_Gain;
+			float _flag_PID_P___Yaw_Gain;
+			float _flag_PID_P_Alt_Gain;
+			float _flag_PID_P_PosX_Gain;
+			float _flag_PID_P_PosY_Gain;
+			float _flag_PID_P_SpeedZ_Gain;
+			float _flag_PID_P_SpeedX_Gain;
+			float _flag_PID_P_SpeedY_Gain;
+			float _flag_PID_I_Alt_Gain;
+			float _flag_PID_I_PosX_Gain;
+			float _flag_PID_I_PosY_Gain;
+			float _flag_PID_I__Roll_Gain;
+			float _flag_PID_I_Pitch_Gain;
+			float _flag_PID_I___Yaw_Gain;
+			float _flag_PID_I_SpeedZ_Gain;
+			float _flag_PID_I_SpeedX_Gain;
+			float _flag_PID_I_SpeedY_Gain;
+			float _flag_PID_I__Roll_Max__Value;
+			float _flag_PID_I_Pitch_Max__Value;
+			float _flag_PID_I___Yaw_Max__Value;
+			float _flag_PID_D__Roll_Gain;
+			float _flag_PID_D_Pitch_Gain;
+			float _flag_PID_D___Yaw_Gain;
+			float _flag_PID_D_SpeedZ_Gain;
+			float _flag_PID_D_SpeedX_Gain;
+			float _flag_PID_D_SpeedY_Gain;
+			float _flag_PID_Hover_Throttle;
 
-		float _flag_PID_Level_Max;
-		float _flag_PID_Alt_Level_Max;
-		float _flag_PID_Pos_Level_Max;
+			float _flag_PID_Level_Max;
+			float _flag_PID_Alt_Level_Max;
+			float _flag_PID_Pos_Level_Max;
 
-		float _flag_PID_Takeoff_Altitude;
-		float _flag_PID_Alt_Speed_Max;
-		float _flag_PID_Alt_Accel_Max;
-		float _flag_PID_PosMan_Speed_Max;
-		float _flag_PID_Pos_Speed_Max;
-		float _flag_PID_Pos_Accel_Max;
+			float _flag_PID_Takeoff_Altitude;
+			float _flag_PID_Alt_Speed_Max;
+			float _flag_PID_Alt_Accel_Max;
+			float _flag_PID_PosMan_Speed_Max;
+			float _flag_PID_Pos_Speed_Max;
+			float _flag_PID_Pos_Accel_Max;
+		} PC;
 
-		double _flag_Accel__Roll_Cali;
-		double _flag_Accel_Pitch_Cali;
-		double _flag_MPU9250_A_X_Cali;
-		double _flag_MPU9250_A_Y_Cali;
-		double _flag_MPU9250_A_Z_Cali;
-		double _flag_MPU9250_A_X_Scal;
-		double _flag_MPU9250_A_Y_Scal;
-		double _flag_MPU9250_A_Z_Scal;
-		double _flag_MPU9250_M_X_Offset;
-		double _flag_MPU9250_M_Y_Offset;
-		double _flag_MPU9250_M_Z_Offset;
-		double _flag_MPU9250_M_Y_Scaler;
-		double _flag_MPU9250_M_Z_Scaler;
-		double _flag_MPU9250_Head_Asix;
+		struct SensorConfig
+		{
+			double _flag_Accel__Roll_Cali;
+			double _flag_Accel_Pitch_Cali;
+			double _flag_MPU9250_A_X_Cali;
+			double _flag_MPU9250_A_Y_Cali;
+			double _flag_MPU9250_A_Z_Cali;
+			double _flag_MPU9250_A_X_Scal;
+			double _flag_MPU9250_A_Y_Scal;
+			double _flag_MPU9250_A_Z_Scal;
+			double _flag_MPU9250_M_X_Offset;
+			double _flag_MPU9250_M_Y_Offset;
+			double _flag_MPU9250_M_Z_Offset;
+			double _flag_MPU9250_M_Y_Scaler;
+			double _flag_MPU9250_M_Z_Scaler;
+			double _flag_MPU9250_Head_Asix;
 
-		double _flag_QMC5883L_Head_Asix;
-		double _flag_QMC5883L_M_X_Offset;
-		double _flag_QMC5883L_M_Y_Offset;
-		double _flag_QMC5883L_M_Z_Offset;
-		double _flag_QMC5883L_M_Y_Scaler;
-		double _flag_QMC5883L_M_Z_Scaler;
+			double _flag_QMC5883L_Head_Asix;
+			double _flag_QMC5883L_M_X_Offset;
+			double _flag_QMC5883L_M_Y_Offset;
+			double _flag_QMC5883L_M_Z_Offset;
+			double _flag_QMC5883L_M_Y_Scaler;
+			double _flag_QMC5883L_M_Z_Scaler;
+		} SC;
 
-		int _flag_A1_Pin;
-		int _flag_A2_Pin;
-		int _flag_B1_Pin;
-		int _flag_B2_Pin;
-		float _flag_YAWOut_Reverse;
+		struct OutputConfig
+		{
+			int _flag_A1_Pin;
+			int _flag_A2_Pin;
+			int _flag_B1_Pin;
+			int _flag_B2_Pin;
+			float _flag_YAWOut_Reverse;
+		} OC;
 
-		int _flag_RC_Min_PWM_Value;
-		int _flag_RC_Mid_PWM_Value;
-		int _flag_RC_Max_PWM_Value;
+		struct RCConfig
+		{
+			int _flag_RC_Min_PWM_Value;
+			int _flag_RC_Mid_PWM_Value;
+			int _flag_RC_Max_PWM_Value;
 
-		int _flag_RC_ARM_PWM_Value;
-		int _flag_RC_ARM_PWM_Channel;
-		int _flag_RC_AP_ManualHold_PWM_Value;
-		int _flag_RC_AP_ManualHold_PWM_Channel;
-		int _flag_RC_AP_AutoStable_PWM_Value;
-		int _flag_RC_AP_AutoStable_PWM_Channel;
-		int _flag_RC_AP_AltHold_PWM_Value;
-		int _flag_RC_AP_AltHold_PWM_Channel;
-		int _flag_RC_AP_PositionHold_PWM_Value;
-		int _flag_RC_AP_PositionHold_PWM_Channel;
-		int _flag_RC_AP_SpeedHold_PWM_Value;
-		int _flag_RC_AP_SpeedHold_PWM_Channel;
-		int _flag_RC_AP_UserAuto_PWM_Value;
-		int _flag_RC_AP_UserAuto_PWM_Channel;
+			int _flag_RC_ARM_PWM_Value;
+			int _flag_RC_ARM_PWM_Channel;
+			int _flag_RC_AP_ManualHold_PWM_Value;
+			int _flag_RC_AP_ManualHold_PWM_Channel;
+			int _flag_RC_AP_AutoStable_PWM_Value;
+			int _flag_RC_AP_AutoStable_PWM_Channel;
+			int _flag_RC_AP_AltHold_PWM_Value;
+			int _flag_RC_AP_AltHold_PWM_Channel;
+			int _flag_RC_AP_PositionHold_PWM_Value;
+			int _flag_RC_AP_PositionHold_PWM_Channel;
+			int _flag_RC_AP_SpeedHold_PWM_Value;
+			int _flag_RC_AP_SpeedHold_PWM_Channel;
+			int _flag_RC_AP_UserAuto_PWM_Value;
+			int _flag_RC_AP_UserAuto_PWM_Channel;
 
-		int _flag_RCIsReserv__Roll;
-		int _flag_RCIsReserv_Pitch;
-		int _flag_RCIsReserv___Yaw;
+			int _flag_RCIsReserv__Roll;
+			int _flag_RCIsReserv_Pitch;
+			int _flag_RCIsReserv___Yaw;
+		} RC;
+
+		struct FilterConfig
+		{
+		} FC;
 	};
 
 	enum APModeINFO
@@ -190,18 +209,6 @@ namespace SingleAPMAPI
 		void APMControllerSpeed(int x, int y, int z);
 
 	protected:
-		Sbus *SbusInit;
-		Ibus *IbusInit;
-		MS5611 *MS5611S;
-		GPSUart *GPSInit;
-		RPiMPU9250 *MPUDevice;
-		MSPUartFlow *FlowInit;
-		int DEBUGOuputCleaner = 0;
-		GPSI2CCompass_QMC5883L *GPSMAGInit;
-		TotalEKF EKFDevice;
-		pt1Filter_t BAROLPF;
-		pt1Filter_t ThrottleLPF;
-
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
 						  float P_Gain, float I_Gain, float D_Gain, float I_Max);
@@ -244,7 +251,6 @@ namespace SingleAPMAPI
 			bool _flag_GPSData_Async;
 			bool _flag_FlowData_Async;
 			bool _flag_SonarData_Async;
-			bool _flag_IsGPSHoldSet;
 			bool _flag_IsSonarAvalible;
 			bool _flag_IsFlowAvalible;
 		} AF;
@@ -265,6 +271,18 @@ namespace SingleAPMAPI
 			bool _IsFlowEnable;
 			bool _IsRCSafeEnable;
 			bool _IsMS5611Enable;
+
+			Sbus *SbusInit;
+			Ibus *IbusInit;
+			MS5611 *MS5611S;
+			GPSUart *GPSInit;
+			RPiMPU9250 *MPUDevice;
+			MSPUartFlow *FlowInit;
+			GPSI2CCompass_QMC5883L *GPSMAGInit;
+			TotalEKF EKFDevice;
+
+			pt1Filter_t BAROLPF;
+			pt1Filter_t ThrottleLPF;
 		} DF;
 
 		struct SensorsINFO
@@ -364,22 +382,22 @@ namespace SingleAPMAPI
 			float _uORB_Leveling_Pitch = 0;
 			float _uORB_Leveling___Yaw = 0;
 
-			float _flag_PID_P__Roll_Gain;
-			float _flag_PID_P_Pitch_Gain;
-			float _flag_PID_P___Yaw_Gain;
+			float _flag_PID_P__Roll_Gain = 0;
+			float _flag_PID_P_Pitch_Gain = 0;
+			float _flag_PID_P___Yaw_Gain = 0;
 
-			float _flag_PID_I__Roll_Gain;
-			float _flag_PID_I_Pitch_Gain;
-			float _flag_PID_I___Yaw_Gain;
-			float _flag_PID_I__Roll_Max__Value;
-			float _flag_PID_I_Pitch_Max__Value;
-			float _flag_PID_I___Yaw_Max__Value;
+			float _flag_PID_I__Roll_Gain = 0;
+			float _flag_PID_I_Pitch_Gain = 0;
+			float _flag_PID_I___Yaw_Gain = 0;
+			float _flag_PID_I__Roll_Max__Value = 0;
+			float _flag_PID_I_Pitch_Max__Value = 0;
+			float _flag_PID_I___Yaw_Max__Value = 0;
 
-			float _flag_PID_D__Roll_Gain;
-			float _flag_PID_D_Pitch_Gain;
-			float _flag_PID_D___Yaw_Gain;
+			float _flag_PID_D__Roll_Gain = 0;
+			float _flag_PID_D_Pitch_Gain = 0;
+			float _flag_PID_D___Yaw_Gain = 0;
 
-			float _flag_PID_Level_Max;
+			float _flag_PID_Level_Max = 0;
 			//===============AltHoldPID=========//
 			//Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
@@ -399,22 +417,22 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			float _uORB_PID_AccelBias_Beta = 0.02f;
+			float _flag_PID_AccelBias_Beta = 0.02f;
 			float _flag_Sonar_Dynamic_Beta = 0.35f;
 			float _flag_Baro_Dynamic_Beta = 0.5f;
 			float _flag_Accel_Dynamic_Beta = 1.f;
-			float _flag_PID_Alt_Speed_Max = 0;
-			float _flag_PID_Alt_Accel_Max = 0;
-			float _flag_PID_Takeoff_Altitude = 0;
+			float _flag_PID_Alt_Speed_Max = 50;
+			float _flag_PID_Alt_Accel_Max = 500;
+			float _flag_PID_Takeoff_Altitude = 50;
 			float _flag_PID_P_TAsix_Gain = 0;
-			float _flag_PID_Alt_Level_Max;
-			float _flag_PID_Hover_Throttle;
+			float _flag_PID_Alt_Level_Max = 400;
+			float _flag_PID_Hover_Throttle = 1300;
 			//
-			float _flag_PID_P_Alt_Gain;
-			float _flag_PID_I_Alt_Gain;
-			float _flag_PID_P_SpeedZ_Gain;
-			float _flag_PID_I_SpeedZ_Gain;
-			float _flag_PID_D_SpeedZ_Gain;
+			float _flag_PID_P_Alt_Gain = 0;
+			float _flag_PID_I_Alt_Gain = 0;
+			float _flag_PID_P_SpeedZ_Gain = 0;
+			float _flag_PID_I_SpeedZ_Gain = 0;
+			float _flag_PID_D_SpeedZ_Gain = 0;
 			float _uORB_PID_I_Last_Value_SpeedZ = 0;
 			float _uORB_PID_D_Last_Value_SpeedZ = 0;
 			//==========PositionHoldPID=========//
@@ -458,10 +476,10 @@ namespace SingleAPMAPI
 			float _flag_PID_I_SpeedY_Gain = 0;
 			float _flag_PID_D_SpeedY_Gain = 0;
 
-			float _flag_PID_PosMan_Speed_Max = 0;
-			float _flag_PID_Pos_Speed_Max = 0;
-			float _flag_PID_Pos_Accel_Max = 0;
-			float _flag_PID_Pos_Level_Max;
+			float _flag_PID_PosMan_Speed_Max = 50;
+			float _flag_PID_Pos_Speed_Max = 50;
+			float _flag_PID_Pos_Accel_Max = 500;
+			float _flag_PID_Pos_Level_Max = 250;
 
 			float _uORB_PID_I_Last_Value_SpeedX = 0;
 			float _uORB_PID_D_Last_Value_SpeedX = 0;
@@ -474,14 +492,14 @@ namespace SingleAPMAPI
 			int RC_Type;
 			int _Tmp_RC_Data[36] = {0};
 			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-			int _flag_RC_Max_PWM_Value;
-			int _flag_RC_Mid_PWM_Value;
-			int _flag_RC_Min_PWM_Value;
+			int _flag_RC_Max_PWM_Value = 2000;
+			int _flag_RC_Mid_PWM_Value = 1500;
+			int _flag_RC_Min_PWM_Value = 1000;
 
-			int _uORB_RC_Out__Roll;
-			int _uORB_RC_Out_Pitch;
-			int _uORB_RC_Out_Throttle;
-			int _uORB_RC_Out___Yaw;
+			int _uORB_RC_Out__Roll = 0;
+			int _uORB_RC_Out_Pitch = 0;
+			int _uORB_RC_Out_Throttle = 0;
+			int _uORB_RC_Out___Yaw = 0;
 
 			int _uORB_RC_Out_AltHoldSpeed = 0;
 			int _uORB_RC_Out_PosHoldSpeedX = 0;
@@ -513,14 +531,14 @@ namespace SingleAPMAPI
 
 		struct ESCINFO
 		{
-			int _uORB_A1_Speed;
-			int _uORB_A2_Speed;
-			int _uORB_B1_Speed;
-			int _uORB_B2_Speed;
-			int _Tmp_A1_Speed;
-			int _Tmp_A2_Speed;
-			int _Tmp_B1_Speed;
-			int _Tmp_B2_Speed;
+			int _uORB_A1_Speed = 0;
+			int _uORB_A2_Speed = 0;
+			int _uORB_B1_Speed = 0;
+			int _uORB_B2_Speed = 0;
+			int _Tmp_A1_Speed = 0;
+			int _Tmp_A2_Speed = 0;
+			int _Tmp_B1_Speed = 0;
+			int _Tmp_B2_Speed = 0;
 			int _flag_A1_Pin = 0;
 			int _flag_A2_Pin = 1;
 			int _flag_B1_Pin = 2;
@@ -529,15 +547,6 @@ namespace SingleAPMAPI
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;
 			float _flag_YAWOut_Reverse = 1.f;
-
-			int _uORB_Servo1_On_Output = 0;
-			int _uORB_Servo1_Off_Output = 0;
-			int _uORB_Servo2_On_Output = 0;
-			int _uORB_Servo2_Off_Output = 0;
-			int _uORB_Servo3_On_Output = 0;
-			int _uORB_Servo3_Off_Output = 0;
-			int _uORB_Servo4_On_Output = 0;
-			int _uORB_Servo4_Off_Output = 0;
 		} EF;
 
 		struct TaskThread
@@ -568,15 +577,16 @@ namespace SingleAPMAPI
 			int _flag_ESCThreadTimeMax = 0;
 			int _flag_ESCThreadFreq;
 			int _flag_ESCErrorTimes = 0;
-			int _Tmp_SerThreadClock = 0;
-			int _flag_SerThreadFreq = 50;
-			int _flag_SerThreadTimes = 0;
+			int _Tmp_ServoThreadClock = 0;
+			int _flag_ServoThreadFreq = 50;
+			int _flag_ServoThreadTimes = 0;
 			std::thread *ESCTask;
 			int _Tmp_ALTThreadTimeStart = 0;
 			int _Tmp_ALTThreadTimeEnd = 0;
 			int _Tmp_ALTThreadTimeNext = 0;
 			int _Tmp_ALTThreadTimeLoop = 0;
 			int _Tmp_ALTThreadError = 0;
+			int _flag_ALTThreadFreq = 45;
 			int _flag_ALTThreadTimeMax = (float)1 / 45 * 1000000;
 			int _flag_ALTErrorTimes = 0;
 			std::thread *ALTTask;
@@ -608,6 +618,7 @@ namespace SingleAPMAPI
 			int _flag_FlowErrorTimes = 0;
 			std::thread *FlowTask;
 			std::thread LEDSignalTask;
+			int DEBUGOuputCleaner = 0;
 		} TF;
 	};
 } // namespace SingleAPMAPI
