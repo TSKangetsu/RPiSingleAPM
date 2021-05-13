@@ -129,9 +129,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		DF.MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false,
 									  1, DF.MPU9250_ADDR, TF._flag_IMUThreadFreq,
-									  SF.IMUMixFilter_Type, 0.99992,
-									  FilterLPFBiquad, 256,
-									  FilterLPFBiquad, 15);
+									  SF.IMUMixFilter_Type, SF._flag_Filter_AngleMix_Alpha,
+									  SF._flag_Filter_Gryo_Type, SF._flag_Filter_Gryo_CutOff,
+									  SF._flag_Filter_Accel_Type, SF._flag_Filter_Accel_CutOff);
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
@@ -999,7 +999,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	TF._flag_ESCThreadFreq = APMInit.DC.ESC_Freqeuncy;
 	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
 	TF._flag_ServoThreadTimes = TF._flag_ESCThreadFreq / TF._flag_ServoThreadFreq;
-	//==========================================================Controller cofig==/
+	//==========================================================Controller config==/
 
 	RF._flag_RC_Min_PWM_Value = APMInit.RC._flag_RC_Min_PWM_Value;
 	RF._flag_RC_Mid_PWM_Value = APMInit.RC._flag_RC_Mid_PWM_Value;
@@ -1023,13 +1023,13 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	RF._flag_RCIsReserv__Roll = APMInit.RC._flag_RCIsReserv__Roll;
 	RF._flag_RCIsReserv_Pitch = APMInit.RC._flag_RCIsReserv_Pitch;
 	RF._flag_RCIsReserv___Yaw = APMInit.RC._flag_RCIsReserv___Yaw;
-	//==========================================================ESC cofig=========/
+	//==========================================================ESC config=========/
 	EF._flag_A1_Pin = APMInit.OC._flag_A1_Pin;
 	EF._flag_A2_Pin = APMInit.OC._flag_A2_Pin;
 	EF._flag_B1_Pin = APMInit.OC._flag_B1_Pin;
 	EF._flag_B2_Pin = APMInit.OC._flag_B2_Pin;
 	EF._flag_YAWOut_Reverse = APMInit.OC._flag_YAWOut_Reverse;
-	//==================================================================PID cofig==/
+	//==================================================================PID config==/
 	PF._flag_PID_P__Roll_Gain = APMInit.PC._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit.PC._flag_PID_P_Pitch_Gain;
 	PF._flag_PID_P___Yaw_Gain = APMInit.PC._flag_PID_P___Yaw_Gain;
@@ -1071,7 +1071,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_PosMan_Speed_Max = APMInit.PC._flag_PID_PosMan_Speed_Max;
 	PF._flag_PID_Pos_Speed_Max = APMInit.PC._flag_PID_Pos_Speed_Max;
 	PF._flag_PID_Pos_Accel_Max = APMInit.PC._flag_PID_Pos_Accel_Max;
-	//==============================================================Sensors cofig==/
+	//==============================================================Sensors config==/
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit.SC._flag_MPU9250_A_X_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit.SC._flag_MPU9250_A_Y_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliZ] = APMInit.SC._flag_MPU9250_A_Z_Cali;
@@ -1085,6 +1085,22 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_QMC5883L_M_Z_Offset = APMInit.SC._flag_QMC5883L_M_Z_Offset;
 	SF._flag_QMC5883L_M_Y_Scaler = APMInit.SC._flag_QMC5883L_M_Y_Scaler;
 	SF._flag_QMC5883L_M_Z_Scaler = APMInit.SC._flag_QMC5883L_M_Z_Scaler;
+	//==============================================================Filter config==/
+	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
+	SF._flag_Filter_Gryo_CutOff = APMInit.FC._flag_Filter_Gryo_CutOff;
+	SF._flag_Filter_Accel_Type = APMInit.FC._flag_Filter_Accel_Type;
+	SF._flag_Filter_Accel_CutOff = APMInit.FC._flag_Filter_Accel_CutOff;
+	SF._flag_Filter_AngleMix_Alpha = APMInit.FC._flag_Filter_AngleMix_Alpha;
+
+	PF._flag_Baro_Dynamic_Beta = APMInit.FC._flag_Baro_Trust_Beta;
+	PF._flag_Accel_Dynamic_Beta = APMInit.FC._flag_Accel_Trust_Beta;
+	PF._flag_Sonar_Dynamic_Beta = APMInit.FC._flag_Sonar_Trust_Beta;
+	PF._flag_GPSAlt_Dynamic_Beta = APMInit.FC._flag_GPSAlt_Trust_Beta;
+	PF._flag_AccelBias_Beta = APMInit.FC._flag_AccelBias_Trust_Beta;
+
+	RF._flag_Filter_RC_CutOff = APMInit.FC._flag_Filter_RC_CutOff;
+	PF._flag_Filter_AngleRate_CutOff = APMInit.FC._flag_Filter_AngleRate_CutOff;
+	SF._flag_Filter_AngleMix_Alpha = APMInit.FC._flag_Filter_AngleMix_Alpha;
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
@@ -1185,7 +1201,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 											 pow(PF._flag_Baro_Dynamic_Beta, 2) *
 											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
-										pow(PF._flag_Baro_Dynamic_Beta, 2) * PF._flag_PID_AccelBias_Beta *
+										pow(PF._flag_Baro_Dynamic_Beta, 2) * PF._flag_AccelBias_Beta *
 										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 			//===============================================//
 			if (AF._flag_IsSonarAvalible)
@@ -1198,7 +1214,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 												 pow(PF._flag_Sonar_Dynamic_Beta, 2) *
 												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
-											pow(PF._flag_Sonar_Dynamic_Beta, 2) * PF._flag_PID_AccelBias_Beta *
+											pow(PF._flag_Sonar_Dynamic_Beta, 2) * PF._flag_AccelBias_Beta *
 											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				//
 				PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;

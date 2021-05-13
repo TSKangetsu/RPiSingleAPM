@@ -89,7 +89,19 @@
     "_flag_RC_Max_PWM_Value": 1997,
     "_flag_RC_Mid_PWM_Value": 1495,
     "_flag_RC_Min_PWM_Value": 997,
-    "_flag_YAWOut_Reverse": 1
+    "_flag_YAWOut_Reverse": 1,
+    "_flag_Filter_Gryo_Type": 1,
+    "_flag_Filter_Gryo_CutOff": 256,
+    "_flag_Filter_Accel_Type": 1,
+    "_flag_Filter_Accel_CutOff": 15,
+    "_flag_Filter_AngleMix_Alpha": 0.9996,
+    "_flag_Baro_Trust_Beta": 0.35,
+    "_flag_Accel_Trust_Beta": 1.0,
+    "_flag_Sonar_Trust_Beta": 0.7,
+    "_flag_GPSAlt_Trust_Beta": 0.15,
+    "_flag_AccelBias_Trust_Beta": 0.02,
+    "_flag_Filter_RC_CutOff": 10,
+    "_flag_Filter_AngleRate_CutOff": 30
   },
   "APM320": {
     "ESC_Freqeucy": 330,
@@ -181,7 +193,19 @@
     "_flag_RC_Max_PWM_Value": 1932,
     "_flag_RC_Mid_PWM_Value": 1499,
     "_flag_RC_Min_PWM_Value": 1065,
-    "_flag_YAWOut_Reverse": -1
+    "_flag_YAWOut_Reverse": -1,
+    "_flag_Filter_Gryo_Type": 1,
+    "_flag_Filter_Gryo_CutOff": 256,
+    "_flag_Filter_Accel_Type": 1,
+    "_flag_Filter_Accel_CutOff": 15,
+    "_flag_Filter_AngleMix_Alpha": 0.9996,
+    "_flag_Baro_Trust_Beta": 0.35,
+    "_flag_Accel_Trust_Beta": 1.0,
+    "_flag_Sonar_Trust_Beta": 0.7,
+    "_flag_GPSAlt_Trust_Beta": 0.15,
+    "_flag_AccelBias_Trust_Beta": 0.02,
+    "_flag_Filter_RC_CutOff": 10,
+    "_flag_Filter_AngleRate_CutOff": 30
   },
   "APM450": {
     "ESC_Freqeucy": 330,
@@ -273,6 +297,18 @@
     "_flag_RC_Max_PWM_Value": 1932,
     "_flag_RC_Mid_PWM_Value": 1499,
     "_flag_RC_Min_PWM_Value": 1065,
-    "_flag_YAWOut_Reverse": 1
+    "_flag_YAWOut_Reverse": 1,
+    "_flag_Filter_Gryo_Type": 1,
+    "_flag_Filter_Gryo_CutOff": 256,
+    "_flag_Filter_Accel_Type": 1,
+    "_flag_Filter_Accel_CutOff": 15,
+    "_flag_Filter_AngleMix_Alpha": 0.9996,
+    "_flag_Baro_Trust_Beta": 0.35,
+    "_flag_Accel_Trust_Beta": 1.0,
+    "_flag_Sonar_Trust_Beta": 0.7,
+    "_flag_GPSAlt_Trust_Beta": 0.15,
+    "_flag_AccelBias_Trust_Beta": 0.02,
+    "_flag_Filter_RC_CutOff": 10,
+    "_flag_Filter_AngleRate_CutOff": 30
   }
 }

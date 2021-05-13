@@ -231,6 +231,21 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.SC._flag_QMC5883L_M_Z_Offset = Configdata["_flag_QMC5883L_M_Z_Offset"].get<double>();
 	APMInit.SC._flag_QMC5883L_M_Y_Scaler = Configdata["_flag_QMC5883L_M_Y_Scaler"].get<double>();
 	APMInit.SC._flag_QMC5883L_M_Z_Scaler = Configdata["_flag_QMC5883L_M_Z_Scaler"].get<double>();
+	//==============================================================Filter config==/
+	APMInit.FC._flag_Filter_Gryo_Type = Configdata["_flag_Filter_Gryo_Type"].get<double>();
+	APMInit.FC._flag_Filter_Gryo_CutOff = Configdata["_flag_Filter_Gryo_CutOff"].get<double>();
+	APMInit.FC._flag_Filter_Accel_Type = Configdata["_flag_Filter_Accel_Type"].get<double>();
+	APMInit.FC._flag_Filter_Accel_CutOff = Configdata["_flag_Filter_Accel_CutOff"].get<double>();
+	APMInit.FC._flag_Filter_AngleMix_Alpha = Configdata["_flag_Filter_AngleMix_Alpha"].get<double>();
+
+	APMInit.FC._flag_Baro_Trust_Beta = Configdata["_flag_Baro_Trust_Beta"].get<double>();
+	APMInit.FC._flag_Accel_Trust_Beta = Configdata["_flag_Accel_Trust_Beta"].get<double>();
+	APMInit.FC._flag_Sonar_Trust_Beta = Configdata["_flag_Sonar_Trust_Beta"].get<double>();
+	APMInit.FC._flag_GPSAlt_Trust_Beta = Configdata["_flag_GPSAlt_Trust_Beta"].get<double>();
+	APMInit.FC._flag_AccelBias_Trust_Beta = Configdata["_flag_AccelBias_Trust_Beta"].get<double>();
+
+	APMInit.FC._flag_Filter_RC_CutOff = Configdata["_flag_Filter_RC_CutOff"].get<double>();
+	APMInit.FC._flag_Filter_AngleRate_CutOff = Configdata["_flag_Filter_AngleRate_CutOff"].get<double>();
 }
 
 void configWrite(const char *configDir, const char *Target, double obj)

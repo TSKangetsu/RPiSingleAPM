@@ -173,7 +173,7 @@ namespace SingleAPMAPI
 			float _flag_Accel_Trust_Beta;
 			float _flag_Sonar_Trust_Beta;
 			float _flag_GPSAlt_Trust_Beta;
-			float _flag_PID_AccelBias_Trust_Beta;
+			float _flag_AccelBias_Trust_Beta;
 
 			float _flag_Filter_RC_CutOff;
 			float _flag_Filter_AngleRate_CutOff;
@@ -440,7 +440,7 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			float _flag_PID_AccelBias_Beta = 0.02f;
+			float _flag_AccelBias_Beta = 0.02f;
 			float _flag_Baro_Dynamic_Beta = 0.35f;
 			float _flag_Sonar_Dynamic_Beta = 0.8f;
 			float _flag_GPSAlt_Dynamic_Beta = 0.15f;
