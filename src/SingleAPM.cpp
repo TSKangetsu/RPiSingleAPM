@@ -305,6 +305,10 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			}
 			//RC Out Caculation
 			{
+				for (size_t i = 0; i < 4; i++)
+					if (i != 2)
+						RF._uORB_RC_Channel_PWM[i] = pt1FilterApply4(&DF.RCLPF[i], RF._uORB_RC_Channel_PWM[i],
+																	 RF._flag_Filter_RC_CutOff, ((float)TF._flag_RXTThreadTimeMax / 1000000.f));
 				if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 					RF._uORB_RC_Out__Roll = 0;
 				else
@@ -1071,6 +1075,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_PosMan_Speed_Max = APMInit.PC._flag_PID_PosMan_Speed_Max;
 	PF._flag_PID_Pos_Speed_Max = APMInit.PC._flag_PID_Pos_Speed_Max;
 	PF._flag_PID_Pos_Accel_Max = APMInit.PC._flag_PID_Pos_Accel_Max;
+	PF._flag_PID_AngleRate_Gain = APMInit.PC._flag_PID_AngleRate_Gain;
 	//==============================================================Sensors config==/
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit.SC._flag_MPU9250_A_X_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit.SC._flag_MPU9250_A_Y_Cali;
@@ -1087,6 +1092,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_QMC5883L_M_Z_Scaler = APMInit.SC._flag_QMC5883L_M_Z_Scaler;
 	//==============================================================Filter config==/
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
+	SF._flag_Filter_GYaw_CutOff = APMInit.FC._flag_Filter_GYaw_CutOff;
 	SF._flag_Filter_Gryo_CutOff = APMInit.FC._flag_Filter_Gryo_CutOff;
 	SF._flag_Filter_Accel_Type = APMInit.FC._flag_Filter_Accel_Type;
 	SF._flag_Filter_Accel_CutOff = APMInit.FC._flag_Filter_Accel_CutOff;
@@ -1329,8 +1335,14 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		}
 		//Leveling PID MIX
 		{
-			PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + SF._uORB_MPU_Data._uORB_Real__Roll * 8;
-			PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + SF._uORB_MPU_Data._uORB_Real_Pitch * 8;
+			PF._uORB_PID_AngleRate__Roll = pt1FilterApply4(&DF.AngleRateLPF[0], SF._uORB_MPU_Data._uORB_Real__Roll,
+														   PF._flag_Filter_AngleRate_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+			PF._uORB_PID_AngleRate_Pitch = pt1FilterApply4(&DF.AngleRateLPF[1], SF._uORB_MPU_Data._uORB_Real_Pitch,
+														   PF._flag_Filter_AngleRate_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+			PF._uORB_PID_GYaw_Output = pt1FilterApply4(&DF.AngleRateLPF[2], SF._uORB_MPU_Data._uORB_Gryo___Yaw,
+													   SF._flag_Filter_GYaw_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+			PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + PF._uORB_PID_AngleRate__Roll * PF._flag_PID_AngleRate_Gain;
+			PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + PF._uORB_PID_AngleRate_Pitch * PF._flag_PID_AngleRate_Gain;
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
 				PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
@@ -1365,7 +1377,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
 
 			//Yaw PID Mix
-			PID_Caculate(SF._uORB_MPU_Data._uORB_Gryo___Yaw + RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
+			PID_Caculate(PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw, PF._uORB_Leveling___Yaw,
 						 PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
 						 PF._flag_PID_P___Yaw_Gain, PF._flag_PID_I___Yaw_Gain, PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
 			if (PF._uORB_Leveling___Yaw > PF._flag_PID_Level_Max)
@@ -1461,7 +1473,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " \n";
 	std::cout << " GryoPitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Gryo_Pitch << "    "
 			  << " GryoRoll:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Gryo__Roll << "    "
-			  << " GryoYaw:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Gryo___Yaw << "    "
+			  << " GryoYaw:     " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_GYaw_Output << "    "
 			  << "                        "
 			  << std::endl;
 	std::cout << " AccePitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel_Pitch << "    "

@@ -164,6 +164,7 @@ namespace SingleAPMAPI
 		struct FilterConfig
 		{
 			int _flag_Filter_Gryo_Type;
+			int _flag_Filter_GYaw_CutOff;
 			int _flag_Filter_Gryo_CutOff;
 			int _flag_Filter_Accel_Type;
 			int _flag_Filter_Accel_CutOff;
@@ -297,8 +298,10 @@ namespace SingleAPMAPI
 			GPSI2CCompass_QMC5883L *GPSMAGInit;
 			TotalEKF EKFDevice;
 
+			pt1Filter_t RCLPF[4];
 			pt1Filter_t BAROLPF;
 			pt1Filter_t ThrottleLPF;
+			pt1Filter_t AngleRateLPF[3];
 		} DF;
 
 		struct SensorsINFO
@@ -309,6 +312,7 @@ namespace SingleAPMAPI
 			int IMUMixFilter_Type;
 			MPUData _uORB_MPU_Data;
 			int _flag_Filter_Gryo_Type;
+			int _flag_Filter_GYaw_CutOff;
 			int _flag_Filter_Gryo_CutOff;
 			int _flag_Filter_Accel_Type;
 			int _flag_Filter_Accel_CutOff;
@@ -418,9 +422,13 @@ namespace SingleAPMAPI
 			float _flag_PID_D_Pitch_Gain = 0;
 			float _flag_PID_D___Yaw_Gain = 0;
 
+			float _uORB_PID_GYaw_Output;
+			float _uORB_PID_AngleRate_Pitch;
+			float _uORB_PID_AngleRate__Roll;
+
 			float _flag_PID_Level_Max = 0;
-			float _flag_PID_AngleRate_Gain;
-			float _flag_Filter_AngleRate_CutOff;
+			float _flag_PID_AngleRate_Gain = 15;
+			float _flag_Filter_AngleRate_CutOff = 255;
 			//===============AltHoldPID=========//
 			//Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
