@@ -1194,33 +1194,31 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				AF._flag_SonarData_Async = false;
 			}
 			//===============================================//
-			PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
-											PF._flag_Baro_Dynamic_Beta *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-			PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
-											 pow(PF._flag_Baro_Dynamic_Beta, 2) *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
-										pow(PF._flag_Baro_Dynamic_Beta, 2) * PF._flag_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-			//===============================================//
 			if (AF._flag_IsSonarAvalible)
 			{
-
 				PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
 												PF._flag_Sonar_Dynamic_Beta *
 												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
 												 pow(PF._flag_Sonar_Dynamic_Beta, 2) *
 												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-				PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
-											pow(PF._flag_Sonar_Dynamic_Beta, 2) * PF._flag_AccelBias_Beta *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				//
 				PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;
 			}
 			else
+			{
+				PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
+												PF._flag_Baro_Dynamic_Beta *
+												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
+												 pow(PF._flag_Baro_Dynamic_Beta, 2) *
+												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
+											pow(PF._flag_Baro_Dynamic_Beta, 2) * PF._flag_AccelBias_Beta *
+											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_MS5611_AltInput;
+			}
+
 			//===============================================//
 			SF._uORB_True_Movement_Z += PF._uORB_PID_MoveZCorrection;
 			SF._uORB_True_Speed_Z += PF._uORB_PID_SpeedZCorrection;
@@ -1331,8 +1329,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		}
 		//Leveling PID MIX
 		{
-			PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + SF._uORB_MPU_Data._uORB_Real__Roll * 15;
-			PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + SF._uORB_MPU_Data._uORB_Real_Pitch * 15;
+			PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + SF._uORB_MPU_Data._uORB_Real__Roll * 8;
+			PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + SF._uORB_MPU_Data._uORB_Real_Pitch * 8;
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
 				PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
@@ -1343,7 +1341,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_PID__Roll_Input += (PF._uORB_PID_PosX_Output - RF._uORB_RC_Out__Roll);
 				PF._uORB_PID_Pitch_Input += (PF._uORB_PID_PosY_Output - RF._uORB_RC_Out_Pitch);
 			}
-			else if (AF.AutoPilotMode == APModeINFO::AutoStable)
+			else if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::AltHold)
 			{
 				PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll;
 				PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch;

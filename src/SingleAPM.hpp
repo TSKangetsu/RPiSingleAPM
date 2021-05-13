@@ -31,7 +31,7 @@
 #define COMPASSCalibration 12;
 
 #define FILTERBAROLPFCUTOFF 1.f
-#define FILTERTHROTTLELPFCUTOFF 4.f
+#define FILTERTHROTTLELPFCUTOFF 3.f
 
 namespace SingleAPMAPI
 {
