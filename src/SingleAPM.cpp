@@ -305,10 +305,11 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			}
 			//RC Out Caculation
 			{
-				for (size_t i = 0; i < 4; i++)
-					if (i != 2)
-						RF._uORB_RC_Channel_PWM[i] = pt1FilterApply4(&DF.RCLPF[i], RF._uORB_RC_Channel_PWM[i],
-																	 RF._flag_Filter_RC_CutOff, ((float)TF._flag_RXTThreadTimeMax / 1000000.f));
+				if (!AF._flag_RC_Disconnected)
+					for (size_t i = 0; i < 4; i++)
+						if (i != 2)
+							RF._uORB_RC_Channel_PWM[i] = pt1FilterApply4(&DF.RCLPF[i], RF._uORB_RC_Channel_PWM[i],
+																		 RF._flag_Filter_RC_CutOff, ((float)TF._flag_RXTThreadTimeMax / 1000000.f));
 				if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 					RF._uORB_RC_Out__Roll = 0;
 				else
@@ -1341,8 +1342,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 														   PF._flag_Filter_AngleRate_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			PF._uORB_PID_GYaw_Output = pt1FilterApply4(&DF.AngleRateLPF[2], SF._uORB_MPU_Data._uORB_Gryo___Yaw,
 													   SF._flag_Filter_GYaw_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-			PF._uORB_PID__Roll_Input = SF._uORB_MPU_Data._uORB_Gryo__Roll + PF._uORB_PID_AngleRate__Roll * PF._flag_PID_AngleRate_Gain;
-			PF._uORB_PID_Pitch_Input = SF._uORB_MPU_Data._uORB_Gryo_Pitch + PF._uORB_PID_AngleRate_Pitch * PF._flag_PID_AngleRate_Gain;
+			PF._uORB_PID__Roll_Input = PF._uORB_PID_AngleRate__Roll;
+			PF._uORB_PID_Pitch_Input = PF._uORB_PID_AngleRate_Pitch;
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
 				PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
@@ -1350,14 +1351,18 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			}
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowAvalible)
 			{
-				PF._uORB_PID__Roll_Input += (PF._uORB_PID_PosX_Output - RF._uORB_RC_Out__Roll);
-				PF._uORB_PID_Pitch_Input += (PF._uORB_PID_PosY_Output - RF._uORB_RC_Out_Pitch);
+				PF._uORB_PID__Roll_Input += (PF._uORB_PID_PosX_Output - RF._uORB_RC_Out__Roll / 15.f);
+				PF._uORB_PID_Pitch_Input += (PF._uORB_PID_PosY_Output - RF._uORB_RC_Out_Pitch / 15.f);
 			}
 			else if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::AltHold)
 			{
-				PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll;
-				PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch;
+				PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll / 15.f;
+				PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch / 15.f;
 			}
+			PF._uORB_PID__Roll_Input *= PF._flag_PID_AngleRate_Gain;
+			PF._uORB_PID_Pitch_Input *= PF._flag_PID_AngleRate_Gain;
+			PF._uORB_PID__Roll_Input += SF._uORB_MPU_Data._uORB_Gryo__Roll;
+			PF._uORB_PID_Pitch_Input += SF._uORB_MPU_Data._uORB_Gryo_Pitch;
 			//Roll PID Mix
 			PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
 						 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
