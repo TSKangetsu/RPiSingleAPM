@@ -215,6 +215,8 @@ namespace SingleAPMAPI
 		int APMCalibrator(int controller, int action, int input, double *data);
 
 		//=========APMUserControllerFunction===========//
+		void APMControllerFakeRC(int *ChannelData, bool IsError, bool HighTrust);
+
 		void APMControllerARMED();
 
 		void APMControllerDISARM(APModeINFO APMode);
@@ -249,6 +251,8 @@ namespace SingleAPMAPI
 			bool _flag_IsAutoTakeoffRequire;
 
 			bool _flag_Error;
+			bool _flag_RC_Error;
+			bool _flag_FakeRC_Error;
 			bool _flag_GPS_Error;
 			bool _flag_ESC_ARMED;
 			bool _flag_ESC_DISARMED_Request;
@@ -259,8 +263,10 @@ namespace SingleAPMAPI
 			bool _flag_MPU9250_first_StartUp;
 
 			bool _flag_RC_Disconnected;
+			bool _flag_FakeRC_Disconnected;
 			bool _flag_GPS_Disconnected;
 			long int RC_Lose_Clocking;
+			long int FakeRC_Lose_Clocking;
 			long int GPS_Lose_Clocking;
 			long int Flow_Lose_Clocking;
 
@@ -270,6 +276,8 @@ namespace SingleAPMAPI
 			bool _flag_SonarData_Async;
 			bool _flag_IsSonarAvalible;
 			bool _flag_IsFlowAvalible;
+			bool _flag_IsFakeRCUpdated;
+			bool _flag_IsARSHDiable;
 		} AF;
 
 		struct DeviceINFO
@@ -453,6 +461,7 @@ namespace SingleAPMAPI
 			float _flag_Sonar_Dynamic_Beta = 0.8f;
 			float _flag_GPSAlt_Dynamic_Beta = 0.15f;
 			float _flag_Accel_Dynamic_Beta = 1.f;
+			float _flag_Accel_Config_Beta = 1.f;
 			float _flag_PID_Alt_Speed_Max = 50;
 			float _flag_PID_Alt_Accel_Max = 500;
 			float _flag_PID_Takeoff_Altitude = 50;
@@ -490,7 +499,7 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosX_Output = 0;
 			float _uORB_PID_PosY_Output = 0;
 
-			float _flag_Flow_Dynamic_Beta = 0.998;
+			float _flag_Flow_Dynamic_Beta = 0.5;
 
 			float _flag_PID_SpeedX_Max = 0;
 			float _flag_PID_AccelX_Max = 0;
@@ -525,6 +534,7 @@ namespace SingleAPMAPI
 			int _Tmp_RC_Data[36] = {0};
 			float _flag_Filter_RC_CutOff;
 			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _uORB_FakeRC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _flag_RC_Max_PWM_Value = 2000;
 			int _flag_RC_Mid_PWM_Value = 1500;
 			int _flag_RC_Min_PWM_Value = 1000;
@@ -580,6 +590,12 @@ namespace SingleAPMAPI
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;
 			float _flag_YAWOut_Reverse = 1.f;
+
+			int _uORB_ESC_RPY_Max = 0;
+			int _uORB_ESC_RPY_Min = 0;
+			int _uORB_ESC_RPY_Range = 0;
+
+			float _uORB_ESC_MIX_Range = 0;
 		} EF;
 
 		struct TaskThread
