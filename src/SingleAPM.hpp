@@ -310,6 +310,10 @@ namespace SingleAPMAPI
 			pt1Filter_t BAROLPF;
 			pt1Filter_t ThrottleLPF;
 			pt1Filter_t AngleRateLPF[3];
+			pt1Filter_t ItermFilterPitch;
+			pt1Filter_t ItermFilterRoll;
+			pt1Filter_t DtermFilterPitch;
+			pt1Filter_t DtermFilterRoll;
 		} DF;
 
 		struct SensorsINFO

@@ -36,7 +36,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_IsFakeRCUpdated = false;
 		AF._flag_FakeRC_Disconnected = false;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
-
 		PF._flag_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
 	}
 	ConfigReader(APMInit);
@@ -1421,18 +1420,24 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		PF._uORB_PID__Roll_Input += SF._uORB_MPU_Data._uORB_Gryo__Roll;
 		PF._uORB_PID_Pitch_Input += SF._uORB_MPU_Data._uORB_Gryo_Pitch;
 		//Roll PID Mix
-		PID_Caculate(PF._uORB_PID__Roll_Input, PF._uORB_Leveling__Roll,
-					 PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
-					 PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
+		float ROLLITERM = pt1FilterApply4(&DF.ItermFilterRoll, PF._uORB_PID__Roll_Input, 30.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+		float ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, PF._uORB_PID__Roll_Input, 100.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+		PID_CaculateExtend(PF._uORB_PID__Roll_Input, ROLLITERM, ROLLDTERM,
+						   PF._uORB_Leveling__Roll,
+						   PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
+						   PF._flag_PID_P__Roll_Gain, PF._flag_PID_I__Roll_Gain, PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
 		if (PF._uORB_Leveling__Roll > PF._flag_PID_Level_Max)
 			PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max;
 		if (PF._uORB_Leveling__Roll < PF._flag_PID_Level_Max * -1)
 			PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max * -1;
 
 		//Pitch PID Mix
-		PID_Caculate(PF._uORB_PID_Pitch_Input, PF._uORB_Leveling_Pitch,
-					 PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
-					 PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
+		float PITCHITERM = pt1FilterApply4(&DF.ItermFilterPitch, PF._uORB_PID_Pitch_Input, 30.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+		float PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PF._uORB_PID_Pitch_Input, 100.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+		PID_CaculateExtend(PF._uORB_PID_Pitch_Input, PITCHITERM, PITCHDTERM,
+						   PF._uORB_Leveling_Pitch,
+						   PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
+						   PF._flag_PID_P_Pitch_Gain, PF._flag_PID_I_Pitch_Gain, PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
 		if (PF._uORB_Leveling_Pitch > PF._flag_PID_Level_Max)
 			PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max;
 		if (PF._uORB_Leveling_Pitch < PF._flag_PID_Level_Max * -1)
@@ -1464,57 +1469,71 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 	else
 		TotalThrottle = RF._uORB_RC_Out_Throttle;
 
-	EF._Tmp_B1_Speed = 0 -
-					   ((TotalThrottle - PF._uORB_Leveling__Roll) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling__Roll)) +
-					   ((TotalThrottle + PF._uORB_Leveling_Pitch) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling_Pitch)) +
-					   ((TotalThrottle + PF._uORB_Leveling___Yaw) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling___Yaw));
-	EF._Tmp_A1_Speed = 0 -
-					   ((TotalThrottle - PF._uORB_Leveling__Roll) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling__Roll)) -
-					   ((TotalThrottle - PF._uORB_Leveling_Pitch) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling_Pitch)) -
-					   ((TotalThrottle - PF._uORB_Leveling___Yaw) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling___Yaw));
-	EF._Tmp_A2_Speed = 0 +
-					   ((TotalThrottle + PF._uORB_Leveling__Roll) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling__Roll)) -
-					   ((TotalThrottle - PF._uORB_Leveling_Pitch) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling_Pitch)) +
-					   ((TotalThrottle + PF._uORB_Leveling___Yaw) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling___Yaw));
-	EF._Tmp_B2_Speed = 0 +
-					   ((TotalThrottle + PF._uORB_Leveling__Roll) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling__Roll)) +
-					   ((TotalThrottle + PF._uORB_Leveling_Pitch) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling_Pitch)) -
-					   ((TotalThrottle - PF._uORB_Leveling___Yaw) < RF._flag_RC_Min_PWM_Value ? 0 : (PF._uORB_Leveling___Yaw));
+	if (TotalThrottle > RF._flag_RC_Max_PWM_Value - 200.f)
+		TotalThrottle = RF._flag_RC_Max_PWM_Value - 200.f;
 
-	EF._uORB_ESC_RPY_Max = EF._Tmp_B1_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_B1_Speed : EF._uORB_ESC_RPY_Max;
-	EF._uORB_ESC_RPY_Max = EF._Tmp_A1_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_A1_Speed : EF._uORB_ESC_RPY_Max;
-	EF._uORB_ESC_RPY_Max = EF._Tmp_A2_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_A2_Speed : EF._uORB_ESC_RPY_Max;
-	EF._uORB_ESC_RPY_Max = EF._Tmp_B2_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_B2_Speed : EF._uORB_ESC_RPY_Max;
+	// EF._Tmp_B1_Speed = TotalThrottle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch;
+	// EF._Tmp_A1_Speed = TotalThrottle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch;
+	// EF._Tmp_A2_Speed = TotalThrottle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch;
+	// EF._Tmp_B2_Speed = TotalThrottle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch;
 
-	EF._uORB_ESC_RPY_Min = EF._Tmp_B1_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_B1_Speed : EF._uORB_ESC_RPY_Min;
-	EF._uORB_ESC_RPY_Min = EF._Tmp_A1_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_A1_Speed : EF._uORB_ESC_RPY_Min;
-	EF._uORB_ESC_RPY_Min = EF._Tmp_A2_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_A2_Speed : EF._uORB_ESC_RPY_Min;
-	EF._uORB_ESC_RPY_Min = EF._Tmp_B2_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_B2_Speed : EF._uORB_ESC_RPY_Min;
+	// if ((EF._Tmp_B1_Speed + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse)) < RF._flag_RC_Min_PWM_Value)
+	// 	EF._Tmp_B1_Speed = RF._flag_RC_Min_PWM_Value - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch;
+	// else
+	// 	EF._Tmp_B1_Speed += 0 + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+	// if ((EF._Tmp_A1_Speed - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse)) < RF._flag_RC_Min_PWM_Value)
+	// 	EF._Tmp_A1_Speed = RF._flag_RC_Min_PWM_Value - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch;
+	// else
+	// 	EF._Tmp_A1_Speed += 0 - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+	// if ((EF._Tmp_A2_Speed + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse)) < RF._flag_RC_Min_PWM_Value)
+	// 	EF._Tmp_A2_Speed = RF._flag_RC_Min_PWM_Value + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch;
+	// else
+	// 	EF._Tmp_A2_Speed += 0 + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+	// if ((EF._Tmp_B2_Speed - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse)) < RF._flag_RC_Min_PWM_Value)
+	// 	EF._Tmp_B2_Speed = RF._flag_RC_Min_PWM_Value + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch;
+	// else
+	// 	EF._Tmp_B2_Speed += 0 - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
 
-	EF._uORB_ESC_RPY_Range = EF._uORB_ESC_RPY_Max - EF._uORB_ESC_RPY_Min;
-	EF._uORB_ESC_MIX_Range = (float)EF._uORB_ESC_RPY_Range / (float)350;
-	if (EF._uORB_ESC_MIX_Range > 1.0f)
-	{
-		EF._Tmp_B1_Speed /= EF._uORB_ESC_MIX_Range;
-		EF._Tmp_A1_Speed /= EF._uORB_ESC_MIX_Range;
-		EF._Tmp_A2_Speed /= EF._uORB_ESC_MIX_Range;
-		EF._Tmp_B2_Speed /= EF._uORB_ESC_MIX_Range;
-	}
+	//This part is old Mixer , still tesing
+	EF._Tmp_B1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+	EF._Tmp_A1_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle - PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+	EF._Tmp_A2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
+	EF._Tmp_B2_Speed = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle + PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - (PF._uORB_Leveling___Yaw * EF._flag_YAWOut_Reverse);
 
-	EF._Tmp_B1_Speed += TotalThrottle;
-	EF._Tmp_A1_Speed += TotalThrottle;
-	EF._Tmp_A2_Speed += TotalThrottle;
-	EF._Tmp_B2_Speed += TotalThrottle;
+	// EF._uORB_ESC_RPY_Max = EF._Tmp_B1_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_B1_Speed : EF._uORB_ESC_RPY_Max;
+	// EF._uORB_ESC_RPY_Max = EF._Tmp_A1_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_A1_Speed : EF._uORB_ESC_RPY_Max;
+	// EF._uORB_ESC_RPY_Max = EF._Tmp_A2_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_A2_Speed : EF._uORB_ESC_RPY_Max;
+	// EF._uORB_ESC_RPY_Max = EF._Tmp_B2_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_B2_Speed : EF._uORB_ESC_RPY_Max;
 
-	EF._Tmp_A1_Speed = EF._Tmp_A1_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_A1_Speed;
-	EF._Tmp_A2_Speed = EF._Tmp_A2_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_A2_Speed;
-	EF._Tmp_B1_Speed = EF._Tmp_B1_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_B1_Speed;
-	EF._Tmp_B2_Speed = EF._Tmp_B2_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_B2_Speed;
+	// EF._uORB_ESC_RPY_Min = EF._Tmp_B1_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_B1_Speed : EF._uORB_ESC_RPY_Min;
+	// EF._uORB_ESC_RPY_Min = EF._Tmp_A1_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_A1_Speed : EF._uORB_ESC_RPY_Min;
+	// EF._uORB_ESC_RPY_Min = EF._Tmp_A2_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_A2_Speed : EF._uORB_ESC_RPY_Min;
+	// EF._uORB_ESC_RPY_Min = EF._Tmp_B2_Speed < EF._uORB_ESC_RPY_Min ? EF._Tmp_B2_Speed : EF._uORB_ESC_RPY_Min;
 
-	EF._Tmp_A1_Speed = EF._Tmp_A1_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_A1_Speed;
-	EF._Tmp_A2_Speed = EF._Tmp_A2_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_A2_Speed;
-	EF._Tmp_B1_Speed = EF._Tmp_B1_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_B1_Speed;
-	EF._Tmp_B2_Speed = EF._Tmp_B2_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_B2_Speed;
+	// EF._uORB_ESC_RPY_Range = EF._uORB_ESC_RPY_Max - EF._uORB_ESC_RPY_Min;
+	// EF._uORB_ESC_MIX_Range = (float)EF._uORB_ESC_RPY_Range / (float)350;
+	// if (EF._uORB_ESC_MIX_Range > 1.0f)
+	// {
+	// 	EF._Tmp_B1_Speed /= EF._uORB_ESC_MIX_Range;
+	// 	EF._Tmp_A1_Speed /= EF._uORB_ESC_MIX_Range;
+	// 	EF._Tmp_A2_Speed /= EF._uORB_ESC_MIX_Range;
+	// 	EF._Tmp_B2_Speed /= EF._uORB_ESC_MIX_Range;
+	// }
+
+	// EF._Tmp_B1_Speed += TotalThrottle;
+	// EF._Tmp_A1_Speed += TotalThrottle;
+	// EF._Tmp_A2_Speed += TotalThrottle;
+	// EF._Tmp_B2_Speed += TotalThrottle;
+
+	// EF._Tmp_A1_Speed = EF._Tmp_A1_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_A1_Speed;
+	// EF._Tmp_A2_Speed = EF._Tmp_A2_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_A2_Speed;
+	// EF._Tmp_B1_Speed = EF._Tmp_B1_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_B1_Speed;
+	// EF._Tmp_B2_Speed = EF._Tmp_B2_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_B2_Speed;
+
+	// EF._Tmp_A1_Speed = EF._Tmp_A1_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_A1_Speed;
+	// EF._Tmp_A2_Speed = EF._Tmp_A2_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_A2_Speed;
+	// EF._Tmp_B1_Speed = EF._Tmp_B1_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_B1_Speed;
+	// EF._Tmp_B2_Speed = EF._Tmp_B2_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_B2_Speed;
 
 	EF._uORB_A1_Speed = (700 * (((float)EF._Tmp_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
 	EF._uORB_A2_Speed = (700 * (((float)EF._Tmp_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
