@@ -429,6 +429,7 @@ namespace SingleAPMAPI
 			float _flag_PID_I__Roll_Max__Value = 0;
 			float _flag_PID_I_Pitch_Max__Value = 0;
 			float _flag_PID_I___Yaw_Max__Value = 0;
+			float _uORB_PID_I_Dynamic_Gain = 1.f;
 
 			float _flag_PID_D__Roll_Gain = 0;
 			float _flag_PID_D_Pitch_Gain = 0;
@@ -460,18 +461,27 @@ namespace SingleAPMAPI
 			//Target Output
 			float _uORB_PID_Alt_Throttle = 0;
 			//AltHold Gain
-			float _flag_AccelBias_Beta = 0.02f;
-			float _flag_Baro_Dynamic_Beta = 0.35f;
-			float _flag_Sonar_Dynamic_Beta = 0.8f;
-			float _flag_GPSAlt_Dynamic_Beta = 0.15f;
-			float _flag_Accel_Dynamic_Beta = 1.f;
+			float _uORB_AccelBias_Beta = 0.02f;
+			float _uORB_Baro_Dynamic_Beta = 0.35f;
+			float _uORB_Sonar_Dynamic_Beta = 0.8f;
+			float _uORB_GPSAlt_Dynamic_Beta = 0.15f;
+			float _uORB_Accel_Dynamic_Beta = 1.f;
+
 			float _flag_Accel_Config_Beta = 1.f;
+			float _flag_Baro_Config_Beta = 0.35f;
+			float _flag_Sonar_Config_Beta = 0.8f;
+			//
 			float _flag_PID_Alt_Speed_Max = 50;
 			float _flag_PID_Alt_Accel_Max = 500;
-			float _flag_PID_Takeoff_Altitude = 50;
+			float _uORB_PID_Alt_Speed_Max = 50;
+			float _uORB_PID_Alt_Accel_Max = 500;
 			float _flag_PID_P_TAsix_Gain = 0;
 			float _flag_PID_Alt_Level_Max = 400;
 			float _flag_PID_Hover_Throttle = 1300;
+
+			float _flag_PID_TakeOff_Speed_Max = 50.f;
+			float _flag_PID_TakeOff_Accel_Max = 150.f;
+			float _flag_PID_Takeoff_Altitude = 50.f;
 			//
 			float _flag_PID_P_Alt_Gain = 0;
 			float _flag_PID_I_Alt_Gain = 0;
@@ -598,6 +608,9 @@ namespace SingleAPMAPI
 			int _uORB_ESC_RPY_Max = 0;
 			int _uORB_ESC_RPY_Min = 0;
 			int _uORB_ESC_RPY_Range = 0;
+
+			int _uORB_Dynamic_ThrottleMin = 1000;
+			int _uORB_Dynamic_ThrottleMax = 2000;
 
 			float _uORB_ESC_MIX_Range = 0;
 		} EF;
