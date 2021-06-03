@@ -178,6 +178,10 @@ namespace SingleAPMAPI
 
 			float _flag_Filter_RC_CutOff;
 			float _flag_Filter_AngleRate_CutOff;
+
+			float _flag_Filter_PID_I_CutOff;
+			float _flag_Filter_PID_D_ST1_CutOff;
+			float _flag_Filter_PID_D_ST2_CutOff;
 		} FC;
 	};
 
@@ -235,6 +239,10 @@ namespace SingleAPMAPI
 		void PID_CaculateExtend(float inputDataP, float inputDataI, float inputDataD, float &outputData,
 								float &last_I_Data, float &last_D_Data,
 								float P_Gain, float I_Gain, float D_Gain, float I_Max);
+
+		void PID_CaculateHyper(float inputDataP, float inputDataI, float inputDataD, float &outputData,
+							   float &last_I_Data, float &last_D_Data,
+							   float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
 		void ConfigReader(APMSettinngs APMInit);
 
@@ -314,6 +322,8 @@ namespace SingleAPMAPI
 			pt1Filter_t ItermFilterRoll;
 			pt1Filter_t DtermFilterPitch;
 			pt1Filter_t DtermFilterRoll;
+			pt1Filter_t DtermFilterPitchST2;
+			pt1Filter_t DtermFilterRollST2;
 		} DF;
 
 		struct SensorsINFO
@@ -442,6 +452,9 @@ namespace SingleAPMAPI
 			float _flag_PID_Level_Max = 0;
 			float _flag_PID_AngleRate_Gain = 15;
 			float _flag_Filter_AngleRate_CutOff = 255;
+			float _flag_Filter_PID_I_CutOff = 30.f;
+			float _flag_Filter_PID_D_ST1_CutOff = 100.f;
+			float _flag_Filter_PID_D_ST2_CutOff = 200.f;
 			//===============AltHoldPID=========//
 			//Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
