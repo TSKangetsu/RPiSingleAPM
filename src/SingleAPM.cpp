@@ -1077,7 +1077,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	RF._flag_RC_AP_AutoStable_PWM_Channel = APMInit.RC._flag_RC_AP_AutoStable_PWM_Channel;
 	RF._flag_RC_AP_AltHold_PWM_Value = APMInit.RC._flag_RC_AP_AltHold_PWM_Value;
 	RF._flag_RC_AP_AltHold_PWM_Channel = APMInit.RC._flag_RC_AP_AltHold_PWM_Channel;
-	RF._flag_RC_AP_PositionHold_PWM_Value = APMInit.RC._flag_RC_AP_AltHold_PWM_Channel;
+	RF._flag_RC_AP_PositionHold_PWM_Value = APMInit.RC._flag_RC_AP_PositionHold_PWM_Value;
 	RF._flag_RC_AP_PositionHold_PWM_Channel = APMInit.RC._flag_RC_AP_PositionHold_PWM_Channel;
 	RF._flag_RC_AP_SpeedHold_PWM_Value = APMInit.RC._flag_RC_AP_SpeedHold_PWM_Value;
 	RF._flag_RC_AP_SpeedHold_PWM_Channel = APMInit.RC._flag_RC_AP_SpeedHold_PWM_Channel;
@@ -1386,38 +1386,12 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_PID_Flow_PosInput_Y = SF._uORB_Flow_XOutput_Total;
 				AF._flag_FlowData_Async = false;
 			}
+
+			SF._uORB_True_Movement_X = SF._uORB_True_Movement_X * PF._flag_Flow_Dynamic_Beta + PF._uORB_PID_Flow_PosInput_X * (1.f - PF._flag_Flow_Dynamic_Beta);
+			SF._uORB_True_Movement_Y = SF._uORB_True_Movement_Y * PF._flag_Flow_Dynamic_Beta + PF._uORB_PID_Flow_PosInput_Y * (1.f - PF._flag_Flow_Dynamic_Beta);
 			//
-			PF._uORB_PID_MoveXCorrection = 0;
-			PF._uORB_PID_SpeedXCorrection = 0;
-			PF._uORB_PID_MoveYCorrection = 0;
-			PF._uORB_PID_SpeedYCorrection = 0;
-			//
-			if (AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible)
-			{
-				PF._uORB_PID_MoveXCorrection += (PF._uORB_PID_Flow_PosInput_X - SF._uORB_True_Movement_X) *
-												PF._flag_Flow_Dynamic_Beta *
-												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-				PF._uORB_PID_SpeedXCorrection += (PF._uORB_PID_Flow_PosInput_X - SF._uORB_True_Movement_X) *
-												 pow(PF._flag_Flow_Dynamic_Beta, 2) *
-												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-				PF._uORB_PID_MoveYCorrection += (PF._uORB_PID_Flow_PosInput_Y - SF._uORB_True_Movement_Y) *
-												PF._flag_Flow_Dynamic_Beta *
-												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-				PF._uORB_PID_SpeedYCorrection += (PF._uORB_PID_Flow_PosInput_Y - SF._uORB_True_Movement_Y) *
-												 pow(PF._flag_Flow_Dynamic_Beta, 2) *
-												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
-			}
-			else
-			{
-				SF._uORB_True_Speed_X = 0;
-				SF._uORB_True_Speed_Y = 0;
-				SF._uORB_True_Movement_X = 0;
-				SF._uORB_True_Movement_Y = 0;
-			}
-			SF._uORB_True_Movement_X += PF._uORB_PID_MoveXCorrection;
-			SF._uORB_True_Speed_X += PF._uORB_PID_SpeedXCorrection;
-			SF._uORB_True_Movement_Y += PF._uORB_PID_MoveYCorrection;
-			SF._uORB_True_Speed_Y += PF._uORB_PID_SpeedYCorrection;
+			SF._uORB_True_Speed_X = SF._uORB_True_Speed_X * PF._flag_Flow_Dynamic_Beta + SF._uORB_Flow_Speed_Y * (1.f - PF._flag_Flow_Dynamic_Beta);
+			SF._uORB_True_Speed_Y = SF._uORB_True_Speed_Y * PF._flag_Flow_Dynamic_Beta + SF._uORB_Flow_Speed_X * (1.f - PF._flag_Flow_Dynamic_Beta);
 			//
 			double TargetSpeedX = (SF._uORB_True_Movement_X - PF._uORB_PID_PosXUserTarget) * PF._flag_PID_P_PosX_Gain -
 								  RF._uORB_RC_Out_PosHoldSpeedX - PF._uORB_PID_PosXUserSpeed;
@@ -1427,7 +1401,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			double TargetAccelX = (TargetSpeedX + SF._uORB_True_Speed_X) * PF._flag_PID_I_PosX_Gain;
 			TargetAccelX = TargetAccelX > PF._flag_PID_Pos_Accel_Max ? PF._flag_PID_Pos_Accel_Max : TargetAccelX;
 			TargetAccelX = TargetAccelX < -1 * PF._flag_PID_Pos_Accel_Max ? -1 * PF._flag_PID_Pos_Accel_Max : TargetAccelX;
-			PF._uORB_PID_PosXTarget = TargetAccelX - SF._uORB_MPU_Data._uORB_Acceleration_X;
+			PF._uORB_PID_PosXTarget = TargetAccelX + SF._uORB_MPU_Data._uORB_Acceleration_X;
 			//
 			double TargetSpeedY = (SF._uORB_True_Movement_Y - PF._uORB_PID_PosYUserTarget) * PF._flag_PID_P_PosY_Gain -
 								  RF._uORB_RC_Out_PosHoldSpeedY - PF._uORB_PID_PosYUserSpeed;
@@ -1437,7 +1411,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			double TargetAccelY = (TargetSpeedY + SF._uORB_True_Speed_Y) * PF._flag_PID_I_PosY_Gain;
 			TargetAccelY = TargetAccelY > PF._flag_PID_Pos_Accel_Max ? PF._flag_PID_Pos_Accel_Max : TargetAccelY;
 			TargetAccelY = TargetAccelY < -1 * PF._flag_PID_Pos_Accel_Max ? -1 * PF._flag_PID_Pos_Accel_Max : TargetAccelY;
-			PF._uORB_PID_PosYTarget = TargetAccelY - SF._uORB_MPU_Data._uORB_Acceleration_Y;
+			PF._uORB_PID_PosYTarget = TargetAccelY + SF._uORB_MPU_Data._uORB_Acceleration_Y;
 			//
 			if (AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
 				AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible)
@@ -1452,6 +1426,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 								   PF._flag_PID_P_SpeedY_Gain, PF._flag_PID_I_SpeedY_Gain / 100.f, PF._flag_PID_D_SpeedY_Gain, PF._flag_PID_Pos_Level_Max);
 				PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
 				PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
+				PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, 4.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, 4.f, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			}
 		}
 		//Leveling PID MIX

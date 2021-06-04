@@ -324,6 +324,8 @@ namespace SingleAPMAPI
 			pt1Filter_t DtermFilterRoll;
 			pt1Filter_t DtermFilterPitchST2;
 			pt1Filter_t DtermFilterRollST2;
+
+			pt1Filter_t POSOutLPF[2];
 		} DF;
 
 		struct SensorsINFO
@@ -526,7 +528,7 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosX_Output = 0;
 			float _uORB_PID_PosY_Output = 0;
 
-			float _flag_Flow_Dynamic_Beta = 0.5;
+			float _flag_Flow_Dynamic_Beta = 0.9992;
 
 			float _flag_PID_SpeedX_Max = 0;
 			float _flag_PID_AccelX_Max = 0;
