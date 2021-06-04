@@ -136,7 +136,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		DF.MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false,
 									  1, DF.MPU9250_ADDR, TF._flag_IMUThreadFreq,
-									  SF.IMUMixFilter_Type, SF._flag_Filter_AngleMix_Alpha,
+									  SF._flag_Filter_AngleMix_Alpha,
 									  SF._flag_Filter_Gryo_Type, SF._flag_Filter_Gryo_CutOff,
 									  SF._flag_Filter_Accel_Type, SF._flag_Filter_Accel_CutOff);
 #ifdef RPiDEBUGStart
@@ -1045,7 +1045,6 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	RF.RC_Type = APMInit.DC.RC_Type;
 	SF.MPU9250_Type = APMInit.DC.MPU9250_Type;
 	SF.IMUFilter_Type = APMInit.DC.IMUFilter_Type;
-	SF.IMUMixFilter_Type = APMInit.DC.IMUMixFilter_Type;
 
 	DF.RCDevice = APMInit.DC.__RCDevice;
 	DF.GPSDevice = APMInit.DC.__GPSDevice;

@@ -45,7 +45,6 @@ namespace SingleAPMAPI
 			int RXT_Freqeuncy;
 			int ESC_Freqeuncy;
 			int IMUFilter_Type;
-			int IMUMixFilter_Type;
 
 			std::string __RCDevice;
 			std::string __GPSDevice;
@@ -333,7 +332,6 @@ namespace SingleAPMAPI
 			//=========================MPU9250======//
 			int MPU9250_Type;
 			int IMUFilter_Type;
-			int IMUMixFilter_Type;
 			MPUData _uORB_MPU_Data;
 			int _flag_Filter_Gryo_Type;
 			int _flag_Filter_GYaw_CutOff;

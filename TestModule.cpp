@@ -127,7 +127,6 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.DC.RC_Type = Configdata["Type_RC"].get<int>();
 	APMInit.DC.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
 	APMInit.DC.IMUFilter_Type = Configdata["Type_IMUFilter"].get<int>();
-	APMInit.DC.IMUMixFilter_Type = Configdata["Type_IMUMixFilter"].get<int>();
 
 	APMInit.DC.__RCDevice = Configdata["__RCDevice"].get<std::string>(),
 	APMInit.DC.__GPSDevice = Configdata["__GPSDevice"].get<std::string>(),
