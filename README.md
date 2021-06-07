@@ -27,6 +27,7 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
   *  QMC5883 or HMC5883 support (Uninplment)
   *  5 - 7 inch Race-Quadcopter test Pass
   *  PCA9685 PWM controller to ESC
+  *  Sbus and Ibus RC support
 
 # Special thanks
   * Attitude and PID , Looping core reference from <a href="https://www.youtube.com/channel/UCpJ5uKSLxP84TXQtwiRNm1g">Joop Brokking</a>
