@@ -1296,8 +1296,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 												PF._uORB_Sonar_Dynamic_Beta *
 												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
-												 pow(PF._uORB_Sonar_Dynamic_Beta, 2) *
+												 PF._uORB_Sonar_Dynamic_Beta *
 												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
+											pow(PF._uORB_Sonar_Dynamic_Beta, 2) * PF._uORB_AccelBias_Beta *
+											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;
 			}
 			else
@@ -1347,9 +1350,31 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_PID_PosXUserTarget = 0;
 				PF._uORB_PID_PosYUserTarget = 0;
 				if (RF._uORB_RC_Out_PosHoldSpeedX != 0)
-					SF._uORB_Flow_YOutput_Total = 0;
+				{
+					AF._flag_IsPositionXChange = true;
+					AF._flag_IsBrakingXBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingXBlock)
+					{
+						AF._flag_IsBrakingXSet = true;
+						AF._flag_IsBrakingXBlock = false;
+					}
+				}
 				if (RF._uORB_RC_Out_PosHoldSpeedY != 0)
-					SF._uORB_Flow_XOutput_Total = 0;
+				{
+					AF._flag_IsPositionYChange = true;
+					AF._flag_IsBrakingYBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingYBlock)
+					{
+						AF._flag_IsBrakingYSet = true;
+						AF._flag_IsBrakingYBlock = false;
+					}
+				}
 			}
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
@@ -1360,9 +1385,31 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				RF._uORB_RC_Out_PosHoldSpeedX = 0;
 				RF._uORB_RC_Out_PosHoldSpeedY = 0;
 				if (RF._uORB_RC_Out__Roll != 0)
-					SF._uORB_Flow_YOutput_Total = 0;
+				{
+					AF._flag_IsPositionXChange = true;
+					AF._flag_IsBrakingXBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingXBlock)
+					{
+						AF._flag_IsBrakingXSet = true;
+						AF._flag_IsBrakingXBlock = false;
+					}
+				}
 				if (RF._uORB_RC_Out_Pitch != 0)
-					SF._uORB_Flow_XOutput_Total = 0;
+				{
+					AF._flag_IsPositionYChange = true;
+					AF._flag_IsBrakingYBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingYBlock)
+					{
+						AF._flag_IsBrakingYSet = true;
+						AF._flag_IsBrakingYBlock = false;
+					}
+				}
 			}
 			else if (AF.AutoPilotMode == APModeINFO::UserAuto)
 			{
@@ -1386,11 +1433,54 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				AF._flag_FlowData_Async = false;
 			}
 
-			SF._uORB_True_Movement_X = SF._uORB_True_Movement_X * PF._flag_Flow_Dynamic_Beta + PF._uORB_PID_Flow_PosInput_X * (1.f - PF._flag_Flow_Dynamic_Beta);
-			SF._uORB_True_Movement_Y = SF._uORB_True_Movement_Y * PF._flag_Flow_Dynamic_Beta + PF._uORB_PID_Flow_PosInput_Y * (1.f - PF._flag_Flow_Dynamic_Beta);
-			//
-			SF._uORB_True_Speed_X = SF._uORB_True_Speed_X * PF._flag_Flow_Dynamic_Beta + SF._uORB_Flow_Speed_Y * (1.f - PF._flag_Flow_Dynamic_Beta);
-			SF._uORB_True_Speed_Y = SF._uORB_True_Speed_Y * PF._flag_Flow_Dynamic_Beta + SF._uORB_Flow_Speed_X * (1.f - PF._flag_Flow_Dynamic_Beta);
+			if (AF._flag_IsPositionXChange || AF._flag_IsBrakingXSet)
+			{
+				SF._uORB_True_Movement_X = 0;
+				SF._uORB_Flow_YOutput_Total = 0;
+				AF._flag_IsPositionXChange = false;
+				if (-10.f < SF._uORB_True_Speed_X && SF._uORB_True_Speed_X < 10.f)
+					AF._flag_IsBrakingXSet = false;
+			}
+			if (AF._flag_IsPositionYChange || AF._flag_IsBrakingYSet)
+			{
+				SF._uORB_True_Movement_Y = 0;
+				SF._uORB_Flow_XOutput_Total = 0;
+				AF._flag_IsPositionYChange = false;
+				if (-10.f < SF._uORB_True_Speed_Y && SF._uORB_True_Speed_Y < 10.f)
+					AF._flag_IsBrakingYSet = false;
+			}
+
+			PF._uORB_PID_MoveXCorrection = 0;
+			PF._uORB_PID_SpeedXCorrection = 0;
+			PF._uORB_PID_MoveYCorrection = 0;
+			PF._uORB_PID_SpeedYCorrection = 0;
+
+			if (AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible)
+			{
+				PF._uORB_PID_MoveXCorrection += (PF._uORB_PID_Flow_PosInput_X - SF._uORB_True_Movement_X) *
+												PF._flag_Flow_Dynamic_Beta *
+												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_SpeedXCorrection += (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
+												 PF._flag_Flow_Dynamic_Beta *
+												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_AccelX_Bias -= (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
+											pow(PF._flag_Flow_Dynamic_Beta, 2) * PF._uORB_AccelBias_Beta *
+											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+
+				PF._uORB_PID_MoveYCorrection += (PF._uORB_PID_Flow_PosInput_Y - SF._uORB_True_Movement_Y) *
+												PF._flag_Flow_Dynamic_Beta *
+												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_SpeedYCorrection += (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
+												 PF._flag_Flow_Dynamic_Beta *
+												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_AccelY_Bias -= (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
+											pow(PF._flag_Flow_Dynamic_Beta, 2) * PF._uORB_AccelBias_Beta *
+											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+			}
+			SF._uORB_True_Movement_X += PF._uORB_PID_MoveXCorrection;
+			SF._uORB_True_Speed_X += PF._uORB_PID_SpeedXCorrection;
+			SF._uORB_True_Movement_Y += PF._uORB_PID_MoveYCorrection;
+			SF._uORB_True_Speed_Y += PF._uORB_PID_SpeedYCorrection;
 			//
 			double TargetSpeedX = (SF._uORB_True_Movement_X - PF._uORB_PID_PosXUserTarget) * PF._flag_PID_P_PosX_Gain -
 								  RF._uORB_RC_Out_PosHoldSpeedX - PF._uORB_PID_PosXUserSpeed;
@@ -1450,8 +1540,14 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				}
 				else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowAvalible)
 				{
-					PF._uORB_PID__Roll_Input += (PF._uORB_PID_PosX_Output - RF._uORB_RC_Out__Roll / 15.f);
-					PF._uORB_PID_Pitch_Input += (PF._uORB_PID_PosY_Output - RF._uORB_RC_Out_Pitch / 15.f);
+					if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
+						PF._uORB_PID__Roll_Input -= (RF._uORB_RC_Out__Roll / 15.f);
+					else
+						PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
+					if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
+						PF._uORB_PID_Pitch_Input -= (RF._uORB_RC_Out_Pitch / 15.f);
+					else
+						PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
 				}
 				else if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::AltHold)
 				{

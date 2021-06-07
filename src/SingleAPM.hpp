@@ -284,7 +284,14 @@ namespace SingleAPMAPI
 			bool _flag_IsSonarAvalible;
 			bool _flag_IsFlowAvalible;
 			bool _flag_IsFakeRCUpdated;
+
 			bool _flag_IsARSHDiable;
+			bool _flag_IsPositionXChange;
+			bool _flag_IsPositionYChange;
+			bool _flag_IsBrakingXSet;
+			bool _flag_IsBrakingYSet;
+			bool _flag_IsBrakingXBlock;
+			bool _flag_IsBrakingYBlock;
 		} AF;
 
 		struct DeviceINFO
@@ -526,7 +533,7 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosX_Output = 0;
 			float _uORB_PID_PosY_Output = 0;
 
-			float _flag_Flow_Dynamic_Beta = 0.9992;
+			float _flag_Flow_Dynamic_Beta = 1.f;
 
 			float _flag_PID_SpeedX_Max = 0;
 			float _flag_PID_AccelX_Max = 0;
