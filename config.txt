@@ -1,0 +1,23 @@
+# This is a example config for Raspberrypi4B
+framebuffer_width=640
+framebuffer_height=380
+enable_tvout=1
+sdtv_mode=0
+sdtv_aspect=3
+arm_freq=1500
+force_turbo=1
+core_freq=360
+core_freq_min=360
+dtparam=audio=on
+[pi4]
+max_framebuffers=3
+dtparam=i2c_arm=on
+dtparam=i2c_baudrate=800000
+dtparam=spi=on
+gpu_mem=128
+dtoverlay=pi3-miniuart-bt
+dtoverlay=uart3
+dtoverlay=uart5
+[all]
+start_x=1
+enable_uart=1

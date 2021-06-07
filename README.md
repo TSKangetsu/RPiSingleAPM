@@ -3,126 +3,76 @@
 
 # RPiSingleAPM
 
+RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to build a AutoPilot drone
 
-RPiSingleAPM is a c++ API for RaspberryPi , it was tested on RaspberryPi3B , 3B+ , 4B , using RPiSingleAPM can make RaspberryPi using
-PCA9685 and MPU9250(MPU6050 , and MS5611) to build a Auto-Leveling quadCotper ，it means that you can easily using RaspberryPi with OpenVINO to make a computer-vision-base quadCotper
+<img src="https://github.com/TSKangetsu/RPiSingleAPM/blob/NDTask_Ver/Document/Header.jpg" style="transform:rotate(90deg);">
 
-*\*This project is using GPL linsense*
-
-## Code Dependence
-- JSON_LIB : https://github.com/nlohmann/json
-
-- wiringPi : http://wiringpi.com/
-
-- all of them need to build and install at Raspbain
-
-## Hardware Dependence
-At least you need :
- - PCA9685 to drive 4 Electronic-Speed-Control , 
-
- - MPU6050 to use for Auto-Leveing the copter
-
- - Remote receiver now support IBUS , in future will fully support SBUS , you can use IBUS perfect
- 
-## Build Test Need
- - install nlohamnnJSON
- - using cmake build the code
- - move APMconfig.json to /etc/
- - cd build and run ./SingleAPM -r
-
-*\* check RC value and change value at /etc/APMconfig.json , IBUS value is diffrent from SBUS , if no ckeck , it won armed*
-
-## PCB Dependence
-![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/PI-PCB/PI-PCB.png?raw=true)
-
-**P5:RX TX 5v gnd**
-**P6、P7、P8:SCL SDA GND 3.3V**  
-This PCB provides connection support for PCA9685, MPU9250, MS5611 and more sensor extension interfaces for convenient. you can get more information on file.
-
-## Video display
-
-**Being updated，please wait**
+- GetStarted
+  - [BuildConfigure](#BuildConfigure)
+  - [Configure RaspberryPi For Controller](#Configure-RaspberryPi-For-Controller)
+  - [Sensor Device Check Out](#Sonsor-Device-CheckOut)
 
 
-## The way to use TestMdule
-
- 1. compile and install nlohmann [JSON](https://github.com/nlohmann/json)
-- **git clone https://github.com/nlohmann/json**
-
-- **cd /clone file directory/**. 
-
-- **git checkout v3.7.0** Switch to the specified version branch
-
-- **cd build**
-
-- **cmake**
-
-- **make**
-
-- **make install**
-2. install wiringPI (google youreself)
-3. Compile SingleAPM (https://github.com/TSKangetsu/RPiSingleAPM)
-- **git clone https://github.com/nlohmann/json**
-
-- **cd RPiSingleAPM** 
-
-- **mkdir build , cd build**
-
-- **cmake ..**
-
-- **make**
-
-- **cd .. , mv APMconfig.json /etc/** 
-move APMconfig.json within the project to /etc
-
-- **cd build , mv SingleAPM /usr/bin，sudo chmod /usr/bin/SingleAPM 755**
-Move SingleAPM executable file within build in /usr/bin/, and set the permission as 755
-- **execute SingleAPM -r**
-
-## Configuration instructions of TestModule:
-![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/TestModule%E7%9A%84%E9%A3%9E%E8%A1%8C%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E.png?raw=true)
-1.	Type_MPU9250: 
-If the mpu9250 or mpu6000 sensor connected to raspberry PI is an SPI connection, select 1, 
-Otherwise(I2C) select 0.
-**Attention**：the I2C configuration of raspberry pie needs to be changed to high-speed mode）
-
-**Changing the default I2C Speed**
+# BuildConfigure 
+### Build Test Module And Fly On RaspberryPi:
+```SHELL
+    #TestModule Is using Json lib for FlightController configure
+    #You need to compile and install nlohmann/json in you RaspberryPi OS
+    git clone https://github.com/nlohmann/json
+    cd json && git checkout v3.7.0
+    mkdir build && cd build
+    cmake .. && make -j1 #prevent 1GB device OOM,if your Pi is over 2gb can use -j4
+    sudo make install
+    cd ../.. #Please make sure what things you are doing
+    #Build RPiSingleAPM
+    git clone https://github.com/TSKangetsu/RPiSingleAPM.git --recursive
+    cd RPiSingleAPM && mkdir build
+    cd build && cmake ..
+    make -j1 && cp SingleAPM /usr/bin
+    cd .. && cp APMconfig.json /etc/ #Copy APMConfig.json to /etc/ , this file has flying controller settings,like pid tunning
+    SingleAPM -r # Run APM Programe If data fresh at screen , you can try to fly
 ```
-The default I2C baudrate on the Pi 3 is 100Kbps (kilo bits (not bytes) per second). 
-At this speed, clearing the interrupt register and reading the IMU data 
-(14 bytes; 3 16 bit gyros, 1 16 bit temperature, 3 16 bit accels) takes about 6.5ms, which is unacceptably slow. 
-Since the data is read while processing the ISR, the slow speed of the data read operation imposes an upper bound of 150Hz on the interrupt frequency. 
-It is possible to increase the default I2C baudrate by modifying the /boot/config.
-txt file as shown below.  
-```  
-👆Form <http://www.telesens.co/2017/03/11/imu-sampling-using-the-raspberry-pi/>
+### Use RPiSingleAPM for developing
+```CMAKE
+    #Do this in you git project if you using CMake
+    git submodule add https://github.com/TSKangetsu/RPiSingleAPM [Dir-Where-you-want]
+    #In CMAKE
+    ...
+    add_definitions(-DRPiDEBUGStart)
+    add_definitions(-DRPiDEBUG)
+    ...
+    add_subdirectory([PATH-TO-RPiSingleAPM]/src)
+    ...
+    target_link_libraries([YOU-EXEC] RPiSingleAPI)
+    #Attention!
+    # If you use git submodule , when you clone a new dir, you need to add --recursive
+    # or After Clone run:
+    git submodule update --init --recursive
+```
 
-![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/%E6%9B%B4%E6%94%B9I2c%E7%9A%84%E9%80%9F%E5%BA%A6.png?raw=true)
+# Configure RaspberryPi For Controller
+  - ### If you are RaspberryPi4B, and want to use GPS or FlowSensor. You can check <a href="https://raspberrypi.stackexchange.com/questions/104464/where-are-the-uarts-on-the-raspberry-pi-4">here</a>
+```R
+    # Edit /boot/config.txt
+    core_freq = 250 
+    # If you want to use software Serial for RC controller
+    # If RC use hardware serial can be higher
+    # If using Analog Video Output on PI4 should be 360 and use hardware serial
+    dtparam=i2c_arm=on
+    dtparam=i2c_baudrate=400000 #RaspberryPi3 Is max to 400khz,Pi4 can Up to 1MHZ
+    dtparam=spi=on
+    # This set i2c and spi enable for RaspberryPi 
+    # or you can use sudo raspi-config to configure
+    enable_uart=1
+    dtoverlay=pi3-miniuart-bt # Disable Software Serial for GPIO
+    dtoverlay=uart3 # if you are Pi4 that you can use more than 4 GPIO Uart
+    dtoverlay=uart5 
+    # Set Uart enable and use Hardware serial
 
-You need to restart PI for the Settings to take effect
+    # Attention: If config.txt exist same object ,replase it
+    # AfterChange Save and reboot RaspberryPi to effect the settings
+```
+  - ### AddOn: You need to Disable GPIO UART Login TTY. You can check <a href="https://www.raspberrypi.org/documentation/configuration/uart.md#:~:text=Disable%20Linux%20serial%20console&text=This%20can%20be%20done%20by,Select%20option%20P6%20%2D%20Serial%20Port.">here</a>
 
-2. Type_RC: receiver mode: 0 for IBUS mode, 1 for SBUS mode, please put receiver at /dev/ttys0, this will be improved later  
-3. Type_IMUFilter: gyro filter 0 is no filter, 1 is pt1 filter (currently not available), 2 is 50hz low-pass filter (recommend to use first-order filter)  
-4. Type_IMUMixFilter: The fusion filter of gyroscope and accelerometer, 0 is the first order complementary filter, suitable for short time flight；1 is the Kalman filtering, suitable for long time operation.  
-5. Update_Freqeucy: It can't be changed now，If you change this item, you may cause a personal accident.  
-6. _flag_A1_Pin:
-  _flag_A2_Pin:
-  _flag_B1_Pin:
-  _flag_B2_Pin:
-  This is the PWM connection position of four-axis pca9685: fill in according to the pin number on pca9685  
-  ![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/%E9%92%88%E5%8F%B7.png?raw=true)  
-
-7. _flag_Accel_Pitch_Cali:
-_flag_Accel__Roll_Cali:
-Horizontal correction of aircraft acceleration sensor，it needs to be adjusted
-
-8. PID related：The PID values of Pitch roll yaw need to be adjusted to be stable. It is not recommended to change the max_arbitration value and level_Max  
-![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/PID%E7%9B%B8%E5%85%B3.png?raw=true)
-
-9. The remote control related：   
-**Matters needing attention：**
-The PWM values of ibus and sbus have some different, it need to be adjusted by yourself, otherwise they cannot fly or lose control and put Personal safety at risk. The channel of flight control is unlocked in channel 5 of the remote control, please adjust by yourself
-Reserv represents the reverse direction of the remote control and can only be 1 and -1. Changing to other values will endanger people's safety  
-![网络图片](https://github.com/pluierry/picture/blob/master/readme%20pictures/%E9%81%A5%E6%8E%A7%E5%99%A8%E7%9B%B8%E5%85%B3.png?raw=true)
-
-****
+# Sensor Device CheckOut
+<img src="https://github.com/TSKangetsu/RPiSingleAPM/blob/NDTask_Ver/Document/DebugInfo.jpg">

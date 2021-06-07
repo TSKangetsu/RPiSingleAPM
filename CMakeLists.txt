@@ -1,6 +1,7 @@
 IF(UNIX)
 ###########################code Definetion##################
-    add_definitions(-DDEBUG) 
+    add_definitions(-DRPiDEBUGStart)
+    add_definitions(-DRPiDEBUG)
 #############################################################
     cmake_minimum_required(VERSION 3.10)
     set(CMAKE_C_COMPILER "/usr/bin/gcc")
