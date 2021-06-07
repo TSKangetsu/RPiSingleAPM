@@ -9,7 +9,6 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
   - [HardwareSupport](#Supported-Hardware) 
   - [BuildConfigure](#BuildConfigure)
   - [Configure RaspberryPi For Controller](#Configure-RaspberryPi-For-Controller)
-  - [Sensor Device Check Out](#Sonsor-Device-CheckOut)
   
 # Features
   * Run in Raspberrypi4B without any external controller
@@ -21,7 +20,7 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
 
 # Supported-Hardware
   * Attitude controll with MPU9250
-  * Surface Tracking with <a href="https://raspberrypi.stackexchange.com/questions/104464/where-are-the-uarts-on-the-raspberry-pi-4">Mateksys 3901-L0X: OPTICAL FLOW & LIDAR SENSOR </a>
+  * Surface Tracking with <a href="http://www.mateksys.com/?portfolio=3901-l0x">Mateksys 3901-L0X: OPTICAL FLOW & LIDAR SENSOR </a>
   *  AltHold controll with Mateksys 3901-L0X , or MS5611 Pressure sensor
   *  GPS hold with M8N (Unimplment)
   *  QMC5883 or HMC5883 support (Uninplment)
@@ -88,6 +87,3 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
     # AfterChange Save and reboot RaspberryPi to effect the settings
 ```
   - ### AddOn: You need to Disable GPIO UART Login TTY. You can check <a href="https://www.raspberrypi.org/documentation/configuration/uart.md#:~:text=Disable%20Linux%20serial%20console&text=This%20can%20be%20done%20by,Select%20option%20P6%20%2D%20Serial%20Port.">here</a>
-
-# Sensor Device CheckOut
-<img src="https://github.com/TSKangetsu/RPiSingleAPM/blob/NDTask_Ver/Document/DebugInfo.jpg">
