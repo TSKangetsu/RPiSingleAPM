@@ -19,7 +19,7 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
   * Simple C++ API control copter's speed , position, attitidue. Custom Position sensor and RC input support
   * Auto-Takeoff support
 
-# Supported-Hardware
+# Supported Hardware
   * Attitude controll with MPU9250
   * Surface Tracking with <a href="http://www.mateksys.com/?portfolio=3901-l0x">Mateksys 3901-L0X: OPTICAL FLOW & LIDAR SENSOR </a>
   *  AltHold controll with Mateksys 3901-L0X , or MS5611 Pressure sensor
