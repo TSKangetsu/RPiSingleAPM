@@ -7,6 +7,7 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
 - GetStarted
   - [Features](#Features)
   - [HardwareSupport](#Supported-Hardware) 
+  - [Special thanks](#Special-thanks)
   - [BuildConfigure](#BuildConfigure)
   - [Configure RaspberryPi For Controller](#Configure-RaspberryPi-For-Controller)
   
@@ -26,6 +27,11 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
   *  QMC5883 or HMC5883 support (Uninplment)
   *  5 - 7 inch Race-Quadcopter test Pass
   *  PCA9685 PWM controller to ESC
+
+# Special thanks
+  * Attitude and PID , Looping core reference from <a href="https://www.youtube.com/channel/UCpJ5uKSLxP84TXQtwiRNm1g">Joop Brokking</a>
+  * Navigation core reference from <a href="https://github.com/iNavFlight/inav">INAV</a>
+  * Filter reference <a href="https://github.com/cleanflight/cleanflight">cleanflight</a>
 
 # BuildConfigure 
 ### Build Test Module And Fly On RaspberryPi:
