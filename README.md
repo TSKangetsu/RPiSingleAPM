@@ -5,10 +5,34 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
 <img src="https://github.com/TSKangetsu/RPiSingleAPM/blob/NDTask_Ver/Document/Header.jpg" style="transform:rotate(90deg);">
 
 - GetStarted
+  - [Features](#Features)
+  - [HardwareSupport](#Supported-Hardware) 
+  - [Special thanks](#Special-thanks)
   - [BuildConfigure](#BuildConfigure)
   - [Configure RaspberryPi For Controller](#Configure-RaspberryPi-For-Controller)
-  - [Sensor Device Check Out](#Sonsor-Device-CheckOut)
+  
+# Features
+  * Run in Raspberrypi4B without any external controller
+  * 2kHZ with Attitude Control and IMU navigation
+  * 1KHZ ESCUpdate With PCA9685
+  * Position hold , Speed hold with stick
+  * Simple C++ API control copter's speed , position, attitidue. Custom Position sensor and RC input support
+  * Auto-Takeoff support
 
+# Supported Hardware
+  * Attitude controll with MPU9250
+  * Surface Tracking with <a href="http://www.mateksys.com/?portfolio=3901-l0x">Mateksys 3901-L0X: OPTICAL FLOW & LIDAR SENSOR </a>
+  *  AltHold controll with Mateksys 3901-L0X , or MS5611 Pressure sensor
+  *  GPS hold with M8N (Unimplment)
+  *  QMC5883 or HMC5883 support (Uninplment)
+  *  5 - 7 inch Race-Quadcopter test Pass
+  *  PCA9685 PWM controller to ESC
+  *  Sbus and Ibus RC support
+
+# Special thanks
+  * Attitude and PID , Looping core reference from <a href="https://www.youtube.com/channel/UCpJ5uKSLxP84TXQtwiRNm1g">Joop Brokking</a>
+  * Navigation core reference from <a href="https://github.com/iNavFlight/inav">INAV</a>
+  * Filter reference <a href="https://github.com/cleanflight/cleanflight">cleanflight</a>
 
 # BuildConfigure 
 ### Build Test Module And Fly On RaspberryPi:
@@ -70,6 +94,3 @@ RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to bu
     # AfterChange Save and reboot RaspberryPi to effect the settings
 ```
   - ### AddOn: You need to Disable GPIO UART Login TTY. You can check <a href="https://www.raspberrypi.org/documentation/configuration/uart.md#:~:text=Disable%20Linux%20serial%20console&text=This%20can%20be%20done%20by,Select%20option%20P6%20%2D%20Serial%20Port.">here</a>
-
-# Sensor Device CheckOut
-<img src="https://github.com/TSKangetsu/RPiSingleAPM/blob/NDTask_Ver/Document/DebugInfo.jpg">
