@@ -225,16 +225,16 @@ namespace SingleAPMAPI
 
 	protected:
 		void PID_Caculate(float inputData, float &outputData,
-						  float &last_I_Data, float &last_D_Data,
-						  float P_Gain, float I_Gain, float D_Gain, float I_Max);
+				  float &last_I_Data, float &last_D_Data,
+				  float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
 		void PID_CaculateExtend(float inputDataP, float inputDataI, float inputDataD, float &outputData,
-								float &last_I_Data, float &last_D_Data,
-								float P_Gain, float I_Gain, float D_Gain, float I_Max);
+					float &last_I_Data, float &last_D_Data,
+					float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
 		void PID_CaculateHyper(float inputDataP, float inputDataI, float inputDataD, float &outputData,
-							   float &last_I_Data, float &last_D_Data,
-							   float P_Gain, float I_Gain, float D_Gain, float I_Max);
+				       float &last_I_Data, float &last_D_Data,
+				       float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
 		void ConfigReader(APMSettinngs APMInit);
 
@@ -496,6 +496,8 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosY_Output = 0;
 
 			float _flag_Flow_Dynamic_Beta = 1.f;
+			float _flag_Braking_AccelMax_Gain = 1.5f;
+			float _flag_Braking_Speed_Gain = 1.5f;
 
 			float _flag_PID_SpeedX_Max = 0;
 			float _flag_PID_AccelX_Max = 0;
