@@ -116,13 +116,6 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_M_Y_Scaler;
 			double _flag_MPU9250_M_Z_Scaler;
 			double _flag_MPU9250_Head_Asix;
-
-			double _flag_QMC5883L_Head_Asix;
-			double _flag_QMC5883L_M_X_Offset;
-			double _flag_QMC5883L_M_Y_Offset;
-			double _flag_QMC5883L_M_Z_Offset;
-			double _flag_QMC5883L_M_Y_Scaler;
-			double _flag_QMC5883L_M_Z_Scaler;
 		} SC;
 
 		struct OutputConfig
@@ -218,7 +211,7 @@ namespace SingleAPMAPI
 		int APMCalibrator(int controller, int action, int input, double *data);
 
 		//=========APMUserControllerFunction===========//
-		void APMControllerFakeRC(int *ChannelData, bool IsError, bool HighTrust);
+		void APMControllerFakeRC(int *ChannelData, bool IsError);
 
 		void APMControllerARMED();
 
@@ -269,6 +262,7 @@ namespace SingleAPMAPI
 			bool _flag_Device_setupFailed;
 			bool _flag_MPU9250_first_StartUp;
 
+			bool _flag_FakeRC_Deprive;
 			bool _flag_RC_Disconnected;
 			bool _flag_FakeRC_Disconnected;
 			bool _flag_GPS_Disconnected;
@@ -276,6 +270,7 @@ namespace SingleAPMAPI
 			long int FakeRC_Lose_Clocking;
 			long int GPS_Lose_Clocking;
 			long int Flow_Lose_Clocking;
+			long int FakeRC_Deprive_Clocking;
 
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
@@ -317,12 +312,12 @@ namespace SingleAPMAPI
 			GPSUart *GPSInit;
 			RPiMPU9250 *MPUDevice;
 			MSPUartFlow *FlowInit;
-			GPSI2CCompass_QMC5883L *GPSMAGInit;
 			TotalEKF EKFDevice;
 
 			pt1Filter_t RCLPF[4];
 			pt1Filter_t BAROLPF;
 			pt1Filter_t ThrottleLPF;
+			pt1Filter_t POSOutLPF[2];
 			pt1Filter_t AngleRateLPF[3];
 			pt1Filter_t ItermFilterPitch;
 			pt1Filter_t ItermFilterRoll;
@@ -330,8 +325,6 @@ namespace SingleAPMAPI
 			pt1Filter_t DtermFilterRoll;
 			pt1Filter_t DtermFilterPitchST2;
 			pt1Filter_t DtermFilterRollST2;
-
-			pt1Filter_t POSOutLPF[2];
 		} DF;
 
 		struct SensorsINFO
@@ -364,40 +357,9 @@ namespace SingleAPMAPI
 			int _uORB_MS5611_Altitude = 0;
 			double _uORB_MS5611_ClimbeRate = 0;
 			//=========================GPS=========//
-			float _Tmp_QMC5883L_M_XH = 0;
-			float _Tmp_QMC5883L_M_YH = 0;
-			float _Tmp_QMC5883L___MAG = 0;
-			float _Tmp_QMC5883L__Head = 0;
-			float _Tmp_QMC5883L__Head_Gryo = 0;
-			float _Tmp_QMC5883L__Head__Mag = 0;
-
-			long _uORB_QMC5883L_M_X = 0;
-			long _uORB_QMC5883L_M_Y = 0;
-			long _uORB_QMC5883L_M_Z = 0;
-			float _uORB_QMC5883L__Yaw = 0;
-			float _uORB_QMC5883L_Head = 0;
-
-			double _flag_QMC5883L_Head_Asix;
-			double _flag_QMC5883L_M_X_Offset;
-			double _flag_QMC5883L_M_Y_Offset;
-			double _flag_QMC5883L_M_Z_Offset;
-			double _flag_QMC5883L_M_Y_Scaler;
-			double _flag_QMC5883L_M_Z_Scaler;
-
 			GPSUartData _uORB_GPS_Data;
-
-			int _Tmp_GPS_Lat_Last_Data = 0;
-			int _Tmp_GPS_Lng_Last_Data = 0;
-			float _Tmp_GPS_Lng_Diff = 0;
-			float _Tmp_GPS_Lat_Diff = 0;
-			float _Tmp_GPS_Lat_Smooth_Diff = 0;
-			float _Tmp_GPS_Lng_Smooth_Diff = 0;
-
-			int _uORB_GPS_Lat_Smooth = 0;
-			int _uORB_GPS_Lng_Smooth = 0;
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
-
 			int _uORB_Flow_XOutput = 0;
 			int _uORB_Flow_YOutput = 0;
 			int _uORB_Flow_Quality = 0;
@@ -542,6 +504,8 @@ namespace SingleAPMAPI
 			float _flag_PID_P_SpeedX_Gain = 0;
 			float _flag_PID_I_SpeedX_Gain = 0;
 			float _flag_PID_D_SpeedX_Gain = 0;
+			float _uORB_PID_P_PosX_Dynamic_Gain = 0;
+			float _uORB_PID_I_PosX_Dynamic_Gain = 0;
 
 			float _flag_PID_SpeedY_Max = 0;
 			float _flag_PID_AccelY_Max = 0;
@@ -550,11 +514,15 @@ namespace SingleAPMAPI
 			float _flag_PID_P_SpeedY_Gain = 0;
 			float _flag_PID_I_SpeedY_Gain = 0;
 			float _flag_PID_D_SpeedY_Gain = 0;
+			float _uORB_PID_P_PosY_Dynamic_Gain = 0;
+			float _uORB_PID_I_PosY_Dynamic_Gain = 0;
 
 			float _flag_PID_PosMan_Speed_Max = 50;
 			float _flag_PID_Pos_Speed_Max = 50;
 			float _flag_PID_Pos_Accel_Max = 500;
 			float _flag_PID_Pos_Level_Max = 250;
+			float _uORB_PID_Pos_AccelX_Max = 500;
+			float _uORB_PID_Pos_AccelY_Max = 500;
 
 			float _uORB_PID_I_Last_Value_SpeedX = 0;
 			float _uORB_PID_D_Last_Value_SpeedX = 0;
@@ -569,9 +537,15 @@ namespace SingleAPMAPI
 			float _flag_Filter_RC_CutOff;
 			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _uORB_FakeRC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			int _uORB_ModeCopy_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			int _flag_RC_Max_PWM_Value = 2000;
 			int _flag_RC_Mid_PWM_Value = 1500;
 			int _flag_RC_Min_PWM_Value = 1000;
+
+			int _Tmp_RC_Out__Roll = 0;
+			int _Tmp_RC_Out_Pitch = 0;
+			int _Tmp_RC_Out_Throttle = 0;
+			int _Tmp_RC_Out___Yaw = 0;
 
 			int _uORB_RC_Out__Roll = 0;
 			int _uORB_RC_Out_Pitch = 0;
