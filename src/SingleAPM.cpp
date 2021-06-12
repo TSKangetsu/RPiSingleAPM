@@ -1440,7 +1440,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 												 (PF._flag_Flow_Dynamic_Beta / 1.15f) *
 												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_AccelY_Bias -= (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
-											(PF._flag_Flow_Dynamic_Beta / 1.5f) * PF._uORB_AccelBias_Beta *
+											(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
 											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 			}
 			SF._uORB_True_Movement_X += PF._uORB_PID_MoveXCorrection;
