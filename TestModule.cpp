@@ -216,6 +216,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.PC._flag_PID_Alt_Accel_Max = Configdata["_flag_PID_Alt_Accel_Max"].get<float>();
 	APMInit.PC._flag_PID_PosMan_Speed_Max = Configdata["_flag_PID_PosMan_Speed_Max"].get<float>();
 	APMInit.PC._flag_PID_Pos_Accel_Max = Configdata["_flag_PID_Pos_Accel_Max"].get<float>();
+	APMInit.PC._flag_PID_Pos_Speed_Max = Configdata["_flag_PID_Pos_Speed_Max"].get<float>();
 	APMInit.PC._flag_PID_AngleRate_Gain = Configdata["_flag_PID_AngleRate_Gain"].get<float>();
 	//==============================================================Sensors cofig==/
 	APMInit.SC._flag_MPU9250_A_X_Cali = Configdata["_flag_MPU9250_A_X_Cali"].get<double>();
@@ -244,6 +245,11 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.FC._flag_Filter_PID_I_CutOff = Configdata["_flag_Filter_PID_I_CutOff"].get<double>();
 	APMInit.FC._flag_Filter_PID_D_ST1_CutOff = Configdata["_flag_Filter_PID_D_ST1_CutOff"].get<double>();
 	APMInit.FC._flag_Filter_PID_D_ST2_CutOff = Configdata["_flag_Filter_PID_D_ST2_CutOff"].get<double>();
+
+	APMInit.FC._flag_GPS_Config_Beta = Configdata["_flag_GPS_Config_Beta"].get<double>();
+	APMInit.FC._flag_Flow_Config_Beta = Configdata["_flag_Flow_Config_Beta"].get<double>();
+	APMInit.FC._flag_Braking_Speed_Gain = Configdata["_flag_Braking_Speed_Gain"].get<double>();
+	APMInit.FC._flag_Braking_AccelMax_Gain = Configdata["_flag_Braking_AccelMax_Gain"].get<double>();
 }
 
 void configWrite(const char *configDir, const char *Target, double obj)

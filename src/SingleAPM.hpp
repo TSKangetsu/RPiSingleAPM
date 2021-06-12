@@ -169,6 +169,11 @@ namespace SingleAPMAPI
 			float _flag_GPSAlt_Trust_Beta;
 			float _flag_AccelBias_Trust_Beta;
 
+			float _flag_GPS_Config_Beta = 1.f;
+			float _flag_Flow_Config_Beta = 1.f;
+			float _flag_Braking_Speed_Gain = 2.0f;
+			float _flag_Braking_AccelMax_Gain = 2.0f;
+
 			float _flag_Filter_RC_CutOff;
 			float _flag_Filter_AngleRate_CutOff;
 
@@ -496,6 +501,7 @@ namespace SingleAPMAPI
 			float _uORB_PID_PosX_Output = 0;
 			float _uORB_PID_PosY_Output = 0;
 
+			float _flag_GPS_Dynamic_Beta = .8f;
 			float _flag_Flow_Dynamic_Beta = 1.f;
 			float _flag_Braking_AccelMax_Gain = 2.0f;
 			float _flag_Braking_Speed_Gain = 2.0f;

@@ -1136,6 +1136,11 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_Filter_PID_I_CutOff = APMInit.FC._flag_Filter_PID_I_CutOff;
 	PF._flag_Filter_PID_D_ST1_CutOff = APMInit.FC._flag_Filter_PID_D_ST1_CutOff;
 	PF._flag_Filter_PID_D_ST2_CutOff = APMInit.FC._flag_Filter_PID_D_ST2_CutOff;
+
+	PF._flag_GPS_Dynamic_Beta = APMInit.FC._flag_GPS_Config_Beta;
+	PF._flag_Flow_Dynamic_Beta = APMInit.FC._flag_Flow_Config_Beta;
+	PF._flag_Braking_Speed_Gain = APMInit.FC._flag_Braking_Speed_Gain;
+	PF._flag_Braking_AccelMax_Gain = APMInit.FC._flag_Braking_AccelMax_Gain;
 }
 
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
@@ -1462,7 +1467,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
 				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
 
-			if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 20.f)
+			if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 45.f)
 			{
 				PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
 				PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * PF._flag_Braking_Speed_Gain;
@@ -1471,7 +1476,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			{
 				PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max;
 			}
-			if (AF._flag_IsBrakingYSet && abs(SF._uORB_True_Speed_Y) > 20.f)
+			if (AF._flag_IsBrakingYSet && abs(SF._uORB_True_Speed_Y) > 45.f)
 			{
 				PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
 				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * PF._flag_Braking_Speed_Gain;
