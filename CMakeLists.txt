@@ -1,3 +1,5 @@
+SET(NCURSES_ENABLE false  CACHE BOOL "ncurses console debug controller enable")
+
 IF(UNIX)
 ###########################code Definetion##################
     add_definitions(-DRPiDEBUGStart)
