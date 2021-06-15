@@ -43,20 +43,15 @@ int main(int argc, char *argv[])
 		break;
 		case 'C':
 		{
-			// RPiSingleAPM APM_Settle;
-			// configSettle("/etc/APMconfig.json", setting);
-			// APM_Settle.RPiSingleAPMInit(setting);
-			// APM_Settle.APMCalibrator(1, data);
-			// configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Y_Scaler", data[0]);
-			// configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Z_Scaler", data[1]);
-			// configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_X_Offset", data[2]);
-			// configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Y_Offset", data[3]);
-			// configWrite("/etc/APMconfig.json", "_flag_QMC5883L_M_Z_Offset", data[4]);
-			// configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Y_Scaler", data[5]);
-			// configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Z_Scaler", data[6]);
-			// configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_X_Offset", data[7]);
-			// configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Y_Offset", data[8]);
-			// configWrite("/etc/APMconfig.json", "_flag_MPU9250_M_Z_Offset", data[9]);
+			RPiSingleAPM APM_Settle;
+			configSettle("/etc/APMconfig.json", setting);
+			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.APMCalibrator(COMPASSCalibration, -1, -1, data);
+			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Y_Scaler", data[CompassYScaler]);
+			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Z_Scaler", data[CompassZScaler]);
+			configWrite("/etc/APMconfig.json", "_flag_COMPASS_X_Offset", data[CompassXOffset]);
+			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Y_Offset", data[CompassYOffset]);
+			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Z_Offset", data[CompassZOffset]);
 		}
 		break;
 		case 'a':
@@ -225,6 +220,12 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.SC._flag_MPU9250_A_X_Scal = Configdata["_flag_MPU9250_A_X_Scal"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Y_Scal = Configdata["_flag_MPU9250_A_Y_Scal"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Z_Scal = Configdata["_flag_MPU9250_A_Z_Scal"].get<double>();
+
+	APMInit.SC._flag_COMPASS_Y_Scaler = Configdata["_flag_COMPASS_Y_Scaler"].get<double>();
+	APMInit.SC._flag_COMPASS_Z_Scaler = Configdata["_flag_COMPASS_Z_Scaler"].get<double>();
+	APMInit.SC._flag_COMPASS_X_Offset = Configdata["_flag_COMPASS_X_Offset"].get<double>();
+	APMInit.SC._flag_COMPASS_Y_Offset = Configdata["_flag_COMPASS_Y_Offset"].get<double>();
+	APMInit.SC._flag_COMPASS_Z_Offset = Configdata["_flag_COMPASS_Z_Offset"].get<double>();
 	//==============================================================Filter config==/
 	APMInit.FC._flag_Filter_Gryo_Type = Configdata["_flag_Filter_Gryo_Type"].get<double>();
 	APMInit.FC._flag_Filter_GYaw_CutOff = Configdata["_flag_Filter_GYaw_CutOff"].get<double>();

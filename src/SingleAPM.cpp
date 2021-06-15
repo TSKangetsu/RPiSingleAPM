@@ -116,6 +116,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			DF.GPSInit = new GPSUart(DF.GPSDevice.c_str());
+			DF.CompassDevice = new GPSI2CCompass(COMPASS_QMC5883L);
+			DF.CompassDevice->CompassCalibration(false, SF._flag_MPU_MAG_Cali);
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
 #endif
@@ -637,6 +639,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
 					{
 						SF._uORB_GPS_Data = DF.GPSInit->GPSParse();
+						if (SF._uORB_GPS_Data.lat != 0 && SF._uORB_GPS_Data.lng != 0 && !SF._uORB_GPS_Data.DataUnCorrect)
+						{
+							SF._uORB_GPS_COR_Lat = SF._uORB_GPS_Data.lat;
+							SF._uORB_GPS_COR_Lng = SF._uORB_GPS_Data.lng;
+						}
 						//
 						if (SF._uORB_GPS_Data.satillitesCount < 4 || SF._uORB_GPS_Data.DataUnCorrect)
 						{
@@ -700,6 +707,9 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					TF._Tmp_MAGThreadTimeStart = micros();
 					TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 					{
+						DF.CompassDevice->CompassUpdate();
+						DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_Yaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
+						DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
 					}
 					TF._Tmp_MAGThreadTimeEnd = micros();
 					TF._Tmp_MAGThreadTimeLoop = TF._Tmp_MAGThreadTimeEnd - TF._Tmp_MAGThreadTimeStart;
@@ -952,6 +962,10 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 	{
 		DF.MPUDevice->MPUAccelCalibration(action, data);
 	}
+	else if (controller == COMPASSCalibration)
+	{
+		DF.CompassDevice->CompassCalibration(true, data);
+	}
 }
 
 //=-----------------------------------------------------------------------------------------==//
@@ -1115,6 +1129,12 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_MPU_Accel_Cali[MPUAccelScalX] = APMInit.SC._flag_MPU9250_A_X_Scal;
 	SF._flag_MPU_Accel_Cali[MPUAccelScalY] = APMInit.SC._flag_MPU9250_A_Y_Scal;
 	SF._flag_MPU_Accel_Cali[MPUAccelScalZ] = APMInit.SC._flag_MPU9250_A_Z_Scal;
+
+	SF._flag_MPU_MAG_Cali[CompassYScaler] = APMInit.SC._flag_COMPASS_Y_Scaler;
+	SF._flag_MPU_MAG_Cali[CompassZScaler] = APMInit.SC._flag_COMPASS_Z_Scaler;
+	SF._flag_MPU_MAG_Cali[CompassXOffset] = APMInit.SC._flag_COMPASS_X_Offset;
+	SF._flag_MPU_MAG_Cali[CompassYOffset] = APMInit.SC._flag_COMPASS_Y_Offset;
+	SF._flag_MPU_MAG_Cali[CompassZOffset] = APMInit.SC._flag_COMPASS_Z_Offset;
 	//==============================================================Filter config==/
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
 	SF._flag_Filter_GYaw_CutOff = APMInit.FC._flag_Filter_GYaw_CutOff;
@@ -1765,6 +1785,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " RealPitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real_Pitch << "    "
 			  << " RealRoll:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real__Roll << "    "
 			  << std::endl;
+	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw
+			  << " MAGSYAW:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_StaticYaw << "\n"
+			  << " MAGRawX:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawX
+			  << " MAGRawY:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawY
+			  << " MAGRawZ:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawZ
+			  << std::endl;
 	std::cout << " AccelrationX:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Acceleration_X << "cms2"
 			  << " AccelrationY:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Acceleration_Y << "cms2"
 			  << " AccelrationZ:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Acceleration_Z << "cms2"
@@ -1806,13 +1832,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "GPSDataINFO:"
 			  << "\n";
-	std::cout << " GPSLAT:       " << std::setw(10) << std::setfill(' ') << "Unimplment"
-			  << " ||GPSRawLat:  " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_Data.lat
+	std::cout << " GPSLAT:       " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_COR_Lat
 			  << " ||GPSNE:          " << SF._uORB_GPS_Data.lat_North_Mode << " -> " << SF._uORB_GPS_Data.lat_East_Mode
 			  << " ||PosXOutput: " << std::setw(10) << std::setfill(' ') << PF._uORB_PID_PosX_Output
 			  << "            \n";
-	std::cout << " GPSLNG:       " << std::setw(10) << std::setfill(' ') << "Unimplment"
-			  << " ||GPSRawLng:  " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_Data.lng
+	std::cout << " GPSLNG:       " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_COR_Lng
 			  << " ||GPSSATCount:" << std::setw(10) << std::setfill(' ') << SF._uORB_GPS_Data.satillitesCount
 			  << " ||PosYOutput: " << std::setw(10) << std::setfill(' ') << PF._uORB_PID_PosY_Output
 			  << "            \n";

@@ -19,8 +19,11 @@
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
+#include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
+#include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/Dense"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/CURSES_Controller.hpp"
+#define PI 3.1415926
 
 #define RCIsIbus 0
 #define RCIsSbus 1
@@ -29,7 +32,7 @@
 #define CaliESCStart 0
 #define CaliESCUserDefine 2
 #define ACCELCalibration 11
-#define COMPASSCalibration 12;
+#define COMPASSCalibration 12
 
 #define FILTERBAROLPFCUTOFF 1.f
 #define FILTERTHROTTLELPFCUTOFF 4.f
@@ -117,6 +120,11 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_M_Y_Scaler;
 			double _flag_MPU9250_M_Z_Scaler;
 			double _flag_MPU9250_Head_Asix;
+			double _flag_COMPASS_Y_Scaler;
+			double _flag_COMPASS_Z_Scaler;
+			double _flag_COMPASS_X_Offset;
+			double _flag_COMPASS_Y_Offset;
+			double _flag_COMPASS_Z_Offset;
 		} SC;
 
 		struct OutputConfig
@@ -316,6 +324,7 @@ namespace SingleAPMAPI
 			Ibus *IbusInit;
 			MS5611 *MS5611S;
 			GPSUart *GPSInit;
+			GPSI2CCompass *CompassDevice;
 			RPiMPU9250 *MPUDevice;
 			MSPUartFlow *FlowInit;
 			TotalEKF EKFDevice;
@@ -364,6 +373,16 @@ namespace SingleAPMAPI
 			double _uORB_MS5611_ClimbeRate = 0;
 			//=========================GPS=========//
 			GPSUartData _uORB_GPS_Data;
+			int _uORB_GPS_COR_Lat = 0;
+			int _uORB_GPS_COR_Lng = 0;
+			int _uORB_GPS_COR_NES = 0;
+			//=========================MAG=========//
+			double _uORB_MAG_Yaw;
+			double _uORB_MAG_StaticYaw;
+			long _uORB_MAG_RawX;
+			long _uORB_MAG_RawY;
+			long _uORB_MAG_RawZ;
+			double _flag_MPU_MAG_Cali[10];
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
 			int _uORB_Flow_XOutput = 0;
@@ -665,7 +684,7 @@ namespace SingleAPMAPI
 			int _Tmp_GPSThreadTimeNext = 0;
 			int _Tmp_GPSThreadTimeLoop = 0;
 			int _Tmp_GPSThreadError = 0;
-			int _flag_GPSThreadTimeMax = (float)1 / 50 * 1000000;
+			int _flag_GPSThreadTimeMax = (float)1 / 5 * 1000000;
 			int _flag_GPSErrorTimes = 0;
 			std::thread *GPSTask;
 			int _Tmp_MAGThreadSMooth = 0;
@@ -674,7 +693,7 @@ namespace SingleAPMAPI
 			int _Tmp_MAGThreadTimeNext = 0;
 			int _Tmp_MAGThreadTimeLoop = 0;
 			int _Tmp_MAGThreadError = 0;
-			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
+			int _flag_MAGThreadTimeMax = (float)1 / 50 * 1000000;
 			int _flag_MAGErrorTimes = 0;
 			std::thread *MAGTask;
 			int _Tmp_FlowThreadSMooth = 0;
