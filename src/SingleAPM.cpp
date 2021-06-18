@@ -29,7 +29,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF.FakeRC_Deprive_Clocking = 0;
 		AF._flag_FakeRC_Disconnected = 0;
 		AF._flag_ESC_ARMED = true;
-		AF._flag_IsARSHDiable = true;
+		AF._flag_IsINUHDiable = true;
 		AF._flag_IsFlowAvalible = false;
 		AF._flag_StartUP_Protect = true;
 		AF._flag_IsSonarAvalible = false;
@@ -1214,15 +1214,15 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		{
 			if (AF._flag_ESC_ARMED)
 			{
-				AF._flag_IsARSHDiable = true;
+				AF._flag_IsINUHDiable = true;
 				PF._uORB_PID_Sonar_GroundOffset = 0 - SF._uORB_MS5611_Altitude;
 			}
 			else
 			{
-				AF._flag_IsARSHDiable = false;
+				AF._flag_IsINUHDiable = false;
 			}
 			//
-			if (AF._flag_IsARSHDiable)
+			if (AF._flag_IsINUHDiable)
 			{
 				PF._uORB_Accel_Dynamic_Beta = 0.f;
 				PF._uORB_Sonar_Dynamic_Beta = 1.f;
@@ -1294,7 +1294,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;
 			}
-			else
+			else if (DF._IsMS5611Enable)
 			{
 				PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
 												PF._uORB_Baro_Dynamic_Beta *
@@ -1306,6 +1306,18 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 											pow(PF._uORB_Baro_Dynamic_Beta, 2) * PF._uORB_AccelBias_Beta *
 											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 				PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_MS5611_AltInput;
+			}
+			else
+			{
+				PF._uORB_PID_MoveZCorrection += (0.f - SF._uORB_True_Movement_Z) *
+												SpeedUnusableRES *
+												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_SpeedZCorrection += (0.f - SF._uORB_True_Speed_Z) *
+												 SpeedUnusableRES *
+												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_AccelZ_Bias -= (0.f - SF._uORB_True_Speed_Z) *
+											SpeedUnusableRES * PF._uORB_AccelBias_Beta *
+											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 			}
 			//===============================================//
 			SF._uORB_True_Movement_Z += PF._uORB_PID_MoveZCorrection;
@@ -1468,6 +1480,29 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 											(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
 											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 			}
+			else
+			{
+				PF._uORB_PID_MoveXCorrection += (0.f - SF._uORB_True_Movement_X) *
+												SpeedUnusableRES *
+												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_SpeedXCorrection += (0.f - SF._uORB_True_Speed_X) *
+												 SpeedUnusableRES *
+												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_AccelX_Bias -= (0.f - SF._uORB_True_Speed_X) *
+											SpeedUnusableRES * PF._uORB_AccelBias_Beta *
+											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+
+				PF._uORB_PID_MoveYCorrection += (0.f - SF._uORB_True_Movement_Y) *
+												SpeedUnusableRES *
+												((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_SpeedYCorrection += (0.f - SF._uORB_True_Speed_Y) *
+												 SpeedUnusableRES *
+												 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+				PF._uORB_PID_AccelY_Bias -= (0.f - SF._uORB_True_Speed_Y) *
+											SpeedUnusableRES * PF._uORB_AccelBias_Beta *
+											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+			}
+
 			SF._uORB_True_Movement_X += PF._uORB_PID_MoveXCorrection;
 			SF._uORB_True_Speed_X += PF._uORB_PID_SpeedXCorrection;
 			SF._uORB_True_Movement_Y += PF._uORB_PID_MoveYCorrection;

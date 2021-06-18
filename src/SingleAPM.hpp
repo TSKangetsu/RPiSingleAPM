@@ -24,6 +24,7 @@
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/CURSES_Controller.hpp"
 #define PI 3.1415926
+#define SpeedUnusableRES 2.0
 
 #define RCIsIbus 0
 #define RCIsSbus 1
@@ -294,7 +295,7 @@ namespace SingleAPMAPI
 			bool _flag_IsFlowAvalible;
 			bool _flag_IsFakeRCUpdated;
 
-			bool _flag_IsARSHDiable;
+			bool _flag_IsINUHDiable;
 			bool _flag_IsPositionXChange;
 			bool _flag_IsPositionYChange;
 			bool _flag_IsBrakingXSet;
