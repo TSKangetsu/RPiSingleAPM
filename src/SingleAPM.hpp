@@ -24,7 +24,7 @@
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/CURSES_Controller.hpp"
 #define PI 3.1415926
-#define SpeedUnusableRES 2.0
+#define SpeedUnusableRES 1.5
 
 #define RCIsIbus 0
 #define RCIsSbus 1
@@ -168,6 +168,8 @@ namespace SingleAPMAPI
 			int _flag_Filter_Gryo_Type;
 			int _flag_Filter_GYaw_CutOff;
 			int _flag_Filter_Gryo_CutOff;
+			int _flag_Filter_Gryo_NotchFreq;
+			int _flag_Filter_Gryo_NotchCutOff;
 			int _flag_Filter_Accel_Type;
 			int _flag_Filter_Accel_CutOff;
 			double _flag_Filter_AngleMix_Alpha;
@@ -352,6 +354,8 @@ namespace SingleAPMAPI
 			int _flag_Filter_Gryo_Type;
 			int _flag_Filter_GYaw_CutOff;
 			int _flag_Filter_Gryo_CutOff;
+			int _flag_Filter_Gryo_NotchFreq;
+			int _flag_Filter_Gryo_NotchCutOff;
 			int _flag_Filter_Accel_Type;
 			int _flag_Filter_Accel_CutOff;
 			double _flag_Filter_AngleMix_Alpha;

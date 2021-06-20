@@ -141,7 +141,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 									  1, DF.MPU9250_ADDR, TF._flag_IMUThreadFreq,
 									  SF._flag_Filter_AngleMix_Alpha,
 									  SF._flag_Filter_Gryo_Type, SF._flag_Filter_Gryo_CutOff,
-									  SF._flag_Filter_Accel_Type, SF._flag_Filter_Accel_CutOff);
+									  SF._flag_Filter_Accel_Type, SF._flag_Filter_Accel_CutOff,
+									  SF._flag_Filter_Gryo_NotchFreq, SF._flag_Filter_Gryo_NotchCutOff);
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
@@ -1139,6 +1140,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
 	SF._flag_Filter_GYaw_CutOff = APMInit.FC._flag_Filter_GYaw_CutOff;
 	SF._flag_Filter_Gryo_CutOff = APMInit.FC._flag_Filter_Gryo_CutOff;
+	SF._flag_Filter_Gryo_NotchFreq = APMInit.FC._flag_Filter_Gryo_NotchFreq;
+	SF._flag_Filter_Gryo_NotchCutOff = APMInit.FC._flag_Filter_Gryo_NotchCutOff;
 	SF._flag_Filter_Accel_Type = APMInit.FC._flag_Filter_Accel_Type;
 	SF._flag_Filter_Accel_CutOff = APMInit.FC._flag_Filter_Accel_CutOff;
 	SF._flag_Filter_AngleMix_Alpha = APMInit.FC._flag_Filter_AngleMix_Alpha;
