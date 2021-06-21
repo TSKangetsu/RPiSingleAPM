@@ -142,7 +142,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 									  SF._flag_Filter_AngleMix_Alpha,
 									  SF._flag_Filter_Gryo_Type, SF._flag_Filter_Gryo_CutOff,
 									  SF._flag_Filter_Accel_Type, SF._flag_Filter_Accel_CutOff,
-									  SF._flag_Filter_Gryo_NotchFreq, SF._flag_Filter_Gryo_NotchCutOff);
+									  SF._flag_Filter_Gryo_NotchFreq, SF._flag_Filter_Gryo_NotchCutOff,
+									  true);
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
@@ -331,10 +332,15 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				//RC Out Caculation
 				{
 					if (!AF._flag_RC_Disconnected)
-						for (size_t i = 0; i < 4; i++)
-							if (i != 2)
-								RF._uORB_RC_Channel_PWM[i] = pt1FilterApply4(&DF.RCLPF[i], RF._uORB_RC_Channel_PWM[i],
-																			 RF._flag_Filter_RC_CutOff, ((float)TF._flag_RXTThreadTimeMax / 1000000.f));
+					{
+						float DT = (float)TF._flag_RXTThreadTimeMax / 1000000.f;
+						RF._uORB_RC_Channel_PWM[0] = pt1FilterApply4(&RF.RCLPF[0], RF._uORB_RC_Channel_PWM[0],
+																	 RF._flag_Filter_RC_CutOff, DT);
+						RF._uORB_RC_Channel_PWM[1] = pt1FilterApply4(&RF.RCLPF[1], RF._uORB_RC_Channel_PWM[1],
+																	 RF._flag_Filter_RC_CutOff, DT);
+						RF._uORB_RC_Channel_PWM[3] = pt1FilterApply4(&RF.RCLPF[2], RF._uORB_RC_Channel_PWM[3],
+																	 RF._flag_Filter_RC_CutOff, DT);
+					}
 					if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
 						RF._Tmp_RC_Out__Roll = 0;
 					else

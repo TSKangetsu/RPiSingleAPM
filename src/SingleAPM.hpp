@@ -332,7 +332,6 @@ namespace SingleAPMAPI
 			MSPUartFlow *FlowInit;
 			TotalEKF EKFDevice;
 
-			pt1Filter_t RCLPF[4];
 			pt1Filter_t BAROLPF;
 			pt1Filter_t ThrottleLPF;
 			pt1Filter_t POSOutLPF[2];
@@ -566,6 +565,7 @@ namespace SingleAPMAPI
 		struct RCINFO
 		{
 			int RC_Type;
+			pt1Filter_t RCLPF[3];
 			int _Tmp_RC_Data[36] = {0};
 			float _flag_Filter_RC_CutOff;
 			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
