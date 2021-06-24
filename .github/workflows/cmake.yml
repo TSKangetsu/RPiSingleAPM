@@ -11,7 +11,7 @@ env:
 
 jobs:
   build:
-    runs-on: RaspberryPi_OS
+    runs-on: linux
 
     steps:
     - uses: actions/checkout@master
