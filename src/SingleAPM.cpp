@@ -143,7 +143,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 									  SF._flag_Filter_Gryo_Type, SF._flag_Filter_Gryo_CutOff,
 									  SF._flag_Filter_Accel_Type, SF._flag_Filter_Accel_CutOff,
 									  SF._flag_Filter_Gryo_NotchFreq, SF._flag_Filter_Gryo_NotchCutOff,
-									  true);
+									  SF._flag_Filter_Gryo_DynamicNotchEnable,
+									  SF._flag_Filter_Gryo_DynamicNotchMinFreq, SF._flag_Filter_Gryo_DynamicNotchRange);
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
@@ -1148,6 +1149,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_Filter_Gryo_CutOff = APMInit.FC._flag_Filter_Gryo_CutOff;
 	SF._flag_Filter_Gryo_NotchFreq = APMInit.FC._flag_Filter_Gryo_NotchFreq;
 	SF._flag_Filter_Gryo_NotchCutOff = APMInit.FC._flag_Filter_Gryo_NotchCutOff;
+	SF._flag_Filter_Gryo_DynamicNotchRange = APMInit.FC._flag_Filter_Gryo_DynamicNotchRange;
+	SF._flag_Filter_Gryo_DynamicNotchEnable = APMInit.FC._flag_Filter_Gryo_DynamicNotchEnable;
+	SF._flag_Filter_Gryo_DynamicNotchMinFreq = APMInit.FC._flag_Filter_Gryo_DynamicNotchMinFreq;
 	SF._flag_Filter_Accel_Type = APMInit.FC._flag_Filter_Accel_Type;
 	SF._flag_Filter_Accel_CutOff = APMInit.FC._flag_Filter_Accel_CutOff;
 	SF._flag_Filter_AngleMix_Alpha = APMInit.FC._flag_Filter_AngleMix_Alpha;
@@ -1902,6 +1906,14 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	{
 		std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
 	}
+	std::cout << "\nFFTSapmle: "
+			  << " \n";
+	for (size_t i = 0; i < 16; i++)
+	{
+		std::cout << " " << SF._uORB_MPU_Data.FFTSampleBox[i] << " ";
+	}
+	std::cout << "                            \n";
+	std::cout << " DynamicCencterFreq:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ << "            \n";
 	std::cout << " \n\n";
 	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
 	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";

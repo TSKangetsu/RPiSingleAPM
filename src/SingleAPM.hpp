@@ -170,6 +170,10 @@ namespace SingleAPMAPI
 			int _flag_Filter_Gryo_CutOff;
 			int _flag_Filter_Gryo_NotchFreq;
 			int _flag_Filter_Gryo_NotchCutOff;
+			int _flag_Filter_Gryo_DynamicNotchRange;
+			int _flag_Filter_Gryo_DynamicNotchMinFreq;
+			bool _flag_Filter_Gryo_DynamicNotchEnable;
+
 			int _flag_Filter_Accel_Type;
 			int _flag_Filter_Accel_CutOff;
 			double _flag_Filter_AngleMix_Alpha;
@@ -355,6 +359,9 @@ namespace SingleAPMAPI
 			int _flag_Filter_Gryo_CutOff;
 			int _flag_Filter_Gryo_NotchFreq;
 			int _flag_Filter_Gryo_NotchCutOff;
+			int _flag_Filter_Gryo_DynamicNotchRange;
+			int _flag_Filter_Gryo_DynamicNotchMinFreq;
+			bool _flag_Filter_Gryo_DynamicNotchEnable;
 			int _flag_Filter_Accel_Type;
 			int _flag_Filter_Accel_CutOff;
 			double _flag_Filter_AngleMix_Alpha;
