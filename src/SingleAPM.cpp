@@ -1429,8 +1429,18 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			}
 			else if (AF.AutoPilotMode == APModeINFO::UserAuto)
 			{
+				AF._flag_IsBrakingXSet = false;
+				AF._flag_IsBrakingYSet = false;
 				RF._uORB_RC_Out_PosHoldSpeedX = 0;
 				RF._uORB_RC_Out_PosHoldSpeedY = 0;
+				if (PF._uORB_PID_PosXUserSpeed != 0)
+					AF._flag_IsPositionXChange = true;
+				else
+					AF._flag_IsPositionXChange = false;
+				if (PF._uORB_PID_PosYUserSpeed != 0)
+					AF._flag_IsPositionYChange = true;
+				else
+					AF._flag_IsPositionYChange = false;
 			}
 			else
 			{
@@ -1521,37 +1531,40 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 			SF._uORB_True_Movement_Y += PF._uORB_PID_MoveYCorrection;
 			SF._uORB_True_Speed_Y += PF._uORB_PID_SpeedYCorrection;
 
-			if (abs(SF._uORB_True_Speed_X) < 10.f)
-				PF._uORB_PID_I_PosX_Dynamic_Gain = 5.f;
-			else if (10.f < abs(SF._uORB_True_Speed_X) && abs(SF._uORB_True_Speed_X) < 20.f)
-				PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * ((abs(SF._uORB_True_Speed_X) - 10.f) / 20.f) + 5.f;
-			else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-				PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain;
+			//Pos and Braking Dynamic caculate
+			{
+				if (abs(SF._uORB_True_Speed_X) < 10.f)
+					PF._uORB_PID_I_PosX_Dynamic_Gain = 5.f;
+				else if (10.f < abs(SF._uORB_True_Speed_X) && abs(SF._uORB_True_Speed_X) < 20.f)
+					PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * ((abs(SF._uORB_True_Speed_X) - 10.f) / 20.f) + 5.f;
+				else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
+					PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain;
 
-			if (abs(SF._uORB_True_Speed_Y) <= 10.f)
-				PF._uORB_PID_I_PosY_Dynamic_Gain = 5.f;
-			else if (10.f < abs(SF._uORB_True_Speed_Y) && abs(SF._uORB_True_Speed_Y) < 20.f)
-				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * ((abs(SF._uORB_True_Speed_Y) - 10.f) / 20.f) + 5.f;
-			else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
+				if (abs(SF._uORB_True_Speed_Y) <= 10.f)
+					PF._uORB_PID_I_PosY_Dynamic_Gain = 5.f;
+				else if (10.f < abs(SF._uORB_True_Speed_Y) && abs(SF._uORB_True_Speed_Y) < 20.f)
+					PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * ((abs(SF._uORB_True_Speed_Y) - 10.f) / 20.f) + 5.f;
+				else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
+					PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
 
-			if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 45.f)
-			{
-				PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
-				PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * PF._flag_Braking_Speed_Gain;
-			}
-			else
-			{
-				PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max;
-			}
-			if (AF._flag_IsBrakingYSet && abs(SF._uORB_True_Speed_Y) > 45.f)
-			{
-				PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
-				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * PF._flag_Braking_Speed_Gain;
-			}
-			else
-			{
-				PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max;
+				if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 45.f)
+				{
+					PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
+					PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * PF._flag_Braking_Speed_Gain;
+				}
+				else
+				{
+					PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max;
+				}
+				if (AF._flag_IsBrakingYSet && abs(SF._uORB_True_Speed_Y) > 45.f)
+				{
+					PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
+					PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * PF._flag_Braking_Speed_Gain;
+				}
+				else
+				{
+					PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max;
+				}
 			}
 			//
 			double TargetSpeedX = (SF._uORB_True_Movement_X - PF._uORB_PID_PosXUserTarget) * PF._flag_PID_P_PosX_Gain -
