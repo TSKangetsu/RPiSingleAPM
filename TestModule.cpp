@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	int argvs;
 	double data[10];
 	APMSettinngs setting;
-	while ((argvs = getopt(argc, argv, "vteCrha")) != -1)
+	while ((argvs = getopt(argc, argv, "vteECrha")) != -1)
 	{
 		switch (argvs)
 		{
@@ -39,6 +39,19 @@ int main(int argc, char *argv[])
 			configSettle("/etc/APMconfig.json", setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.APMCalibrator(ESCCalibration, CaliESCStart, 0, data);
+		}
+		break;
+		case 'E':
+		{
+			RPiSingleAPM APM_Settle;
+			configSettle("/etc/APMconfig.json", setting);
+			APM_Settle.RPiSingleAPMInit(setting);
+			while (true)
+			{
+				int s;
+				std::cin >> s;
+				APM_Settle.APMCalibrator(ESCCalibration, CaliESCUserDefine, s, data);
+			}
 		}
 		break;
 		case 'C':

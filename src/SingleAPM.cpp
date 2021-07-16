@@ -199,7 +199,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				//IMU SaftyChecking---------------------------------------------------------//
 				if (SF._uORB_MPU_Data._uORB_Real_Pitch > 70.0 || SF._uORB_MPU_Data._uORB_Real_Pitch < -70.0 || SF._uORB_MPU_Data._uORB_Real__Roll > 70.0 || SF._uORB_MPU_Data._uORB_Real__Roll < -70.0)
 				{
-					AF._flag_Error = true;
+					// AF._flag_Error = true;
 				}
 				AttitudeUpdateTask();
 
@@ -717,6 +717,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					{
 						DF.CompassDevice->CompassUpdate();
 						DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_Yaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
+						// DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
 						DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
 					}
 					TF._Tmp_MAGThreadTimeEnd = micros();
@@ -949,7 +950,7 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
-			sleep(5);
+			sleep(15);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
 			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
@@ -958,11 +959,10 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 		}
 		else if (action == CaliESCUserDefine)
 		{
-			int Ouput = (700 * (((float)input - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + 2300;
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, Ouput);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, Ouput);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, Ouput);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, Ouput);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, input);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, input);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, input);
+			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, input);
 			return 1;
 		}
 	}
@@ -1767,10 +1767,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		EF._Tmp_B1_Speed = EF._Tmp_B1_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_B1_Speed;
 		EF._Tmp_B2_Speed = EF._Tmp_B2_Speed > RF._flag_RC_Max_PWM_Value ? RF._flag_RC_Max_PWM_Value : EF._Tmp_B2_Speed;
 
-		EF._uORB_A1_Speed = (700 * (((float)EF._Tmp_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
-		EF._uORB_A2_Speed = (700 * (((float)EF._Tmp_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
-		EF._uORB_B1_Speed = (700 * (((float)EF._Tmp_B1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
-		EF._uORB_B2_Speed = (700 * (((float)EF._Tmp_B2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
+		EF._uORB_A1_Speed = ((EF._Flag_Max__Throttle - EF._Flag_Lazy_Throttle) * (((float)EF._Tmp_A1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
+		EF._uORB_A2_Speed = ((EF._Flag_Max__Throttle - EF._Flag_Lazy_Throttle) * (((float)EF._Tmp_A2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
+		EF._uORB_B1_Speed = ((EF._Flag_Max__Throttle - EF._Flag_Lazy_Throttle) * (((float)EF._Tmp_B1_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
+		EF._uORB_B2_Speed = ((EF._Flag_Max__Throttle - EF._Flag_Lazy_Throttle) * (((float)EF._Tmp_B2_Speed - (float)RF._flag_RC_Min_PWM_Value) / (float)(RF._flag_RC_Max_PWM_Value - RF._flag_RC_Min_PWM_Value))) + EF._Flag_Lazy_Throttle;
 
 		EF._uORB_A1_Speed = EF._uORB_A1_Speed < EF._Flag_Lazy_Throttle ? EF._Flag_Lazy_Throttle : EF._uORB_A1_Speed;
 		EF._uORB_A2_Speed = EF._uORB_A2_Speed < EF._Flag_Lazy_Throttle ? EF._Flag_Lazy_Throttle : EF._uORB_A2_Speed;
@@ -1839,12 +1839,13 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " GryoYaw:     " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_GYaw_Output << "    "
 			  << "                        "
 			  << std::endl;
+	std::cout << " RealPitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real_Pitch << "    "
+			  << " RealRoll:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real__Roll << "    "
+			  << " RealYaw :    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real___Yaw << "    "
+			  << std::endl;
 	std::cout << " AccePitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel_Pitch << "    "
 			  << " AcceRoll:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel__Roll << "    "
 			  << "                        "
-			  << std::endl;
-	std::cout << " RealPitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real_Pitch << "    "
-			  << " RealRoll:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Real__Roll << "    "
 			  << std::endl;
 	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw
 			  << " MAGSYAW:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_StaticYaw << "\n"
@@ -1919,15 +1920,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	{
 		std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
 	}
-	std::cout << "\nFFTSapmle: "
-			  << " \n";
-	for (size_t i = 0; i < 16; i++)
-	{
-		std::cout << " " << SF._uORB_MPU_Data.FFTSampleBox[i] << " ";
-	}
 	std::cout << "                            \n";
-	std::cout << " DynamicCencterFreq:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ << "            \n";
-	std::cout << " \n\n";
+	std::cout << " DynamicCencterFreqX:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0] << "            \n";
+	std::cout << " DynamicCencterFreqY:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1] << "            \n";
+	std::cout << " DynamicCencterFreqZ:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2] << "            \n";
+	std::cout << " \n";
 	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
 	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";
 	std::cout << " TakeOffing:             " << std::setw(3) << std::setfill(' ') << AF._flag_IsAutoTakeoffRequire << " |";

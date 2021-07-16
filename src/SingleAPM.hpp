@@ -634,7 +634,7 @@ namespace SingleAPMAPI
 			int _flag_A2_Pin = 1;
 			int _flag_B1_Pin = 2;
 			int _flag_B2_Pin = 3;
-			const int _Flag_Lazy_Throttle = 2300;
+			const int _Flag_Lazy_Throttle = 2310;
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;
 			float _flag_YAWOut_Reverse = 1.f;
