@@ -196,11 +196,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 					DF.MPUDevice->ResetMPUMixAngle();
 					AF._flag_MPU9250_first_StartUp = false;
 				}
-				//IMU SaftyChecking---------------------------------------------------------//
-				if (SF._uORB_MPU_Data._uORB_Real_Pitch > 70.0 || SF._uORB_MPU_Data._uORB_Real_Pitch < -70.0 || SF._uORB_MPU_Data._uORB_Real__Roll > 70.0 || SF._uORB_MPU_Data._uORB_Real__Roll < -70.0)
-				{
-					// AF._flag_Error = true;
-				}
 				AttitudeUpdateTask();
 
 				TF._Tmp_IMUThreadTimeEnd = micros();
@@ -1607,6 +1602,12 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		//Leveling PID MIX
 		{
 			{
+				//IMU SaftyChecking---------------------------------------------------------//
+				if (SF._uORB_MPU_Data._uORB_Real_Pitch > 70.0 || SF._uORB_MPU_Data._uORB_Real_Pitch < -70.0 ||
+					SF._uORB_MPU_Data._uORB_Real__Roll > 70.0 || SF._uORB_MPU_Data._uORB_Real__Roll < -70.0)
+				{
+				}
+				//--------------------------------------------------------------------------//
 				PF._uORB_PID_AngleRate__Roll = pt1FilterApply4(&DF.AngleRateLPF[0], SF._uORB_MPU_Data._uORB_Real__Roll,
 															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 				PF._uORB_PID_AngleRate_Pitch = pt1FilterApply4(&DF.AngleRateLPF[1], SF._uORB_MPU_Data._uORB_Real_Pitch,
