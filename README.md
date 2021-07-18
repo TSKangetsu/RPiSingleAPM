@@ -1,4 +1,4 @@
-# RPiSingleAPM
+# SingleFlight
 
 RPiSingleAPM is a FlightController C++ API for RaspberryPi , for developer to build a AutoPilot drone
 
