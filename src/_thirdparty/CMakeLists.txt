@@ -1,5 +1,5 @@
 aux_source_directory(. LIB)
 aux_source_directory("EKFImplement/src/." EKFLIB)
-add_subdirectory(RaspberryPiMPU)
+add_subdirectory(RaspberryPiMPU/src)
 add_library(LIB ${LIB} ${EKFLIB})
 target_link_libraries(LIB RPiMPU)

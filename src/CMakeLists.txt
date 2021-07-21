@@ -1,6 +1,9 @@
 SET(NCURSES_ENABLE false  CACHE BOOL "ncurses console debug controller enable")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 #================================================================
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 aux_source_directory(. RPiSingleAPI)
 #================================================================
 find_library(wiringPi_LIB wiringPi)

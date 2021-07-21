@@ -21,7 +21,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 					digitalWrite(28, LOW);
 			}
 		});
-	piHiPri(99);
 	{
 		AF.RC_Lose_Clocking = 0;
 		AF.GPS_Lose_Clocking = 0;
@@ -153,11 +152,10 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 		std::cout << "Done!"
 				  << "\n";
-		sleep(2);
-		system("clear");
 #endif
 	}
-
+	sleep(2);
+	system("clear");
 	AF._flag_Device_setupFailed = false;
 	return 0;
 }
@@ -330,11 +328,11 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					if (!AF._flag_RC_Disconnected)
 					{
 						float DT = (float)TF._flag_RXTThreadTimeMax / 1000000.f;
-						RF._uORB_RC_Channel_PWM[0] = pt1FilterApply4(&RF.RCLPF[0], RF._uORB_RC_Channel_PWM[0],
+						RF._uORB_RC_Channel_PWM[0] = pt1FilterApply4(&DF.RCLPF[0], (float)RF._uORB_RC_Channel_PWM[0],
 																	 RF._flag_Filter_RC_CutOff, DT);
-						RF._uORB_RC_Channel_PWM[1] = pt1FilterApply4(&RF.RCLPF[1], RF._uORB_RC_Channel_PWM[1],
+						RF._uORB_RC_Channel_PWM[1] = pt1FilterApply4(&DF.RCLPF[1], (float)RF._uORB_RC_Channel_PWM[1],
 																	 RF._flag_Filter_RC_CutOff, DT);
-						RF._uORB_RC_Channel_PWM[3] = pt1FilterApply4(&RF.RCLPF[2], RF._uORB_RC_Channel_PWM[3],
+						RF._uORB_RC_Channel_PWM[3] = pt1FilterApply4(&DF.RCLPF[2], (float)RF._uORB_RC_Channel_PWM[3],
 																	 RF._flag_Filter_RC_CutOff, DT);
 					}
 					if (RF._uORB_RC_Channel_PWM[0] < RF._flag_RC_Mid_PWM_Value + 10 && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Mid_PWM_Value - 10)
@@ -1647,9 +1645,14 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				//Roll PID Mix
 				float ROLLDInput = SF._uORB_MPU_Data._uORB_Gryo__Roll - PF._uORB_PID_D_Last_Value__Roll;
 				PF._uORB_PID_D_Last_Value__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll;
-				float ROLLITERM = pt1FilterApply4(&DF.ItermFilterRoll, PF._uORB_PID__Roll_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-				float ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, ROLLDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				float ROLLITERM = PF._uORB_PID__Roll_Input;
+				float ROLLDTERM = ROLLDInput;
+				if (PF._flag_Filter_PID_I_CutOff)
+					ROLLITERM = pt1FilterApply4(&DF.ItermFilterRoll, PF._uORB_PID__Roll_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				if (PF._flag_Filter_PID_D_ST1_CutOff)
+					ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, ROLLDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				if (PF._flag_Filter_PID_D_ST2_CutOff)
+					ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 				PID_CaculateHyper(PF._uORB_PID__Roll_Input, ROLLITERM, ROLLDTERM,
 								  PF._uORB_Leveling__Roll,
 								  PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
@@ -1662,9 +1665,14 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				//Pitch PID Mix
 				float PITCHDInput = SF._uORB_MPU_Data._uORB_Gryo_Pitch - PF._uORB_PID_D_Last_Value_Pitch;
 				PF._uORB_PID_D_Last_Value_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch;
-				float PITCHITERM = pt1FilterApply4(&DF.ItermFilterPitch, PF._uORB_PID_Pitch_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-				float PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PITCHDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				float PITCHITERM = PF._uORB_PID_Pitch_Input;
+				float PITCHDTERM = PITCHDInput;
+				if (PF._flag_Filter_PID_I_CutOff)
+					PITCHITERM = pt1FilterApply4(&DF.ItermFilterPitch, PF._uORB_PID_Pitch_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				if (PF._flag_Filter_PID_D_ST1_CutOff)
+					PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PITCHDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				if (PF._flag_Filter_PID_D_ST2_CutOff)
+					PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 				PID_CaculateHyper(PF._uORB_PID_Pitch_Input, PITCHITERM, PITCHDTERM,
 								  PF._uORB_Leveling_Pitch,
 								  PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
@@ -1846,6 +1854,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " AccePitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel_Pitch << "    "
 			  << " AcceRoll:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel__Roll << "    "
+			  << " AccelG  :    " << std::setw(2) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_A_Vector << "    "
 			  << "                        "
 			  << std::endl;
 	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw
@@ -1925,6 +1934,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " DynamicCencterFreqX:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0] << "            \n";
 	std::cout << " DynamicCencterFreqY:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1] << "            \n";
 	std::cout << " DynamicCencterFreqZ:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2] << "            \n";
+	std::cout << " DynamicAccelTrust  :" << SF._uORB_MPU_Data.MPUMixTraditionBeta << "            \n";
 	std::cout << " \n";
 	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
 	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";

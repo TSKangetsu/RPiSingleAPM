@@ -346,6 +346,7 @@ namespace SingleAPMAPI
 			pt1Filter_t DtermFilterRoll;
 			pt1Filter_t DtermFilterPitchST2;
 			pt1Filter_t DtermFilterRollST2;
+			pt1Filter_t RCLPF[3];
 		} DF;
 
 		struct SensorsINFO
@@ -388,11 +389,11 @@ namespace SingleAPMAPI
 			int _uORB_GPS_COR_Lng = 0;
 			int _uORB_GPS_COR_NES = 0;
 			//=========================MAG=========//
-			double _uORB_MAG_Yaw;
-			double _uORB_MAG_StaticYaw;
-			long _uORB_MAG_RawX;
-			long _uORB_MAG_RawY;
-			long _uORB_MAG_RawZ;
+			double _uORB_MAG_Yaw = 0;
+			double _uORB_MAG_StaticYaw = 0;
+			long _uORB_MAG_RawX = 0;
+			long _uORB_MAG_RawY = 0;
+			long _uORB_MAG_RawZ = 0;
 			double _flag_MPU_MAG_Cali[10];
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
@@ -572,7 +573,6 @@ namespace SingleAPMAPI
 		struct RCINFO
 		{
 			int RC_Type;
-			pt1Filter_t RCLPF[3];
 			int _Tmp_RC_Data[36] = {0};
 			float _flag_Filter_RC_CutOff;
 			int _uORB_RC_Channel_PWM[16] = {1500, 1500, 1500, 1500, 2000, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};

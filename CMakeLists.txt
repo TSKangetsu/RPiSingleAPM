@@ -1,5 +1,7 @@
 SET(NCURSES_ENABLE false  CACHE BOOL "ncurses console debug controller enable")
-
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 IF(UNIX)
 ###########################code Definetion##################
     add_definitions(-DRPiDEBUGStart)
@@ -10,7 +12,6 @@ IF(UNIX)
     set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread")
     find_library(wiringPi_LIB wiringPi)
-	find_package(nlohmann_json REQUIRED)
     add_subdirectory(src)
     add_executable(SingleAPM "TestModule.cpp")
     target_link_libraries( SingleAPM ${wiringPi_LIB})
