@@ -22,7 +22,6 @@
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/Dense"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
-#include "_thirdparty/CURSES_Controller.hpp"
 #define PI 3.1415926
 #define SpeedUnusableRES 1.5
 

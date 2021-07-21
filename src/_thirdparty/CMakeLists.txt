@@ -1,5 +1,5 @@
-aux_source_directory(. LIB)
+aux_source_directory(. SingleFlight3rd)
 aux_source_directory("EKFImplement/src/." EKFLIB)
 add_subdirectory(RaspberryPiMPU/src)
-add_library(LIB ${LIB} ${EKFLIB})
-target_link_libraries(LIB RPiMPU)
+add_library(SingleFlight3rd ${SingleFlight3rd} ${EKFLIB})
+target_link_libraries(SingleFlight3rd PRIVATE RPiMPU)

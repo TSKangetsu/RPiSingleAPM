@@ -1,23 +1,14 @@
-SET(NCURSES_ENABLE false  CACHE BOOL "ncurses console debug controller enable")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 #================================================================
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 aux_source_directory(. RPiSingleAPI)
 #================================================================
 find_library(wiringPi_LIB wiringPi)
-
-if(NCURSES_ENABLE)
-    add_definitions(-DNCURSES_ENABLE)
-    find_library(NCURSES ncurses)
-endif()
+find_package(Threads REQUIRED)
 #================================================================
 add_library(RPiSingleAPI ${RPiSingleAPI})
 add_subdirectory(_thirdparty)
-target_link_libraries( RPiSingleAPI ${wiringPi_LIB})
-target_link_libraries( RPiSingleAPI LIB)
-
-if(NCURSES_ENABLE)
-    target_link_libraries( RPiSingleAPI ${NCURSES})
-endif()
+target_link_libraries(RPiSingleAPI PRIVATE SingleFlight3rd)
+target_link_libraries(RPiSingleAPI PRIVATE Threads::Threads)
+target_link_libraries(RPiSingleAPI PRIVATE ${wiringPi_LIB})
