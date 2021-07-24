@@ -38,7 +38,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_FakeRC_Error = true;
 		AF._flag_FakeRC_Deprive = true;
 		AF._flag_IsFakeRCUpdated = false;
-		AF._flag_IsTakeOff = false;
 		AF._flag_IsNotTakeOff = false;
 		AF._flag_FakeRC_Disconnected = false;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
@@ -490,6 +489,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						else if (!AF._flag_ESC_DISARMED_Request)
 							APMControllerARMED();
 					}
+					//-----------------------------------------------------------------------------------------------------------//
 					if (!(RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] &&
 						  RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] < RF._flag_RC_ARM_PWM_Value + 50))
 					{
@@ -1203,6 +1203,22 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		PF._uORB_PID_I_Last_Value___Yaw = 0;
 	}
 
+	if (AF._flag_IsNotTakeOff_Lock && RF._uORB_RC_Out_Throttle < (RF._flag_RC_Min_PWM_Value + 100.f))
+	{
+		AF._flag_IsNotTakeOff = true;
+		AF._flag_IsNotTakeOff_Lock = false;
+	}
+	else if (RF._uORB_RC_Out_Throttle > (RF._flag_RC_Min_PWM_Value + 100.f))
+	{
+		AF._flag_IsNotTakeOff = false;
+	}
+	if (AF._flag_IsNotTakeOff)
+	{
+		PF._uORB_PID_I_Last_Value_Pitch = 0;
+		PF._uORB_PID_I_Last_Value__Roll = 0;
+		PF._uORB_PID_I_Last_Value___Yaw = 0;
+	}
+
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::AutoStable ||
 		AF.AutoPilotMode == APModeINFO::SpeedHold ||
@@ -1668,13 +1684,6 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				PF._uORB_PID__Roll_Input += SF._uORB_MPU_Data._uORB_Gryo__Roll;
 				PF._uORB_PID_Pitch_Input += SF._uORB_MPU_Data._uORB_Gryo_Pitch;
 				//--------------------------------------------------------------------------//
-				if (AF._flag_IsNotTakeOff)
-				{
-					PF._uORB_PID_I_Last_Value_Pitch = 0;
-					PF._uORB_PID_I_Last_Value__Roll = 0;
-					PF._uORB_PID_I_Last_Value___Yaw = 0;
-				}
-				//--------------------------------------------------------------------------//
 				//Roll PID Mix
 				float ROLLDInput = SF._uORB_MPU_Data._uORB_Gryo__Roll - PF._uORB_PID_D_Last_Value__Roll;
 				PF._uORB_PID_D_Last_Value__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll;
@@ -1979,7 +1988,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_GPS_Disconnected:  " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Disconnected << "         \n";
 	std::cout << " Flag_FakeRC_Error:      " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Error << " |";
 	std::cout << " Flag_FakeRC_Disconnect: " << std::setw(3) << std::setfill(' ') << AF.FakeRC_Lose_Clocking << " |";
-	std::cout << " Flag_FakeRC_Deprive:    " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Deprive << "           \n";
+	std::cout << " Flag_FakeRC_Deprive:    " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Deprive << " |";
+	std::cout << " Flag_IsNotTakeOff:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsNotTakeOff << "           \n";
 	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";
 	std::cout << " Flag_IsSonarAvalible:   " << std::setw(3) << std::setfill(' ') << AF._flag_IsSonarAvalible << " |";
 	std::cout << " GPS_Lose_Clocking:      " << std::setw(3) << std::setfill(' ') << AF.GPS_Lose_Clocking << " |";
@@ -2038,6 +2048,8 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerARMED()
 	AF._flag_GPS_Error = false;
 	AF._flag_ClockingTime_Error = false;
 	AF._flag_IsAutoTakeoffLock = false;
+	AF._flag_IsNotTakeOff = false;
+	AF._flag_IsNotTakeOff_Lock = true;
 }
 
 void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)

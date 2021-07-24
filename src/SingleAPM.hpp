@@ -304,8 +304,8 @@ namespace SingleAPMAPI
 			bool _flag_IsFlowAvalible;
 			bool _flag_IsFakeRCUpdated;
 
-			bool _flag_IsTakeOff;
 			bool _flag_IsNotTakeOff;
+			bool _flag_IsNotTakeOff_Lock;
 
 			bool _flag_IsINUHDiable;
 			bool _flag_IsPositionXChange;
