@@ -38,6 +38,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_FakeRC_Error = true;
 		AF._flag_FakeRC_Deprive = true;
 		AF._flag_IsFakeRCUpdated = false;
+		AF._flag_IsTakeOff = false;
+		AF._flag_IsNotTakeOff = false;
 		AF._flag_FakeRC_Disconnected = false;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
@@ -136,14 +138,29 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	//--------------------------------------------------------------------//
 	{
-		DF.MPUDevice = new RPiMPU9250(SF.MPU9250_Type, false,
-									  1, DF.MPU9250_ADDR, TF._flag_IMUThreadFreq,
-									  SF._flag_Filter_AngleMix_Alpha,
-									  SF._flag_Filter_Gryo_Type, SF._flag_Filter_Gryo_CutOff,
-									  SF._flag_Filter_Accel_Type, SF._flag_Filter_Accel_CutOff,
-									  SF._flag_Filter_Gryo_NotchFreq, SF._flag_Filter_Gryo_NotchCutOff,
-									  SF._flag_Filter_Gryo_DynamicNotchEnable,
-									  SF._flag_Filter_Gryo_DynamicNotchMinFreq, SF._flag_Filter_Gryo_DynamicNotchRange);
+		MPUConfig config;
+		config.MPUType = SF.MPU9250_Type;
+		config.MPUSPIChannel = DF.MPU9250_SPI_Channel;
+		config.MPUI2CAddress = DF.MPU9250_ADDR;
+		//
+		config.TargetFreqency = TF._flag_IMUThreadFreq;
+		config.GyroToAccelBeta = SF._flag_Filter_AngleMix_Alpha;
+		config.GyroDynamicAnalyse = true;
+		//
+		config.GyroHardwareFilterFreq = 250;
+		//
+		config.GyroFilterType = SF._flag_Filter_Gryo_Type;
+		config.GyroFilterCutOff = SF._flag_Filter_Gryo_CutOff;
+		config.GyroFilterNotchCenterFreq = SF._flag_Filter_Gryo_NotchFreq;
+		config.GyroFilterNotchCutOff = SF._flag_Filter_Gryo_NotchCutOff;
+		//
+		config.DynamicNotchQ = SF._flag_Filter_Gryo_DynamicNotchRange;
+		config.DynamicNotchEnable = SF._flag_Filter_Gryo_DynamicNotchEnable;
+		config.DynamicNotchMinFreq = SF._flag_Filter_Gryo_DynamicNotchMinFreq;
+		//
+		config.AccelFilterType = SF._flag_Filter_Accel_Type;
+		config.AccelFilterCutOff = SF._flag_Filter_Accel_CutOff;
+		DF.MPUDevice.reset(new RPiMPU9250(config));
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
@@ -1080,6 +1097,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	EF._flag_B1_Pin = APMInit.OC._flag_B1_Pin;
 	EF._flag_B2_Pin = APMInit.OC._flag_B2_Pin;
 	EF._flag_YAWOut_Reverse = APMInit.OC._flag_YAWOut_Reverse;
+	EF._flag_ESC_Lazy_Per = APMInit.OC._flag_ESC_Lazy_Per;
+	EF._Flag_Lazy_Throttle = (EF._Flag_Lock_Throttle + ESCRANGE * EF._flag_ESC_Lazy_Per);
 	//==================================================================PID config==/
 	PF._flag_PID_P__Roll_Gain = APMInit.PC._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit.PC._flag_PID_P_Pitch_Gain;
@@ -1113,6 +1132,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 
 	PF._flag_PID_Hover_Throttle = APMInit.PC._flag_PID_Hover_Throttle;
 	PF._flag_PID_Level_Max = APMInit.PC._flag_PID_Level_Max;
+	PF._flag_PID_Rate_Litmit = APMInit.PC._flag_PID_Rate_Litmit;
 	PF._flag_PID_Alt_Level_Max = APMInit.PC._flag_PID_Alt_Level_Max;
 	PF._flag_PID_Pos_Level_Max = APMInit.PC._flag_PID_Pos_Level_Max;
 
@@ -1640,8 +1660,21 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				}
 				PF._uORB_PID__Roll_Input *= PF._flag_PID_AngleRate_Gain;
 				PF._uORB_PID_Pitch_Input *= PF._flag_PID_AngleRate_Gain;
+
+				SF._uORB_MPU_Data._uORB_Gryo_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch > PF._flag_PID_Rate_Litmit ? PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo_Pitch;
+				SF._uORB_MPU_Data._uORB_Gryo_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch < -1 * PF._flag_PID_Rate_Litmit ? -1 * PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo_Pitch;
+				SF._uORB_MPU_Data._uORB_Gryo__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll > PF._flag_PID_Rate_Litmit ? PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo__Roll;
+				SF._uORB_MPU_Data._uORB_Gryo__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll < -1 * PF._flag_PID_Rate_Litmit ? -1 * PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo__Roll;
 				PF._uORB_PID__Roll_Input += SF._uORB_MPU_Data._uORB_Gryo__Roll;
 				PF._uORB_PID_Pitch_Input += SF._uORB_MPU_Data._uORB_Gryo_Pitch;
+				//--------------------------------------------------------------------------//
+				if (AF._flag_IsNotTakeOff)
+				{
+					PF._uORB_PID_I_Last_Value_Pitch = 0;
+					PF._uORB_PID_I_Last_Value__Roll = 0;
+					PF._uORB_PID_I_Last_Value___Yaw = 0;
+				}
+				//--------------------------------------------------------------------------//
 				//Roll PID Mix
 				float ROLLDInput = SF._uORB_MPU_Data._uORB_Gryo__Roll - PF._uORB_PID_D_Last_Value__Roll;
 				PF._uORB_PID_D_Last_Value__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll;
@@ -1705,18 +1738,17 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 		EF._Tmp_B2_Speed = 0;
 		EF._uORB_ESC_RPY_Max = 0;
 		EF._uORB_ESC_RPY_Min = 0;
-		double TotalThrottle = 0;
 		//ESC Caculate
 		if (AF.AutoPilotMode == APModeINFO::AltHold ||
 			AF.AutoPilotMode == APModeINFO::PositionHold ||
 			AF.AutoPilotMode == APModeINFO::SpeedHold ||
 			AF.AutoPilotMode == APModeINFO::UserAuto)
-			TotalThrottle = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle;
+			EF._uORB_Total_Throttle = PF._flag_PID_Hover_Throttle + PF._uORB_PID_Alt_Throttle;
 		else
-			TotalThrottle = RF._uORB_RC_Out_Throttle;
+			EF._uORB_Total_Throttle = RF._uORB_RC_Out_Throttle;
 
-		if (TotalThrottle > RF._flag_RC_Max_PWM_Value - 200.f)
-			TotalThrottle = RF._flag_RC_Max_PWM_Value - 200.f;
+		if (EF._uORB_Total_Throttle > RF._flag_RC_Max_PWM_Value - 200.f)
+			EF._uORB_Total_Throttle = RF._flag_RC_Max_PWM_Value - 200.f;
 
 		EF._Tmp_B1_Speed = -PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
 		EF._Tmp_A1_Speed = -PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
@@ -1756,15 +1788,15 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdateTask()
 				(EF._uORB_Dynamic_ThrottleMax - (EF._uORB_ESC_RPY_Range / 2)) > EF._uORB_Dynamic_ThrottleMax + (1000.f / 2.f) + (1000.f * 0.33 / 2.f) ? (EF._uORB_Dynamic_ThrottleMax - (EF._uORB_ESC_RPY_Range / 2)) : EF._uORB_Dynamic_ThrottleMax + (1000.f / 2.f) + (1000.f * 0.33 / 2.f);
 		}
 
-		if (TotalThrottle < EF._uORB_Dynamic_ThrottleMin)
-			TotalThrottle = EF._uORB_Dynamic_ThrottleMin;
-		else if (TotalThrottle > EF._uORB_Dynamic_ThrottleMax)
-			TotalThrottle = EF._uORB_Dynamic_ThrottleMax;
+		if (EF._uORB_Total_Throttle < EF._uORB_Dynamic_ThrottleMin)
+			EF._uORB_Total_Throttle = EF._uORB_Dynamic_ThrottleMin;
+		else if (EF._uORB_Total_Throttle > EF._uORB_Dynamic_ThrottleMax)
+			EF._uORB_Total_Throttle = EF._uORB_Dynamic_ThrottleMax;
 
-		EF._Tmp_B1_Speed += TotalThrottle;
-		EF._Tmp_A1_Speed += TotalThrottle;
-		EF._Tmp_A2_Speed += TotalThrottle;
-		EF._Tmp_B2_Speed += TotalThrottle;
+		EF._Tmp_B1_Speed += EF._uORB_Total_Throttle;
+		EF._Tmp_A1_Speed += EF._uORB_Total_Throttle;
+		EF._Tmp_A2_Speed += EF._uORB_Total_Throttle;
+		EF._Tmp_B2_Speed += EF._uORB_Total_Throttle;
 
 		EF._Tmp_A1_Speed = EF._Tmp_A1_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_A1_Speed;
 		EF._Tmp_A2_Speed = EF._Tmp_A2_Speed < RF._flag_RC_Min_PWM_Value ? RF._flag_RC_Min_PWM_Value : EF._Tmp_A2_Speed;

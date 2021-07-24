@@ -183,6 +183,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.OC._flag_B1_Pin = Configdata["_flag_B1_Pin"].get<int>();
 	APMInit.OC._flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
 	APMInit.OC._flag_YAWOut_Reverse = Configdata["_flag_YAWOut_Reverse"].get<float>();
+	APMInit.OC._flag_ESC_Lazy_Per = Configdata["_flag_ESC_Lazy_Per"].get<float>();
 	//==================================================================PID cofig==/
 	APMInit.PC._flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
 	APMInit.PC._flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();
@@ -216,6 +217,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 
 	APMInit.PC._flag_PID_Hover_Throttle = Configdata["_flag_PID_Hover_Throttle"].get<float>();
 	APMInit.PC._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
+	APMInit.PC._flag_PID_Rate_Litmit = Configdata["_flag_PID_Rate_Litmit"].get<float>();
 	APMInit.PC._flag_PID_Alt_Level_Max = Configdata["_flag_PID_Alt_Level_Max"].get<float>();
 	APMInit.PC._flag_PID_Pos_Level_Max = Configdata["_flag_PID_Pos_Level_Max"].get<float>();
 

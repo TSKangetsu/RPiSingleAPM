@@ -37,6 +37,8 @@
 #define FILTERBAROLPFCUTOFF 1.f
 #define FILTERTHROTTLELPFCUTOFF 4.f
 
+#define ESCRANGE 800.f
+
 namespace SingleAPMAPI
 {
 	struct APMSettinngs
@@ -92,6 +94,7 @@ namespace SingleAPMAPI
 			float _flag_PID_Hover_Throttle;
 
 			float _flag_PID_Level_Max;
+			float _flag_PID_Rate_Litmit;
 			float _flag_PID_AngleRate_Gain;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Pos_Level_Max;
@@ -134,6 +137,7 @@ namespace SingleAPMAPI
 			int _flag_B1_Pin;
 			int _flag_B2_Pin;
 			float _flag_YAWOut_Reverse;
+			float _flag_ESC_Lazy_Per;
 		} OC;
 
 		struct RCConfig
@@ -300,6 +304,9 @@ namespace SingleAPMAPI
 			bool _flag_IsFlowAvalible;
 			bool _flag_IsFakeRCUpdated;
 
+			bool _flag_IsTakeOff;
+			bool _flag_IsNotTakeOff;
+
 			bool _flag_IsINUHDiable;
 			bool _flag_IsPositionXChange;
 			bool _flag_IsPositionYChange;
@@ -331,7 +338,7 @@ namespace SingleAPMAPI
 			MS5611 *MS5611S;
 			GPSUart *GPSInit;
 			GPSI2CCompass *CompassDevice;
-			RPiMPU9250 *MPUDevice;
+			std::unique_ptr<RPiMPU9250> MPUDevice;
 			MSPUartFlow *FlowInit;
 			TotalEKF EKFDevice;
 
@@ -455,6 +462,7 @@ namespace SingleAPMAPI
 			float _uORB_PID_AngleRate__Roll;
 
 			float _flag_PID_Level_Max = 0;
+			float _flag_PID_Rate_Litmit = 500.f;
 			float _flag_PID_AngleRate_Gain = 15;
 			float _flag_Filter_AngleRate_CutOff = 255;
 			float _flag_Filter_PID_I_CutOff = 30.f;
@@ -633,9 +641,11 @@ namespace SingleAPMAPI
 			int _flag_A2_Pin = 1;
 			int _flag_B1_Pin = 2;
 			int _flag_B2_Pin = 3;
-			const int _Flag_Lazy_Throttle = 2310;
+			int _Flag_Lazy_Throttle = 2300;
+			float _flag_ESC_Lazy_Per = 0.06f;
 			const int _Flag_Lock_Throttle = 2200;
 			const int _Flag_Max__Throttle = 3000;
+			double _uORB_Total_Throttle = 0.0;
 			float _flag_YAWOut_Reverse = 1.f;
 
 			int _uORB_ESC_RPY_Max = 0;
