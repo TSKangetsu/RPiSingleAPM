@@ -1150,6 +1150,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_MPU_Accel_Cali[MPUAccelScalX] = APMInit.SC._flag_MPU9250_A_X_Scal;
 	SF._flag_MPU_Accel_Cali[MPUAccelScalY] = APMInit.SC._flag_MPU9250_A_Y_Scal;
 	SF._flag_MPU_Accel_Cali[MPUAccelScalZ] = APMInit.SC._flag_MPU9250_A_Z_Scal;
+	SF._flag_MPU_Accel_Cali[MPUAccelTRIMPitch] = APMInit.SC._flag_Accel_Pitch_Cali;
+	SF._flag_MPU_Accel_Cali[MPUAccelTRIM_Roll] = APMInit.SC._flag_Accel__Roll_Cali;
 
 	SF._flag_MPU_MAG_Cali[CompassYScaler] = APMInit.SC._flag_COMPASS_Y_Scaler;
 	SF._flag_MPU_MAG_Cali[CompassZScaler] = APMInit.SC._flag_COMPASS_Z_Scaler;

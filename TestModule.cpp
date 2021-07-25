@@ -235,6 +235,8 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.SC._flag_MPU9250_A_X_Scal = Configdata["_flag_MPU9250_A_X_Scal"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Y_Scal = Configdata["_flag_MPU9250_A_Y_Scal"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Z_Scal = Configdata["_flag_MPU9250_A_Z_Scal"].get<double>();
+	APMInit.SC._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
+	APMInit.SC._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
 
 	APMInit.SC._flag_COMPASS_Y_Scaler = Configdata["_flag_COMPASS_Y_Scaler"].get<double>();
 	APMInit.SC._flag_COMPASS_Z_Scaler = Configdata["_flag_COMPASS_Z_Scaler"].get<double>();
