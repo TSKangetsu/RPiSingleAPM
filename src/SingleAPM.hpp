@@ -262,26 +262,45 @@ namespace SingleAPMAPI
 
 		void ConfigReader(APMSettinngs APMInit);
 
-		void AttitudeUpdateTask();
+		void AttitudeUpdate();
 
-		void SaftyCheckTaskReg();
+		void NavigationUpdate();
+
+		void SaftyCheck();
 
 		void DebugOutPut();
+
+		enum FailedSafeFlag
+		{
+			_flag_FailedSafe_RCLose = 1 << 0,
+			_flag_FailedSafe_FakeRCLose = 1 << 1,
+			_flag_FailedSafe_AngleLimit = 1 << 2,
+			_flag_FailedSafe_MPUNoRespond = 1 << 3,
+			_flag_FailedSafe_ESCNoRespond = 1 << 4,
+			_flag_FailedSafe_SpeedReferenceZ = 1 << 8,
+			_flag_FailedSafe_SpeedReferenceZT = 1 << 9,
+			_flag_FailedSafe_SpeedReferenceX = 1 << 10,
+			_flag_FailedSafe_SpeedReferenceXT = 1 << 11,
+			_flag_FailedSafe_SpeedReferenceY = 1 << 12,
+			_flag_FailedSafe_SpeedReferenceYT = 1 << 13,
+		};
 
 		struct SafyINFO
 		{
 			APModeINFO AutoPilotMode;
-			bool _flag_IsAutoTakeoffLock;
-			bool _flag_IsAutoTakeoffRequire;
-
+			uint16_t _flag_FailedSafe_Level;
 			bool _flag_Error;
 			bool _flag_RC_Error;
 			bool _flag_FakeRC_Error;
 			bool _flag_GPS_Error;
+			bool _flag_ClockingTime_Error;
+
+			bool _flag_IsAutoTakeoffLock;
+			bool _flag_IsAutoTakeoffRequire;
+
 			bool _flag_ESC_ARMED;
 			bool _flag_ESC_DISARMED_Request;
 			bool _flag_StartUP_Protect;
-			bool _flag_ClockingTime_Error;
 
 			bool _flag_Device_setupFailed;
 			bool _flag_MPU9250_first_StartUp;
