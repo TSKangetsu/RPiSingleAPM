@@ -170,8 +170,10 @@ namespace SingleAPMAPI
 		struct FilterConfig
 		{
 			int _flag_Filter_Gryo_Type;
+			int _flag_Filter_GryoST2_Type;
 			int _flag_Filter_GYaw_CutOff;
 			int _flag_Filter_Gryo_CutOff;
+			int _flag_Filter_GryoST2_CutOff;
 			int _flag_Filter_Gryo_NotchFreq;
 			int _flag_Filter_Gryo_NotchCutOff;
 			int _flag_Filter_Gryo_DynamicNotchRange;
@@ -382,8 +384,10 @@ namespace SingleAPMAPI
 			int IMUFilter_Type;
 			MPUData _uORB_MPU_Data;
 			int _flag_Filter_Gryo_Type;
+			int _flag_Filter_GryoST2_Type;
 			int _flag_Filter_GYaw_CutOff;
 			int _flag_Filter_Gryo_CutOff;
+			int _flag_Filter_GryoST2_CutOff;
 			int _flag_Filter_Gryo_NotchFreq;
 			int _flag_Filter_Gryo_NotchCutOff;
 			int _flag_Filter_Gryo_DynamicNotchRange;

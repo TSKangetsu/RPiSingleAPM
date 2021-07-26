@@ -149,7 +149,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		config.GyroHardwareFilterFreq = 250;
 		//
 		config.GyroFilterType = SF._flag_Filter_Gryo_Type;
+		config.GyroFilterTypeST2 = SF._flag_Filter_GryoST2_Type;
 		config.GyroFilterCutOff = SF._flag_Filter_Gryo_CutOff;
+		config.GyroFilterCutOffST2 = SF._flag_Filter_GryoST2_CutOff;
 		config.GyroFilterNotchCenterFreq = SF._flag_Filter_Gryo_NotchFreq;
 		config.GyroFilterNotchCutOff = SF._flag_Filter_Gryo_NotchCutOff;
 		//
@@ -1178,8 +1180,10 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_MPU_MAG_Cali[CompassZOffset] = APMInit.SC._flag_COMPASS_Z_Offset;
 	//==============================================================Filter config==/
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
+	SF._flag_Filter_GryoST2_Type = APMInit.FC._flag_Filter_GryoST2_Type;
 	SF._flag_Filter_GYaw_CutOff = APMInit.FC._flag_Filter_GYaw_CutOff;
 	SF._flag_Filter_Gryo_CutOff = APMInit.FC._flag_Filter_Gryo_CutOff;
+	SF._flag_Filter_GryoST2_CutOff = APMInit.FC._flag_Filter_GryoST2_CutOff;
 	SF._flag_Filter_Gryo_NotchFreq = APMInit.FC._flag_Filter_Gryo_NotchFreq;
 	SF._flag_Filter_Gryo_NotchCutOff = APMInit.FC._flag_Filter_Gryo_NotchCutOff;
 	SF._flag_Filter_Gryo_DynamicNotchRange = APMInit.FC._flag_Filter_Gryo_DynamicNotchRange;

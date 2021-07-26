@@ -245,8 +245,10 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.SC._flag_COMPASS_Z_Offset = Configdata["_flag_COMPASS_Z_Offset"].get<double>();
 	//==============================================================Filter config==/
 	APMInit.FC._flag_Filter_Gryo_Type = Configdata["_flag_Filter_Gryo_Type"].get<double>();
+	APMInit.FC._flag_Filter_GryoST2_Type = Configdata["_flag_Filter_GryoST2_Type"].get<double>();
 	APMInit.FC._flag_Filter_GYaw_CutOff = Configdata["_flag_Filter_GYaw_CutOff"].get<double>();
 	APMInit.FC._flag_Filter_Gryo_CutOff = Configdata["_flag_Filter_Gryo_CutOff"].get<double>();
+	APMInit.FC._flag_Filter_GryoST2_CutOff = Configdata["_flag_Filter_GryoST2_CutOff"].get<double>();
 	APMInit.FC._flag_Filter_Gryo_NotchFreq = Configdata["_flag_Filter_Gryo_NotchFreq"].get<double>();
 	APMInit.FC._flag_Filter_Gryo_NotchCutOff = Configdata["_flag_Filter_Gryo_NotchCutOff"].get<double>();
 	APMInit.FC._flag_Filter_Gryo_DynamicNotchRange = Configdata["_flag_Filter_Gryo_DynamicNotchRange"].get<double>();
