@@ -106,6 +106,9 @@ namespace SingleAPMAPI
 			float _flag_PID_PosMan_Speed_Max;
 			float _flag_PID_Pos_Speed_Max;
 			float _flag_PID_Pos_Accel_Max;
+
+			float _flag_PID_TPA_Trust;
+			float _flag_PID_TPA_BreakPoint;
 		} PC;
 
 		struct SensorConfig
@@ -222,6 +225,8 @@ namespace SingleAPMAPI
 	{
 	public:
 		int RPiSingleAPMInit(APMSettinngs APMInit);
+
+		void RPiSingleAPMDeInit();
 
 		void IMUSensorsTaskReg();
 
@@ -355,13 +360,13 @@ namespace SingleAPMAPI
 			bool _IsRCSafeEnable;
 			bool _IsMS5611Enable;
 
-			Sbus *SbusInit;
-			Ibus *IbusInit;
-			MS5611 *MS5611S;
-			GPSUart *GPSInit;
-			GPSI2CCompass *CompassDevice;
+			std::unique_ptr<Sbus> SbusInit;
+			std::unique_ptr<Ibus> IbusInit;
+			std::unique_ptr<MS5611> MS5611S;
+			std::unique_ptr<GPSUart> GPSInit;
+			std::unique_ptr<GPSI2CCompass> CompassDevice;
 			std::unique_ptr<RPiMPU9250> MPUDevice;
-			MSPUartFlow *FlowInit;
+			std::unique_ptr<MSPUartFlow> FlowInit;
 			TotalEKF EKFDevice;
 
 			pt1Filter_t BAROLPF;
@@ -492,6 +497,10 @@ namespace SingleAPMAPI
 			float _flag_Filter_PID_I_CutOff = 30.f;
 			float _flag_Filter_PID_D_ST1_CutOff = 100.f;
 			float _flag_Filter_PID_D_ST2_CutOff = 200.f;
+
+			float _uORB_PID_TPA_Beta = 1.f;
+			float _flag_PID_TPA_Trust = 1.f;
+			float _flag_PID_TPA_BreakPoint = 2000;
 			//===============AltHoldPID=========//
 			//Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
@@ -750,7 +759,6 @@ namespace SingleAPMAPI
 			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000; //Flow is 9HZ
 			int _flag_FlowErrorTimes = 0;
 			std::thread *FlowTask;
-			std::thread LEDSignalTask;
 			int DEBUGOuputCleaner = 0;
 		} TF;
 	};

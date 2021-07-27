@@ -228,6 +228,9 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.PC._flag_PID_Pos_Accel_Max = Configdata["_flag_PID_Pos_Accel_Max"].get<float>();
 	APMInit.PC._flag_PID_Pos_Speed_Max = Configdata["_flag_PID_Pos_Speed_Max"].get<float>();
 	APMInit.PC._flag_PID_AngleRate_Gain = Configdata["_flag_PID_AngleRate_Gain"].get<float>();
+
+	APMInit.PC._flag_PID_TPA_Trust = Configdata["_flag_PID_TPA_Trust"].get<float>();
+	APMInit.PC._flag_PID_TPA_BreakPoint = Configdata["_flag_PID_TPA_BreakPoint"].get<float>();
 	//==============================================================Sensors cofig==/
 	APMInit.SC._flag_MPU9250_A_X_Cali = Configdata["_flag_MPU9250_A_X_Cali"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Y_Cali = Configdata["_flag_MPU9250_A_Y_Cali"].get<double>();

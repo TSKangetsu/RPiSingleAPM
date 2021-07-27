@@ -3,24 +3,6 @@
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
 	wiringPiSetup();
-	TF.LEDSignalTask = std::thread(
-		[&]
-		{
-			pinMode(27, OUTPUT);
-			while (true)
-			{
-				digitalWrite(27, HIGH);
-				if (AF._flag_Device_setupFailed)
-					digitalWrite(28, HIGH);
-				usleep(200000);
-				digitalWrite(27, LOW);
-				if (AF._flag_Device_setupFailed)
-					digitalWrite(28, LOW);
-				usleep(200000);
-				if (!AF._flag_Device_setupFailed)
-					digitalWrite(28, LOW);
-			}
-		});
 	{
 		AF.RC_Lose_Clocking = 0;
 		AF.GPS_Lose_Clocking = 0;
@@ -69,14 +51,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 			std::cout << "[RPiSingleAPM]Controller Ibus config comfirm\n";
 #endif
-			DF.IbusInit = new Ibus(DF.RCDevice.c_str());
+			DF.IbusInit.reset(new Ibus(DF.RCDevice.c_str()));
 		}
 		else if (RF.RC_Type == RCIsSbus)
 		{
 #ifdef RPiDEBUGStart
 			std::cout << "[RPiSingleAPM]Controller Sbus config comfirm\n";
 #endif
-			DF.SbusInit = new Sbus(DF.RCDevice.c_str());
+			DF.SbusInit.reset(new Sbus(DF.RCDevice.c_str()));
 		}
 	}
 	//--------------------------------------------------------------------//
@@ -87,7 +69,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Checking MS5611 ... ";
 			std::cout.flush();
 #endif
-			DF.MS5611S = new MS5611();
+			DF.MS5611S.reset(new MS5611());
 			if (!DF.MS5611S->MS5611Init(1, 0, -1))
 			{
 				AF._flag_Device_setupFailed = true;
@@ -115,8 +97,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Waiting for GPS Data ... ";
 			std::cout.flush();
 #endif
-			DF.GPSInit = new GPSUart(DF.GPSDevice.c_str());
-			DF.CompassDevice = new GPSI2CCompass(COMPASS_QMC5883L);
+			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
+			DF.CompassDevice.reset(new GPSI2CCompass(COMPASS_QMC5883L));
 			DF.CompassDevice->CompassCalibration(false, SF._flag_MPU_MAG_Cali);
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
@@ -129,7 +111,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Setting UP FlowSensor... ";
 			std::cout.flush();
 #endif
-			DF.FlowInit = new MSPUartFlow(DF.FlowDevice.c_str());
+			DF.FlowInit.reset(new MSPUartFlow(DF.FlowDevice.c_str()));
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
 #endif
@@ -194,6 +176,44 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	system("clear");
 	AF._flag_Device_setupFailed = false;
 	return 0;
+}
+
+void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
+{
+	//--------------------------------------------------------------------//
+	{
+		AF.RC_Lose_Clocking = 0;
+		AF.GPS_Lose_Clocking = 0;
+		AF.Flow_Lose_Clocking = 0;
+		AF.FakeRC_Deprive_Clocking = 0;
+		AF._flag_FakeRC_Disconnected = 0;
+		AF._flag_ESC_ARMED = true;
+		AF._flag_IsINUHDiable = true;
+		AF._flag_IsFlowAvalible = false;
+		AF._flag_StartUP_Protect = true;
+		AF._flag_IsSonarAvalible = false;
+		AF._flag_Device_setupFailed = true;
+		AF._flag_MPU9250_first_StartUp = true;
+		AF._flag_ESC_DISARMED_Request = false;
+		AF._flag_FakeRC_Error = true;
+		AF._flag_FakeRC_Deprive = true;
+		AF._flag_IsFakeRCUpdated = false;
+		AF._flag_IsNotTakeOff = false;
+		AF._flag_FakeRC_Disconnected = false;
+		AF.AutoPilotMode = APModeINFO::AutoStable;
+		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
+	}
+	//--------------------------------------------------------------------//
+	pca9685PWMWrite(DF.PCA9658_fd, 16, 0, 0);
+	usleep(5000);
+	close(DF.PCA9658_fd);
+	DF.IbusInit.reset();
+	DF.SbusInit.reset();
+	DF.MS5611S.reset();
+	DF.GPSInit.reset();
+	DF.CompassDevice.reset();
+	DF.FlowInit.reset();
+	DF.MPUDevice.reset();
 }
 
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
@@ -1163,6 +1183,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_Pos_Speed_Max = APMInit.PC._flag_PID_Pos_Speed_Max;
 	PF._flag_PID_Pos_Accel_Max = APMInit.PC._flag_PID_Pos_Accel_Max;
 	PF._flag_PID_AngleRate_Gain = APMInit.PC._flag_PID_AngleRate_Gain;
+
+	PF._flag_PID_TPA_Trust = APMInit.PC._flag_PID_TPA_Trust;
+	PF._flag_PID_TPA_BreakPoint = APMInit.PC._flag_PID_TPA_BreakPoint;
 	//==============================================================Sensors config==/
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit.SC._flag_MPU9250_A_X_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit.SC._flag_MPU9250_A_Y_Cali;
@@ -1313,6 +1336,16 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_PID__Roll_Input += SF._uORB_MPU_Data._uORB_Gryo__Roll;
 			PF._uORB_PID_Pitch_Input += SF._uORB_MPU_Data._uORB_Gryo_Pitch;
 			//--------------------------------------------------------------------------//
+			//TPA caculate
+			if (EF._uORB_Total_Throttle > PF._flag_PID_TPA_BreakPoint)
+			{
+				PF._uORB_PID_TPA_Beta = 1.f - ((1.f - PF._flag_PID_TPA_Trust) *
+											   ((EF._uORB_Total_Throttle - PF._flag_PID_TPA_BreakPoint) /
+												((RF._flag_RC_Max_PWM_Value - 200.f) - PF._flag_PID_TPA_BreakPoint)));
+			}
+			else
+				PF._uORB_PID_TPA_Beta = 1.f;
+			//--------------------------------------------------------------------------//
 			//Roll PID Mix
 			float ROLLDInput = SF._uORB_MPU_Data._uORB_Gryo__Roll - PF._uORB_PID_D_Last_Value__Roll;
 			PF._uORB_PID_D_Last_Value__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll;
@@ -1324,10 +1357,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, ROLLDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
 				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-			PID_CaculateHyper(PF._uORB_PID__Roll_Input, ROLLITERM, ROLLDTERM,
-							  PF._uORB_Leveling__Roll,
-							  PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
-							  PF._flag_PID_P__Roll_Gain, (PF._flag_PID_I__Roll_Gain * PF._uORB_PID_I_Dynamic_Gain), PF._flag_PID_D__Roll_Gain, PF._flag_PID_I__Roll_Max__Value);
+			PID_CaculateHyper(PF._uORB_PID__Roll_Input, ROLLITERM, ROLLDTERM, PF._uORB_Leveling__Roll, PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
+							  (PF._flag_PID_P__Roll_Gain * PF._uORB_PID_TPA_Beta),
+							  (PF._flag_PID_I__Roll_Gain * PF._uORB_PID_I_Dynamic_Gain * PF._uORB_PID_TPA_Beta),
+							  (PF._flag_PID_D__Roll_Gain * PF._uORB_PID_TPA_Beta),
+							  PF._flag_PID_I__Roll_Max__Value);
 			if (PF._uORB_Leveling__Roll > PF._flag_PID_Level_Max)
 				PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max;
 			if (PF._uORB_Leveling__Roll < PF._flag_PID_Level_Max * -1)
@@ -1344,10 +1378,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PITCHDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
 				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-			PID_CaculateHyper(PF._uORB_PID_Pitch_Input, PITCHITERM, PITCHDTERM,
-							  PF._uORB_Leveling_Pitch,
-							  PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
-							  PF._flag_PID_P_Pitch_Gain, (PF._flag_PID_I_Pitch_Gain * PF._uORB_PID_I_Dynamic_Gain), PF._flag_PID_D_Pitch_Gain, PF._flag_PID_I_Pitch_Max__Value);
+			PID_CaculateHyper(PF._uORB_PID_Pitch_Input, PITCHITERM, PITCHDTERM, PF._uORB_Leveling_Pitch, PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
+							  (PF._flag_PID_P_Pitch_Gain * PF._uORB_PID_TPA_Beta),
+							  (PF._flag_PID_I_Pitch_Gain * PF._uORB_PID_I_Dynamic_Gain * PF._uORB_PID_TPA_Beta),
+							  (PF._flag_PID_D_Pitch_Gain * PF._uORB_PID_TPA_Beta),
+							  PF._flag_PID_I_Pitch_Max__Value);
 			if (PF._uORB_Leveling_Pitch > PF._flag_PID_Level_Max)
 				PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max;
 			if (PF._uORB_Leveling_Pitch < PF._flag_PID_Level_Max * -1)
@@ -2015,7 +2050,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " DynamicCencterFreqX:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0] << "            \n";
 	std::cout << " DynamicCencterFreqY:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1] << "            \n";
 	std::cout << " DynamicCencterFreqZ:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2] << "            \n";
-	std::cout << " DynamicAccelTrust  :" << SF._uORB_MPU_Data.MPUMixTraditionBeta << "            \n";
+	std::cout << " TPATrust           :" << PF._uORB_PID_TPA_Beta << "            \n";
 	std::cout << " \n";
 	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
 	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";
