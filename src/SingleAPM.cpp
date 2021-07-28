@@ -172,6 +172,19 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		pt1FilterInit(&DF.RCLPF[1], RF._flag_Filter_RC_CutOff, 0.f);
 		pt1FilterInit(&DF.RCLPF[2], RF._flag_Filter_RC_CutOff, 0.f);
 	}
+	//--------------------------------------------------------------------//
+	{
+		IMUSensorsTaskReg();
+
+		AltholdSensorsTaskReg();
+
+		ControllerTaskReg();
+
+		PositionTaskReg();
+
+		ESCUpdateTaskReg();
+	}
+	//--------------------------------------------------------------------//
 	sleep(2);
 	system("clear");
 	AF._flag_Device_setupFailed = false;
@@ -180,6 +193,40 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 {
+	//--------------------------------------------------------------------//
+	TF._flag_IMU_Task_Running = false;
+	TF._flag_RXT_Task_Running = false;
+	TF._flag_ESC_Task_Running = false;
+	TF._flag_ALT_Task_Running = false;
+	TF._flag_GPS_Task_Running = false;
+	TF._flag_MAG_Task_Running = false;
+	TF._flag_Flow_Task_Running = false;
+	TF._flag_Block_Task_Running = false;
+	if (TF.IMUTask.joinable())
+		TF.IMUTask.join();
+	if (TF.RXTask.joinable())
+		TF.RXTask.join();
+	if (TF.ESCTask.joinable())
+		TF.ESCTask.join();
+	if (TF.ALTTask.joinable())
+		TF.ALTTask.join();
+	if (TF.GPSTask.joinable())
+		TF.GPSTask.join();
+	if (TF.MAGTask.joinable())
+		TF.MAGTask.join();
+	if (TF.FlowTask.joinable())
+		TF.FlowTask.join();
+	//--------------------------------------------------------------------//
+	pca9685PWMWrite(DF.PCA9658_fd, 16, 0, 0);
+	usleep(5000);
+	close(DF.PCA9658_fd);
+	DF.IbusInit.reset();
+	DF.SbusInit.reset();
+	DF.MS5611S.reset();
+	DF.GPSInit.reset();
+	DF.CompassDevice.reset();
+	DF.FlowInit.reset();
+	DF.MPUDevice.reset();
 	//--------------------------------------------------------------------//
 	{
 		AF.RC_Lose_Clocking = 0;
@@ -203,40 +250,14 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
 	}
-	//--------------------------------------------------------------------//
-	TF._flag_IMU_Task_Running = false;
-	TF._flag_RXT_Task_Running = false;
-	TF._flag_ESC_Task_Running = false;
-	TF._flag_ALT_Task_Running = false;
-	TF._flag_GPS_Task_Running = false;
-	TF._flag_MAG_Task_Running = false;
-	TF._flag_Flow_Task_Running = false;
-	TF._flag_Block_Task_Running = false;
-	TF.IMUTask->join();
-	TF.RXTask->join();
-	TF.ESCTask->join();
-	TF.ALTTask->join();
-	TF.GPSTask->join();
-	TF.MAGTask->join();
-	TF.FlowTask->join();
-	//--------------------------------------------------------------------//
-	pca9685PWMWrite(DF.PCA9658_fd, 16, 0, 0);
-	usleep(5000);
-	close(DF.PCA9658_fd);
-	DF.IbusInit.reset();
-	DF.SbusInit.reset();
-	DF.MS5611S.reset();
-	DF.GPSInit.reset();
-	DF.CompassDevice.reset();
-	DF.FlowInit.reset();
-	DF.MPUDevice.reset();
 }
 
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 {
-	TF.IMUTask = new std::thread(
+	TF.IMUTask = std::thread(
 		[&]
 		{
+			TF._flag_IMU_Task_Running = true;
 			while (TF._flag_IMU_Task_Running)
 			{
 				TF._Tmp_IMUThreadTimeStart = micros();
@@ -290,16 +311,17 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
 	CPU_SET(3, &cpuset);
-	int rc = pthread_setaffinity_np(TF.IMUTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+	int rc = pthread_setaffinity_np(TF.IMUTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 {
 	if (DF._IsMS5611Enable)
 	{
-		TF.ALTTask = new std::thread(
+		TF.ALTTask = std::thread(
 			[&]
 			{
+				TF._flag_ALT_Task_Running = true;
 				while (TF._flag_ALT_Task_Running)
 				{
 					TF._Tmp_ALTThreadTimeStart = micros();
@@ -340,15 +362,16 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 		cpu_set_t cpuset;
 		CPU_ZERO(&cpuset);
 		CPU_SET(3, &cpuset);
-		int rc = pthread_setaffinity_np(TF.ALTTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+		int rc = pthread_setaffinity_np(TF.ALTTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 {
-	TF.RXTask = new std::thread(
+	TF.RXTask = std::thread(
 		[&]
 		{
+			TF._flag_RXT_Task_Running = true;
 			while (TF._flag_RXT_Task_Running)
 			{
 				TF._Tmp_RXTThreadTimeStart = micros();
@@ -695,16 +718,17 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
 	CPU_SET(3, &cpuset);
-	int rc = pthread_setaffinity_np(TF.RXTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+	int rc = pthread_setaffinity_np(TF.RXTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 {
 	if (DF._IsGPSEnable)
 	{
-		TF.GPSTask = new std::thread(
+		TF.GPSTask = std::thread(
 			[&]
 			{
+				TF._flag_GPS_Task_Running = true;
 				DF.GPSInit->GPSReOpen();
 				TF._Tmp_GPSThreadSMooth = 10;
 				while (TF._flag_GPS_Task_Running)
@@ -771,12 +795,13 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		cpu_set_t cpuset;
 		CPU_ZERO(&cpuset);
 		CPU_SET(3, &cpuset);
-		int rc = pthread_setaffinity_np(TF.GPSTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+		int rc = pthread_setaffinity_np(TF.GPSTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 
-		TF.MAGTask = new std::thread(
+		TF.MAGTask = std::thread(
 			[&]
 			{
-				while (true)
+				TF._flag_MAG_Task_Running = true;
+				while (TF._flag_MAG_Task_Running)
 				{
 					TF._Tmp_MAGThreadTimeStart = micros();
 					TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
@@ -808,14 +833,15 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		cpu_set_t cpuset2;
 		CPU_ZERO(&cpuset2);
 		CPU_SET(3, &cpuset2);
-		int rc2 = pthread_setaffinity_np(TF.MAGTask->native_handle(), sizeof(cpu_set_t), &cpuset2);
+		int rc2 = pthread_setaffinity_np(TF.MAGTask.native_handle(), sizeof(cpu_set_t), &cpuset2);
 	}
 
 	if (DF._IsFlowEnable)
 	{
-		TF.FlowTask = new std::thread(
+		TF.FlowTask = std::thread(
 			[&]
 			{
+				TF._flag_Flow_Task_Running = true;
 				while (TF._flag_Flow_Task_Running)
 				{
 					TF._Tmp_FlowThreadTimeStart = micros();
@@ -915,15 +941,16 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		cpu_set_t cpuset3;
 		CPU_ZERO(&cpuset3);
 		CPU_SET(3, &cpuset3);
-		int rc3 = pthread_setaffinity_np(TF.FlowTask->native_handle(), sizeof(cpu_set_t), &cpuset3);
+		int rc3 = pthread_setaffinity_np(TF.FlowTask.native_handle(), sizeof(cpu_set_t), &cpuset3);
 	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 {
-	TF.ESCTask = new std::thread(
+	TF.ESCTask = std::thread(
 		[&]
 		{
+			TF._flag_ESC_Task_Running = true;
 			while (TF._flag_ESC_Task_Running)
 			{
 				TF._Tmp_ESCThreadTimeStart = micros();
@@ -976,12 +1003,11 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
 	CPU_SET(3, &cpuset);
-	int rc = pthread_setaffinity_np(TF.ESCTask->native_handle(), sizeof(cpu_set_t), &cpuset);
+	int rc = pthread_setaffinity_np(TF.ESCTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 }
 
 void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 {
-#ifndef NCURSES_ENABLE
 #ifdef RPiDEBUG
 	while (TF._flag_Block_Task_Running)
 	{
@@ -996,11 +1022,6 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 		SaftyCheck();
 		usleep(50000);
 	}
-#endif
-#endif
-
-#ifdef NCURSES_ENABLE
-	WindowInit();
 #endif
 }
 

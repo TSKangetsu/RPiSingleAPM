@@ -226,23 +226,15 @@ namespace SingleAPMAPI
 	public:
 		int RPiSingleAPMInit(APMSettinngs APMInit);
 
+		int RPiSingleAPMHotLoad(APMSettinngs APMInit) { ConfigReader(APMInit); };
+
 		void RPiSingleAPMDeInit();
-
-		void IMUSensorsTaskReg();
-
-		void AltholdSensorsTaskReg();
-
-		void ControllerTaskReg();
-
-		void PositionTaskReg();
-
-		void ESCUpdateTaskReg();
-
-		void TaskThreadBlock();
 
 		int APMCalibrator(int controller, int action, int input, double *data);
 
 		~RPiSingleAPM() { RPiSingleAPMDeInit(); };
+
+		void TaskThreadBlock();
 
 		//=========APMUserControllerFunction===========//
 		void APMControllerFakeRC(int *ChannelData, bool IsError);
@@ -256,6 +248,17 @@ namespace SingleAPMAPI
 		void APMControllerPosition(int x, int y, int z, bool resetHome);
 
 		void APMControllerSpeed(int x, int y, int z);
+
+	private:
+		void IMUSensorsTaskReg();
+
+		void AltholdSensorsTaskReg();
+
+		void ControllerTaskReg();
+
+		void PositionTaskReg();
+
+		void ESCUpdateTaskReg();
 
 	protected:
 		void PID_Caculate(float inputData, float &outputData,
@@ -704,7 +707,7 @@ namespace SingleAPMAPI
 			int _flag_IMUThreadFreq;
 			int _flag_IMUErrorTimes = 0;
 			bool _flag_IMU_Task_Running = false;
-			std::thread *IMUTask;
+			std::thread IMUTask;
 			int _Tmp_RXTThreadTimeStart = 0;
 			int _Tmp_RXTThreadTimeEnd = 0;
 			int _Tmp_RXTThreadTimeNext = 0;
@@ -714,7 +717,7 @@ namespace SingleAPMAPI
 			int _flag_RXTThreadFreq;
 			int _flag_RXTErrorTimes = 0;
 			bool _flag_RXT_Task_Running = false;
-			std::thread *RXTask;
+			std::thread RXTask;
 			int _Tmp_ESCThreadTimeStart = 0;
 			int _Tmp_ESCThreadTimeEnd = 0;
 			int _Tmp_ESCThreadTimeNext = 0;
@@ -727,7 +730,7 @@ namespace SingleAPMAPI
 			int _flag_ServoThreadFreq = 50;
 			int _flag_ServoThreadTimes = 0;
 			bool _flag_ESC_Task_Running = false;
-			std::thread *ESCTask;
+			std::thread ESCTask;
 			int _Tmp_ALTThreadTimeStart = 0;
 			int _Tmp_ALTThreadTimeEnd = 0;
 			int _Tmp_ALTThreadTimeNext = 0;
@@ -737,7 +740,7 @@ namespace SingleAPMAPI
 			int _flag_ALTThreadTimeMax = (float)1 / 45 * 1000000;
 			int _flag_ALTErrorTimes = 0;
 			bool _flag_ALT_Task_Running = false;
-			std::thread *ALTTask;
+			std::thread ALTTask;
 			int _Tmp_GPSThreadSMooth = 0;
 			int _Tmp_GPSThreadTimeStart = 0;
 			int _Tmp_GPSThreadTimeEnd = 0;
@@ -747,7 +750,7 @@ namespace SingleAPMAPI
 			int _flag_GPSThreadTimeMax = (float)1 / 5 * 1000000;
 			int _flag_GPSErrorTimes = 0;
 			bool _flag_GPS_Task_Running = false;
-			std::thread *GPSTask;
+			std::thread GPSTask;
 			int _Tmp_MAGThreadSMooth = 0;
 			int _Tmp_MAGThreadTimeStart = 0;
 			int _Tmp_MAGThreadTimeEnd = 0;
@@ -757,7 +760,7 @@ namespace SingleAPMAPI
 			int _flag_MAGThreadTimeMax = (float)1 / 50 * 1000000;
 			int _flag_MAGErrorTimes = 0;
 			bool _flag_MAG_Task_Running = false;
-			std::thread *MAGTask;
+			std::thread MAGTask;
 			int _Tmp_FlowThreadSMooth = 0;
 			int _Tmp_FlowThreadTimeStart = 0;
 			int _Tmp_FlowThreadTimeEnd = 0;
@@ -767,7 +770,7 @@ namespace SingleAPMAPI
 			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000; //Flow is 9HZ
 			int _flag_FlowErrorTimes = 0;
 			bool _flag_Flow_Task_Running = false;
-			std::thread *FlowTask;
+			std::thread FlowTask;
 			int DEBUGOuputCleaner = 0;
 			bool _flag_Block_Task_Running = false;
 		} TF;

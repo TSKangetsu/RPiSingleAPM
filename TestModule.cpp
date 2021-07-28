@@ -25,11 +25,6 @@ int main(int argc, char *argv[])
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", setting);
 			APM_Settle.RPiSingleAPMInit(setting);
-			APM_Settle.IMUSensorsTaskReg();
-			APM_Settle.ControllerTaskReg();
-			APM_Settle.AltholdSensorsTaskReg();
-			APM_Settle.PositionTaskReg();
-			APM_Settle.ESCUpdateTaskReg();
 			APM_Settle.TaskThreadBlock();
 		}
 		break;
