@@ -204,6 +204,22 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
 	}
 	//--------------------------------------------------------------------//
+	TF._flag_IMU_Task_Running = false;
+	TF._flag_RXT_Task_Running = false;
+	TF._flag_ESC_Task_Running = false;
+	TF._flag_ALT_Task_Running = false;
+	TF._flag_GPS_Task_Running = false;
+	TF._flag_MAG_Task_Running = false;
+	TF._flag_Flow_Task_Running = false;
+	TF._flag_Block_Task_Running = false;
+	TF.IMUTask->join();
+	TF.RXTask->join();
+	TF.ESCTask->join();
+	TF.ALTTask->join();
+	TF.GPSTask->join();
+	TF.MAGTask->join();
+	TF.FlowTask->join();
+	//--------------------------------------------------------------------//
 	pca9685PWMWrite(DF.PCA9658_fd, 16, 0, 0);
 	usleep(5000);
 	close(DF.PCA9658_fd);
@@ -221,7 +237,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 	TF.IMUTask = new std::thread(
 		[&]
 		{
-			while (true)
+			while (TF._flag_IMU_Task_Running)
 			{
 				TF._Tmp_IMUThreadTimeStart = micros();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
@@ -284,7 +300,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 		TF.ALTTask = new std::thread(
 			[&]
 			{
-				while (true)
+				while (TF._flag_ALT_Task_Running)
 				{
 					TF._Tmp_ALTThreadTimeStart = micros();
 					TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
@@ -333,7 +349,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 	TF.RXTask = new std::thread(
 		[&]
 		{
-			while (true)
+			while (TF._flag_RXT_Task_Running)
 			{
 				TF._Tmp_RXTThreadTimeStart = micros();
 				TF._Tmp_RXTThreadTimeNext = TF._Tmp_RXTThreadTimeStart - TF._Tmp_RXTThreadTimeEnd;
@@ -691,7 +707,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 			{
 				DF.GPSInit->GPSReOpen();
 				TF._Tmp_GPSThreadSMooth = 10;
-				while (true)
+				while (TF._flag_GPS_Task_Running)
 				{
 					TF._Tmp_GPSThreadTimeStart = micros();
 					TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
@@ -800,7 +816,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		TF.FlowTask = new std::thread(
 			[&]
 			{
-				while (true)
+				while (TF._flag_Flow_Task_Running)
 				{
 					TF._Tmp_FlowThreadTimeStart = micros();
 					TF._Tmp_FlowThreadTimeNext = TF._Tmp_FlowThreadTimeStart - TF._Tmp_FlowThreadTimeEnd;
@@ -908,7 +924,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 	TF.ESCTask = new std::thread(
 		[&]
 		{
-			while (true)
+			while (TF._flag_ESC_Task_Running)
 			{
 				TF._Tmp_ESCThreadTimeStart = micros();
 				TF._Tmp_ESCThreadTimeNext = TF._Tmp_ESCThreadTimeStart - TF._Tmp_ESCThreadTimeEnd;
@@ -967,7 +983,7 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 {
 #ifndef NCURSES_ENABLE
 #ifdef RPiDEBUG
-	while (true)
+	while (TF._flag_Block_Task_Running)
 	{
 		DebugOutPut();
 		TF.DEBUGOuputCleaner++;
