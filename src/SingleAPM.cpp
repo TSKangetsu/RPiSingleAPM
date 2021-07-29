@@ -1009,6 +1009,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 {
 #ifdef RPiDEBUG
+	TF._flag_Block_Task_Running = true;
 	while (TF._flag_Block_Task_Running)
 	{
 		DebugOutPut();
