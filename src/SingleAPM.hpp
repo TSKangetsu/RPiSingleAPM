@@ -249,32 +249,7 @@ namespace SingleAPMAPI
 
 		void APMControllerSpeed(int x, int y, int z);
 
-	private:
-		void IMUSensorsTaskReg();
-
-		void AltholdSensorsTaskReg();
-
-		void ControllerTaskReg();
-
-		void PositionTaskReg();
-
-		void ESCUpdateTaskReg();
-
 	protected:
-		void PID_Caculate(float inputData, float &outputData,
-						  float &last_I_Data, float &last_D_Data,
-						  float P_Gain, float I_Gain, float D_Gain, float I_Max);
-
-		void PID_CaculateExtend(float inputDataP, float inputDataI, float inputDataD, float &outputData,
-								float &last_I_Data, float &last_D_Data,
-								float P_Gain, float I_Gain, float D_Gain, float I_Max);
-
-		void PID_CaculateHyper(float inputDataP, float inputDataI, float inputDataD, float &outputData,
-							   float &last_I_Data, float &last_D_Data,
-							   float P_Gain, float I_Gain, float D_Gain, float I_Max);
-
-		void ConfigReader(APMSettinngs APMInit);
-
 		void AttitudeUpdate();
 
 		void NavigationUpdate();
@@ -774,5 +749,32 @@ namespace SingleAPMAPI
 			int DEBUGOuputCleaner = 0;
 			bool _flag_Block_Task_Running = false;
 		} TF;
+
+	private:
+		void IMUSensorsTaskReg();
+
+		void AltholdSensorsTaskReg();
+
+		void ControllerTaskReg();
+
+		void PositionTaskReg();
+
+		void ESCUpdateTaskReg();
+
+		int GetTimestamp();
+
+		void PID_Caculate(float inputData, float &outputData,
+						  float &last_I_Data, float &last_D_Data,
+						  float P_Gain, float I_Gain, float D_Gain, float I_Max);
+
+		void PID_CaculateExtend(float inputDataP, float inputDataI, float inputDataD, float &outputData,
+								float &last_I_Data, float &last_D_Data,
+								float P_Gain, float I_Gain, float D_Gain, float I_Max);
+
+		void PID_CaculateHyper(float inputDataP, float inputDataI, float inputDataD, float &outputData,
+							   float &last_I_Data, float &last_D_Data,
+							   float P_Gain, float I_Gain, float D_Gain, float I_Max);
+
+		void ConfigReader(APMSettinngs APMInit);
 	};
 } // namespace SingleAPMAPI

@@ -260,9 +260,14 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			TF._flag_IMU_Task_Running = true;
 			while (TF._flag_IMU_Task_Running)
 			{
-				TF._Tmp_IMUThreadTimeStart = micros();
+				TF._Tmp_IMUThreadTimeStart = GetTimestamp();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
+				if (AF._flag_MPU9250_first_StartUp)
+				{
+					DF.MPUDevice->ResetMPUMixAngle();
+					AF._flag_MPU9250_first_StartUp = false;
+				}
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 
 				SF._uORB_MPU_Data._uORB_Acceleration_X -= PF._uORB_PID_AccelX_Bias;
@@ -282,14 +287,10 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				//---------------------------------------------------------//
 				SF._uORB_Gryo_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_X / 65.5) / TF._flag_IMUThreadFreq;
 				SF._uORB_Gryo_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_Y / 65.5) / TF._flag_IMUThreadFreq;
-				if (AF._flag_MPU9250_first_StartUp)
-				{
-					DF.MPUDevice->ResetMPUMixAngle();
-					AF._flag_MPU9250_first_StartUp = false;
-				}
+
 				AttitudeUpdate();
 
-				TF._Tmp_IMUThreadTimeEnd = micros();
+				TF._Tmp_IMUThreadTimeEnd = GetTimestamp();
 				TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
 				if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_IMUThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
 				{
@@ -305,7 +306,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				{
 					TF._Tmp_IMUThreadError = TF._Tmp_IMUThreadTimeLoop;
 				}
-				TF._Tmp_IMUThreadTimeEnd = micros();
+				TF._Tmp_IMUThreadTimeEnd = GetTimestamp();
 			}
 		});
 	cpu_set_t cpuset;
@@ -324,7 +325,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				TF._flag_ALT_Task_Running = true;
 				while (TF._flag_ALT_Task_Running)
 				{
-					TF._Tmp_ALTThreadTimeStart = micros();
+					TF._Tmp_ALTThreadTimeStart = GetTimestamp();
 					TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
 					SF._Tmp_MS5611_Error = DF.MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
@@ -340,7 +341,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 					//
 					AF._flag_MS5611_Async = true;
 
-					TF._Tmp_ALTThreadTimeEnd = micros();
+					TF._Tmp_ALTThreadTimeEnd = GetTimestamp();
 					TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
 					if (TF._Tmp_ALTThreadTimeLoop + TF._Tmp_ALTThreadTimeNext > TF._flag_ALTThreadTimeMax | TF._Tmp_ALTThreadTimeNext < 0)
 					{
@@ -356,7 +357,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 					{
 						TF._Tmp_ALTThreadError = TF._Tmp_ALTThreadTimeLoop;
 					}
-					TF._Tmp_ALTThreadTimeEnd = micros();
+					TF._Tmp_ALTThreadTimeEnd = GetTimestamp();
 				}
 			});
 		cpu_set_t cpuset;
@@ -374,7 +375,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			TF._flag_RXT_Task_Running = true;
 			while (TF._flag_RXT_Task_Running)
 			{
-				TF._Tmp_RXTThreadTimeStart = micros();
+				TF._Tmp_RXTThreadTimeStart = GetTimestamp();
 				TF._Tmp_RXTThreadTimeNext = TF._Tmp_RXTThreadTimeStart - TF._Tmp_RXTThreadTimeEnd;
 
 				//RC Read Parse
@@ -696,7 +697,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					}
 				}
 				//
-				TF._Tmp_RXTThreadTimeEnd = micros();
+				TF._Tmp_RXTThreadTimeEnd = GetTimestamp();
 				TF._Tmp_RXTThreadTimeLoop = TF._Tmp_RXTThreadTimeEnd - TF._Tmp_RXTThreadTimeStart;
 				if (TF._Tmp_RXTThreadTimeLoop + TF._Tmp_RXTThreadTimeNext > TF._flag_RXTThreadTimeMax | TF._Tmp_RXTThreadTimeNext < 0)
 				{
@@ -712,7 +713,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				{
 					TF._Tmp_RXTThreadError = TF._Tmp_RXTThreadTimeLoop;
 				}
-				TF._Tmp_RXTThreadTimeEnd = micros();
+				TF._Tmp_RXTThreadTimeEnd = GetTimestamp();
 			}
 		});
 	cpu_set_t cpuset;
@@ -733,7 +734,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._Tmp_GPSThreadSMooth = 10;
 				while (TF._flag_GPS_Task_Running)
 				{
-					TF._Tmp_GPSThreadTimeStart = micros();
+					TF._Tmp_GPSThreadTimeStart = GetTimestamp();
 					TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
 					{
 						SF._uORB_GPS_Data = DF.GPSInit->GPSParse();
@@ -772,7 +773,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						AF._flag_GPSData_Async = true;
 					}
 					TF._Tmp_GPSThreadSMooth++;
-					TF._Tmp_GPSThreadTimeEnd = micros();
+					TF._Tmp_GPSThreadTimeEnd = GetTimestamp();
 					TF._Tmp_GPSThreadTimeLoop = TF._Tmp_GPSThreadTimeEnd - TF._Tmp_GPSThreadTimeStart;
 					if (TF._Tmp_GPSThreadTimeLoop + TF._Tmp_GPSThreadTimeNext > TF._flag_GPSThreadTimeMax | TF._Tmp_GPSThreadTimeNext < 0)
 					{
@@ -788,7 +789,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					{
 						TF._Tmp_GPSThreadError = TF._Tmp_GPSThreadTimeLoop;
 					}
-					TF._Tmp_GPSThreadTimeEnd = micros();
+					TF._Tmp_GPSThreadTimeEnd = GetTimestamp();
 				}
 			});
 
@@ -803,7 +804,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._flag_MAG_Task_Running = true;
 				while (TF._flag_MAG_Task_Running)
 				{
-					TF._Tmp_MAGThreadTimeStart = micros();
+					TF._Tmp_MAGThreadTimeStart = GetTimestamp();
 					TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 					{
 						DF.CompassDevice->CompassUpdate();
@@ -811,7 +812,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						// DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
 						DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
 					}
-					TF._Tmp_MAGThreadTimeEnd = micros();
+					TF._Tmp_MAGThreadTimeEnd = GetTimestamp();
 					TF._Tmp_MAGThreadTimeLoop = TF._Tmp_MAGThreadTimeEnd - TF._Tmp_MAGThreadTimeStart;
 					if (TF._Tmp_MAGThreadTimeLoop + TF._Tmp_MAGThreadTimeNext > TF._flag_MAGThreadTimeMax | TF._Tmp_MAGThreadTimeNext < 0)
 					{
@@ -827,7 +828,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					{
 						TF._Tmp_MAGThreadError = TF._Tmp_MAGThreadTimeLoop;
 					}
-					TF._Tmp_MAGThreadTimeEnd = micros();
+					TF._Tmp_MAGThreadTimeEnd = GetTimestamp();
 				}
 			});
 		cpu_set_t cpuset2;
@@ -844,7 +845,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				TF._flag_Flow_Task_Running = true;
 				while (TF._flag_Flow_Task_Running)
 				{
-					TF._Tmp_FlowThreadTimeStart = micros();
+					TF._Tmp_FlowThreadTimeStart = GetTimestamp();
 					TF._Tmp_FlowThreadTimeNext = TF._Tmp_FlowThreadTimeStart - TF._Tmp_FlowThreadTimeEnd;
 					{
 						TF._Tmp_FlowThreadSMooth++;
@@ -919,7 +920,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 							SF._uORB_Gryo_Body_Asix_Y = 0;
 						}
 					}
-					TF._Tmp_FlowThreadTimeEnd = micros();
+					TF._Tmp_FlowThreadTimeEnd = GetTimestamp();
 					TF._Tmp_FlowThreadTimeLoop = TF._Tmp_FlowThreadTimeEnd - TF._Tmp_FlowThreadTimeStart;
 					if (TF._Tmp_FlowThreadTimeLoop + TF._Tmp_FlowThreadTimeNext > TF._flag_FlowThreadTimeMax | TF._Tmp_FlowThreadTimeNext < 0)
 					{
@@ -935,7 +936,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					{
 						TF._Tmp_FlowThreadError = TF._Tmp_FlowThreadTimeLoop;
 					}
-					TF._Tmp_FlowThreadTimeEnd = micros();
+					TF._Tmp_FlowThreadTimeEnd = GetTimestamp();
 				}
 			});
 		cpu_set_t cpuset3;
@@ -953,7 +954,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 			TF._flag_ESC_Task_Running = true;
 			while (TF._flag_ESC_Task_Running)
 			{
-				TF._Tmp_ESCThreadTimeStart = micros();
+				TF._Tmp_ESCThreadTimeStart = GetTimestamp();
 				TF._Tmp_ESCThreadTimeNext = TF._Tmp_ESCThreadTimeStart - TF._Tmp_ESCThreadTimeEnd;
 
 				if (AF._flag_ESC_ARMED)
@@ -981,7 +982,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 					TF._Tmp_ServoThreadClock = 0;
 				}
 
-				TF._Tmp_ESCThreadTimeEnd = micros();
+				TF._Tmp_ESCThreadTimeEnd = GetTimestamp();
 				TF._Tmp_ESCThreadTimeLoop = TF._Tmp_ESCThreadTimeEnd - TF._Tmp_ESCThreadTimeStart;
 				if (TF._Tmp_ESCThreadTimeLoop + TF._Tmp_ESCThreadTimeNext > TF._flag_ESCThreadTimeMax | TF._Tmp_ESCThreadTimeNext < 0)
 				{
@@ -997,7 +998,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 				{
 					TF._Tmp_ESCThreadError = TF._Tmp_ESCThreadTimeLoop;
 				}
-				TF._Tmp_ESCThreadTimeEnd = micros();
+				TF._Tmp_ESCThreadTimeEnd = GetTimestamp();
 			}
 		});
 	cpu_set_t cpuset;
@@ -2011,8 +2012,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " AccelG  :    " << std::setw(2) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_A_Vector << "    "
 			  << "                        "
 			  << std::endl;
-	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw
-			  << " MAGSYAW:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_StaticYaw << "\n"
+	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw << "    "
+			  << " MAGSYAW:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_StaticYaw << "    "
+			  << " IMUTIME:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_IMUUpdateTime << "         \n"
 			  << " MAGRawX:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawX
 			  << " MAGRawY:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawY
 			  << " MAGRawZ:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawZ
@@ -2138,6 +2140,13 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " FloErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_FlowErrorTimes;
 	std::cout << " FloMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadError << "    \n"
 			  << std::endl;
+}
+
+int SingleAPMAPI::RPiSingleAPM::GetTimestamp()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
 }
 
 //=-----------------------------------------------------------------------------------------==//
