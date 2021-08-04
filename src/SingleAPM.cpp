@@ -22,7 +22,11 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_IsFakeRCUpdated = false;
 		AF._flag_IsNotTakeOff = false;
 		AF._flag_FakeRC_Disconnected = false;
+		AF._flag_PreARM_Check = false;
+		AF._flag_PreARM_Check_Lock = false;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
+		AF._flag_FailedSafe_Level = 0;
+		AF._flag_PreARM_Check_Level = 0;
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
 	}
 	ConfigReader(APMInit);
@@ -236,7 +240,11 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		AF._flag_IsFakeRCUpdated = false;
 		AF._flag_IsNotTakeOff = false;
 		AF._flag_FakeRC_Disconnected = false;
+		AF._flag_PreARM_Check = false;
+		AF._flag_PreARM_Check_Lock = false;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
+		AF._flag_FailedSafe_Level = 0;
+		AF._flag_PreARM_Check_Level = 0;
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
 	}
 }
@@ -1367,7 +1375,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			PID_CaculateHyper(PF._uORB_PID__Roll_Input, ROLLITERM, ROLLDTERM, PF._uORB_Leveling__Roll, PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
 							  (PF._flag_PID_P__Roll_Gain * PF._uORB_PID_TPA_Beta),
-							  (PF._flag_PID_I__Roll_Gain * PF._uORB_PID_I_Dynamic_Gain * PF._uORB_PID_TPA_Beta),
+							  (PF._flag_PID_I__Roll_Gain * PF._uORB_PID_I_Dynamic_Gain),
 							  (PF._flag_PID_D__Roll_Gain * PF._uORB_PID_TPA_Beta),
 							  PF._flag_PID_I__Roll_Max__Value);
 			if (PF._uORB_Leveling__Roll > PF._flag_PID_Level_Max)
@@ -1388,7 +1396,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			PID_CaculateHyper(PF._uORB_PID_Pitch_Input, PITCHITERM, PITCHDTERM, PF._uORB_Leveling_Pitch, PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
 							  (PF._flag_PID_P_Pitch_Gain * PF._uORB_PID_TPA_Beta),
-							  (PF._flag_PID_I_Pitch_Gain * PF._uORB_PID_I_Dynamic_Gain * PF._uORB_PID_TPA_Beta),
+							  (PF._flag_PID_I_Pitch_Gain * PF._uORB_PID_I_Dynamic_Gain),
 							  (PF._flag_PID_D_Pitch_Gain * PF._uORB_PID_TPA_Beta),
 							  PF._flag_PID_I_Pitch_Max__Value);
 			if (PF._uORB_Leveling_Pitch > PF._flag_PID_Level_Max)
@@ -1635,7 +1643,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
 			PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;
 		}
-		else if (DF._IsMS5611Enable)
+		if (DF._IsMS5611Enable)
 		{
 			PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
 											PF._uORB_Baro_Dynamic_Beta *
@@ -1940,6 +1948,72 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 	{
 		AF._flag_ESC_ARMED = true;
 	}
+
+	//PreARM Checking
+	{
+		if (!AF._flag_PreARM_Check_Lock)
+		{
+			if (SF._uORB_MPU_Data._uORB_Accel__Roll - 3 < SF._uORB_MPU_Data._uORB_Real__Roll &&
+				SF._uORB_MPU_Data._uORB_Real__Roll < SF._uORB_MPU_Data._uORB_Accel__Roll + 3)
+			{
+				AF._flag_PreARM_Check = true;
+				AF._flag_PreARM_Check_Level &= ~FailedSafeFlag::_flag_PreARMFailed_AngleNotSync;
+			}
+			else
+			{
+				AF._flag_PreARM_Check = false;
+				AF._flag_PreARM_Check_Level |= FailedSafeFlag::_flag_PreARMFailed_AngleNotSync;
+			}
+			if (SF._uORB_MPU_Data._uORB_Accel_Pitch - 3 < SF._uORB_MPU_Data._uORB_Real_Pitch &&
+				SF._uORB_MPU_Data._uORB_Real_Pitch < SF._uORB_MPU_Data._uORB_Accel_Pitch + 3)
+			{
+				AF._flag_PreARM_Check = true;
+				AF._flag_PreARM_Check_Level &= ~FailedSafeFlag::_flag_PreARMFailed_AngleNotSync;
+			}
+			else
+			{
+				AF._flag_PreARM_Check = false;
+				AF._flag_PreARM_Check_Level |= FailedSafeFlag::_flag_PreARMFailed_AngleNotSync;
+			}
+			//
+			if ((int)SF._uORB_MPU_Data._uORB_Gryo__Roll == 0 ||
+				(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch == 0 ||
+				(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw == 0)
+			{
+				AF._flag_PreARM_Check = true;
+				AF._flag_PreARM_Check_Level &= ~FailedSafeFlag::_flag_PreARMFailed_GyroNotStable;
+			}
+			else
+			{
+				AF._flag_PreARM_Check = false;
+				AF._flag_PreARM_Check_Level |= FailedSafeFlag::_flag_PreARMFailed_GyroNotStable;
+			}
+			//
+			if ((int)SF._uORB_True_Speed_X == 0 || (int)SF._uORB_True_Speed_Y == 0 || SF._uORB_True_Speed_Z == 0)
+			{
+				AF._flag_PreARM_Check = true;
+				AF._flag_PreARM_Check_Level &= ~FailedSafeFlag::_flag_PreARMFailed_NavigationNotSync;
+			}
+			else
+			{
+				AF._flag_PreARM_Check = false;
+				AF._flag_PreARM_Check_Level |= FailedSafeFlag::_flag_PreARMFailed_NavigationNotSync;
+			}
+			if ((int)SF._uORB_MPU_Data._uORB_Acceleration_X == 0 ||
+				(int)SF._uORB_MPU_Data._uORB_Acceleration_Y == 0 ||
+				(int)SF._uORB_MPU_Data._uORB_Acceleration_Z == 0)
+			{
+				AF._flag_PreARM_Check = true;
+				AF._flag_PreARM_Check_Level &= ~FailedSafeFlag::_flag_PreARMFailed_AccelNotStable;
+			}
+			else
+			{
+				AF._flag_PreARM_Check = false;
+				AF._flag_PreARM_Check_Level |= FailedSafeFlag::_flag_PreARMFailed_AccelNotStable;
+			}
+			AF._flag_PreARM_Check_Lock = true;
+		}
+	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
@@ -2078,6 +2152,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " DynamicCencterFreqZ:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2] << "            \n";
 	std::cout << " TPATrust           :" << PF._uORB_PID_TPA_Beta << "            \n";
 	std::cout << " \n";
+
+	std::bitset<16> x(AF._flag_PreARM_Check_Level);
+	std::cout << " PreARMCheckInfo:    " << x << "                  \n";
+
 	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
 	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";
 	std::cout << " TakeOffing:             " << std::setw(3) << std::setfill(' ') << AF._flag_IsAutoTakeoffRequire << " |";
@@ -2086,6 +2164,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_ClockingTime_Error:" << std::setw(3) << std::setfill(' ') << AF._flag_ClockingTime_Error << " |";
 	std::cout << " Flag_RC_Disconnected:   " << std::setw(3) << std::setfill(' ') << AF._flag_RC_Disconnected << " |";
 	std::cout << " Flag_Flow_ErrorClock:   " << std::setw(3) << std::setfill(' ') << AF.Flow_Lose_Clocking << " |";
+	std::cout << " Flag_PreARMCheckPass:   " << std::setw(3) << std::setfill(' ') << AF._flag_PreARM_Check << " |";
 	std::cout << " Flag_GPS_Disconnected:  " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Disconnected << "         \n";
 	std::cout << " Flag_FakeRC_Error:      " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Error << " |";
 	std::cout << " Flag_FakeRC_Disconnect: " << std::setw(3) << std::setfill(' ') << AF.FakeRC_Lose_Clocking << " |";
@@ -2160,6 +2239,8 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerARMED()
 
 	AF._flag_IsNotTakeOff = false;
 	AF._flag_IsNotTakeOff_Lock = true;
+
+	AF._flag_PreARM_Check_Lock = false;
 }
 
 void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)
@@ -2172,7 +2253,8 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)
 			{
 				if (AF._flag_StartUP_Protect == false)
 				{
-					AF._flag_ESC_ARMED = false;
+					if (AF._flag_PreARM_Check)
+						AF._flag_ESC_ARMED = false;
 				}
 			}
 			else

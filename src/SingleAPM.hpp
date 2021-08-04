@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <math.h>
 #include <thread>
+#include <bitset>
 #include <iostream>
 #include <linux/i2c-dev.h>
 #include "_thirdparty/EKFImpement.hpp"
@@ -267,17 +268,25 @@ namespace SingleAPMAPI
 			_flag_FailedSafe_SpeedReferenceXT = 1 << 11,
 			_flag_FailedSafe_SpeedReferenceY = 1 << 12,
 			_flag_FailedSafe_SpeedReferenceYT = 1 << 13,
+
+			_flag_PreARMFailed_GyroNotStable = 1 << 0,
+			_flag_PreARMFailed_AngleNotSync = 1 << 1,
+			_flag_PreARMFailed_NavigationNotSync = 1 << 2,
+			_flag_PreARMFailed_AccelNotStable = 1 << 3,
 		};
 
 		struct SafyINFO
 		{
 			APModeINFO AutoPilotMode;
 			uint16_t _flag_FailedSafe_Level;
+			uint16_t _flag_PreARM_Check_Level;
 			bool _flag_Error;
 			bool _flag_RC_Error;
 			bool _flag_FakeRC_Error;
 			bool _flag_GPS_Error;
 			bool _flag_ClockingTime_Error;
+			bool _flag_PreARM_Check;
+			bool _flag_PreARM_Check_Lock;
 
 			bool _flag_IsAutoTakeoffLock;
 			bool _flag_IsAutoTakeoffRequire;
