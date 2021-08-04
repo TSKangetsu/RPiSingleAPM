@@ -579,8 +579,8 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					{
 						AF.AutoPilotMode = APModeINFO::AutoStable;
 					}
-					if (RF._flag_RC_AP_ManualHold_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_ManualHold_PWM_Channel] &&
-						RF._flag_RC_AP_ManualHold_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_ManualHold_PWM_Channel])
+					if (RF._flag_RC_AP_RateHold_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_RateHold_PWM_Channel] &&
+						RF._flag_RC_AP_RateHold_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_RateHold_PWM_Channel])
 					{
 						AF.AutoPilotMode = APModeINFO::RateHold;
 					}
@@ -1128,8 +1128,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 
 	RF._flag_RC_ARM_PWM_Value = APMInit.RC._flag_RC_ARM_PWM_Value;
 	RF._flag_RC_ARM_PWM_Channel = APMInit.RC._flag_RC_ARM_PWM_Channel;
-	RF._flag_RC_AP_ManualHold_PWM_Value = APMInit.RC._flag_RC_AP_ManualHold_PWM_Value;
-	RF._flag_RC_AP_ManualHold_PWM_Channel = APMInit.RC._flag_RC_AP_ManualHold_PWM_Channel;
+	RF._flag_RC_AP_RateHold_PWM_Value = APMInit.RC._flag_RC_AP_RateHold_PWM_Value;
+	RF._flag_RC_AP_RateHold_PWM_Channel = APMInit.RC._flag_RC_AP_RateHold_PWM_Channel;
 	RF._flag_RC_AP_AutoStable_PWM_Value = APMInit.RC._flag_RC_AP_AutoStable_PWM_Value;
 	RF._flag_RC_AP_AutoStable_PWM_Channel = APMInit.RC._flag_RC_AP_AutoStable_PWM_Channel;
 	RF._flag_RC_AP_AltHold_PWM_Value = APMInit.RC._flag_RC_AP_AltHold_PWM_Value;
@@ -1345,6 +1345,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				PF._uORB_PID__Roll_Input = PF._uORB_PID_AngleRate__Roll;
 				PF._uORB_PID_Pitch_Input = PF._uORB_PID_AngleRate_Pitch;
 			}
+			else if (AF.AutoPilotMode == APModeINFO::RateHold)
+			{
+				PF._uORB_PID__Roll_Input = 0;
+				PF._uORB_PID_Pitch_Input = 0;
+			}
 			//--------------------------------------------------------------------------//
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
@@ -1362,7 +1367,9 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				else
 					PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
 			}
-			else if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::AltHold)
+			else if (AF.AutoPilotMode == APModeINFO::AutoStable ||
+					 AF.AutoPilotMode == APModeINFO::AltHold ||
+					 AF.AutoPilotMode == APModeINFO::RateHold)
 			{
 				PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll / 15.f;
 				PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch / 15.f;

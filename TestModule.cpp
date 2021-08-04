@@ -151,8 +151,8 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.RC._flag_RC_ARM_PWM_Value = Configdata["_flag_RC_ARM_PWM_Value"].get<int>();
 	APMInit.RC._flag_RC_ARM_PWM_Channel = Configdata["_flag_RC_ARM_PWM_Channel"].get<int>();
 
-	APMInit.RC._flag_RC_AP_ManualHold_PWM_Value = Configdata["_flag_RC_AP_ManualHold_PWM_Value"].get<int>();
-	APMInit.RC._flag_RC_AP_ManualHold_PWM_Channel = Configdata["_flag_RC_AP_ManualHold_PWM_Channel"].get<int>();
+	APMInit.RC._flag_RC_AP_RateHold_PWM_Value = Configdata["_flag_RC_AP_RateHold_PWM_Value"].get<int>();
+	APMInit.RC._flag_RC_AP_RateHold_PWM_Channel = Configdata["_flag_RC_AP_RateHold_PWM_Channel"].get<int>();
 
 	APMInit.RC._flag_RC_AP_AutoStable_PWM_Value = Configdata["_flag_RC_AP_AutoStable_PWM_Value"].get<int>();
 	APMInit.RC._flag_RC_AP_AutoStable_PWM_Channel = Configdata["_flag_RC_AP_AutoStable_PWM_Channel"].get<int>();

@@ -159,8 +159,8 @@ namespace SingleAPMAPI
 
 			int _flag_RC_ARM_PWM_Value;
 			int _flag_RC_ARM_PWM_Channel;
-			int _flag_RC_AP_ManualHold_PWM_Value;
-			int _flag_RC_AP_ManualHold_PWM_Channel;
+			int _flag_RC_AP_RateHold_PWM_Value;
+			int _flag_RC_AP_RateHold_PWM_Channel;
 			int _flag_RC_AP_AutoStable_PWM_Value;
 			int _flag_RC_AP_AutoStable_PWM_Channel;
 			int _flag_RC_AP_AltHold_PWM_Value;
@@ -625,8 +625,8 @@ namespace SingleAPMAPI
 
 			int _flag_RC_ARM_PWM_Value;
 			int _flag_RC_ARM_PWM_Channel;
-			int _flag_RC_AP_ManualHold_PWM_Value;
-			int _flag_RC_AP_ManualHold_PWM_Channel;
+			int _flag_RC_AP_RateHold_PWM_Value;
+			int _flag_RC_AP_RateHold_PWM_Channel;
 			int _flag_RC_AP_AutoStable_PWM_Value;
 			int _flag_RC_AP_AutoStable_PWM_Channel;
 			int _flag_RC_AP_AltHold_PWM_Value;
