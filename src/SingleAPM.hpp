@@ -39,6 +39,7 @@
 #define FILTERPOSOUTLPFCUTOFF 4.f
 
 #define ESCRANGE 800.f
+#define LINUX_SYSTEM_SLEEP_DELAY 50
 
 namespace SingleAPMAPI
 {
@@ -226,7 +227,7 @@ namespace SingleAPMAPI
 	public:
 		int RPiSingleAPMInit(APMSettinngs APMInit);
 
-		int RPiSingleAPMHotLoad(APMSettinngs APMInit) { ConfigReader(APMInit); };
+		void RPiSingleAPMHotLoad(APMSettinngs APMInit) { ConfigReader(APMInit); };
 
 		void RPiSingleAPMDeInit();
 
@@ -250,14 +251,6 @@ namespace SingleAPMAPI
 		void APMControllerSpeed(int x, int y, int z);
 
 	protected:
-		void AttitudeUpdate();
-
-		void NavigationUpdate();
-
-		void SaftyCheck();
-
-		void DebugOutPut();
-
 		enum FailedSafeFlag
 		{
 			_flag_FailedSafe_RCLose = 1 << 0,
@@ -677,6 +670,7 @@ namespace SingleAPMAPI
 			int _Tmp_IMUThreadTimeEnd = 0;
 			int _Tmp_IMUThreadTimeNext = 0;
 			int _Tmp_IMUThreadTimeLoop = 0;
+			int _Tmp_IMUThreadSleepError = 0;
 			int _Tmp_IMUThreadError = 0;
 			int _flag_IMUThreadTimeMax = 0;
 			int _flag_IMUThreadFreq;
@@ -751,6 +745,14 @@ namespace SingleAPMAPI
 		} TF;
 
 	private:
+		void AttitudeUpdate();
+
+		void NavigationUpdate();
+
+		void SaftyCheck();
+
+		void DebugOutPut();
+
 		void IMUSensorsTaskReg();
 
 		void AltholdSensorsTaskReg();
@@ -760,8 +762,6 @@ namespace SingleAPMAPI
 		void PositionTaskReg();
 
 		void ESCUpdateTaskReg();
-
-		int GetTimestamp();
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
@@ -776,5 +776,7 @@ namespace SingleAPMAPI
 							   float P_Gain, float I_Gain, float D_Gain, float I_Max);
 
 		void ConfigReader(APMSettinngs APMInit);
+
+		int GetTimestamp();
 	};
 } // namespace SingleAPMAPI

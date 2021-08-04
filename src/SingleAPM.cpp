@@ -263,38 +263,20 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeStart = GetTimestamp();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
+				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
+
+				NavigationUpdate();
+				AttitudeUpdate();
+
 				if (AF._flag_MPU9250_first_StartUp)
 				{
 					DF.MPUDevice->ResetMPUMixAngle();
 					AF._flag_MPU9250_first_StartUp = false;
 				}
-				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
-
-				SF._uORB_MPU_Data._uORB_Acceleration_X -= PF._uORB_PID_AccelX_Bias;
-				SF._uORB_True_Movement_X += (int)SF._uORB_True_Speed_X * (TF._flag_IMUThreadTimeMax / 1000000.f);
-				SF._uORB_True_Movement_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
-				SF._uORB_True_Speed_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
-				//---------------------------------------------------------//
-				SF._uORB_MPU_Data._uORB_Acceleration_Y -= PF._uORB_PID_AccelY_Bias;
-				SF._uORB_True_Movement_Y += (int)SF._uORB_True_Speed_Y * (TF._flag_IMUThreadTimeMax / 1000000.f);
-				SF._uORB_True_Movement_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
-				SF._uORB_True_Speed_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
-				//---------------------------------------------------------//
-				SF._uORB_MPU_Data._uORB_Acceleration_Z -= PF._uORB_PID_AccelZ_Bias;
-				SF._uORB_True_Movement_Z += (int)SF._uORB_True_Speed_Z * (TF._flag_IMUThreadTimeMax / 1000000.f);
-				SF._uORB_True_Movement_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
-				SF._uORB_True_Speed_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
-				//---------------------------------------------------------//
-				SF._uORB_Gryo_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_X / 65.5) / TF._flag_IMUThreadFreq;
-				SF._uORB_Gryo_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_Y / 65.5) / TF._flag_IMUThreadFreq;
-
-				AttitudeUpdate();
-
 				TF._Tmp_IMUThreadTimeEnd = GetTimestamp();
 				TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
 				if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_IMUThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
 				{
-					usleep(50);
 					TF._flag_IMUErrorTimes++;
 					AF._flag_ClockingTime_Error = true;
 				}
@@ -1140,11 +1122,11 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	DF._IsMS5611Enable = APMInit.DC._IsMS5611Enable;
 
 	TF._flag_IMUThreadFreq = APMInit.DC.IMU_Freqeuncy;
-	TF._flag_IMUThreadTimeMax = (float)1 / TF._flag_IMUThreadFreq * 1000000;
+	TF._flag_IMUThreadTimeMax = 1.f / (float)TF._flag_IMUThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
 	TF._flag_RXTThreadFreq = APMInit.DC.RXT_Freqeuncy;
-	TF._flag_RXTThreadTimeMax = (float)1 / TF._flag_RXTThreadFreq * 1000000;
+	TF._flag_RXTThreadTimeMax = 1.f / (float)TF._flag_RXTThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
 	TF._flag_ESCThreadFreq = APMInit.DC.ESC_Freqeuncy;
-	TF._flag_ESCThreadTimeMax = (float)1 / TF._flag_ESCThreadFreq * 1000000;
+	TF._flag_ESCThreadTimeMax = 1.f / (float)TF._flag_ESCThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
 	TF._flag_ServoThreadTimes = TF._flag_ESCThreadFreq / TF._flag_ServoThreadFreq;
 	//==========================================================Controller config==/
 
@@ -1315,7 +1297,6 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 		AF.AutoPilotMode == APModeINFO::PositionHold ||
 		AF.AutoPilotMode == APModeINFO::UserAuto)
 	{
-		NavigationUpdate();
 		//Leveling PID MIX
 		{
 			//IMU SaftyChecking---------------------------------------------------------//
@@ -1538,6 +1519,23 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 
 void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 {
+	SF._uORB_MPU_Data._uORB_Acceleration_X -= PF._uORB_PID_AccelX_Bias;
+	SF._uORB_True_Movement_X += (int)SF._uORB_True_Speed_X * (TF._flag_IMUThreadTimeMax / 1000000.f);
+	SF._uORB_True_Movement_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
+	SF._uORB_True_Speed_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
+	//---------------------------------------------------------//
+	SF._uORB_MPU_Data._uORB_Acceleration_Y -= PF._uORB_PID_AccelY_Bias;
+	SF._uORB_True_Movement_Y += (int)SF._uORB_True_Speed_Y * (TF._flag_IMUThreadTimeMax / 1000000.f);
+	SF._uORB_True_Movement_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
+	SF._uORB_True_Speed_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
+	//---------------------------------------------------------//
+	SF._uORB_MPU_Data._uORB_Acceleration_Z -= PF._uORB_PID_AccelZ_Bias;
+	SF._uORB_True_Movement_Z += (int)SF._uORB_True_Speed_Z * (TF._flag_IMUThreadTimeMax / 1000000.f);
+	SF._uORB_True_Movement_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
+	SF._uORB_True_Speed_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
+	//---------------------------------------------------------//
+	SF._uORB_Gryo_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_X / 65.5) / TF._flag_IMUThreadFreq;
+	SF._uORB_Gryo_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_Y / 65.5) / TF._flag_IMUThreadFreq;
 	//POS Controller Reseter
 	{
 		if (!(AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
