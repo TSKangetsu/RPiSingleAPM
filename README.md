@@ -17,7 +17,7 @@ This project differs from Baseflight and inav in that it focuses on running cont
 # Features
   * Run in Raspberrypi4B without any external controller
   * 4kHZ with Attitude Control and 100HZ IMU navigation
-  * 400HZ ESCUpdate With PCA9685, will support DMA GPIO to oneshot
+  * ESC oneshot125 support with PCA9685, YES, it's ONESHOT125, Up to 1.5KHZ
   * Position hold , Speed hold with stick
   * Simple C++ API control copter's speed , position, attitidue. Custom Position sensor and RC input support
   * Auto-Takeoff support
