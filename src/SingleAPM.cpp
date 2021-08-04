@@ -8,7 +8,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF.GPS_Lose_Clocking = 0;
 		AF.Flow_Lose_Clocking = 0;
 		AF.FakeRC_Deprive_Clocking = 0;
-		AF._flag_FakeRC_Disconnected = 0;
+		AF.AngleLimit_Out_Clocking = 0;
+		AF._flag_FakeRC_Disconnected = false;
+		AF._flag_AnagleOutOfLimit = false;
 		AF._flag_ESC_ARMED = true;
 		AF._flag_IsINUHDiable = true;
 		AF._flag_IsFlowAvalible = false;
@@ -506,10 +508,6 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						AF._flag_FakeRC_Error = true;
 					}
 					//================================================//
-					if (AF._flag_RC_Error && AF._flag_FakeRC_Error)
-					{
-						AF._flag_Error = true;
-					}
 				}
 				//RC data out
 				{
@@ -520,7 +518,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				}
 				//RC UNLOCK Checking
 				{
-					if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::ManualHold)
+					if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::RateHold)
 					{
 						if (RF._uORB_RC_Out_Throttle < RF._flag_RC_Min_PWM_Value + 20 &&
 							RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] &&
@@ -584,7 +582,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					if (RF._flag_RC_AP_ManualHold_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_ManualHold_PWM_Channel] &&
 						RF._flag_RC_AP_ManualHold_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_ManualHold_PWM_Channel])
 					{
-						AF.AutoPilotMode = APModeINFO::ManualHold;
+						AF.AutoPilotMode = APModeINFO::RateHold;
 					}
 					else if (RF._flag_RC_AP_AltHold_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_AltHold_PWM_Channel] &&
 							 RF._flag_RC_AP_AltHold_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_AltHold_PWM_Channel] &&
@@ -1269,7 +1267,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_PID_I_Last_Value_Pitch = 0;
 			PF._uORB_PID_I_Last_Value___Yaw = 0;
 		}
-
+		//NotTakeoff Detect
 		if (AF._flag_IsNotTakeOff_Lock && RF._uORB_RC_Out_Throttle < (RF._flag_RC_Min_PWM_Value + 100.f))
 		{
 			AF._flag_IsNotTakeOff = true;
@@ -1286,12 +1284,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_PID_I_Last_Value___Yaw = 0;
 		}
 	}
-
+	//
 	if (AF.AutoPilotMode == APModeINFO::AltHold ||
 		AF.AutoPilotMode == APModeINFO::AutoStable ||
 		AF.AutoPilotMode == APModeINFO::SpeedHold ||
 		AF.AutoPilotMode == APModeINFO::PositionHold ||
-		AF.AutoPilotMode == APModeINFO::UserAuto)
+		AF.AutoPilotMode == APModeINFO::UserAuto ||
+		AF.AutoPilotMode == APModeINFO::RateHold)
 	{
 		//Leveling PID MIX
 		{
@@ -1299,6 +1298,24 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			if (SF._uORB_MPU_Data._uORB_Real_Pitch > 70.0 || SF._uORB_MPU_Data._uORB_Real_Pitch < -70.0 ||
 				SF._uORB_MPU_Data._uORB_Real__Roll > 70.0 || SF._uORB_MPU_Data._uORB_Real__Roll < -70.0)
 			{
+				if (AF.AutoPilotMode == APModeINFO::AltHold ||
+					AF.AutoPilotMode == APModeINFO::AutoStable ||
+					AF.AutoPilotMode == APModeINFO::SpeedHold ||
+					AF.AutoPilotMode == APModeINFO::PositionHold ||
+					AF.AutoPilotMode == APModeINFO::UserAuto)
+				{
+					AF.AngleLimit_Out_Clocking += 1.f / (float)TF._flag_IMUThreadTimeMax * 1000000.f;
+					if (AF.AngleLimit_Out_Clocking > AngleLimitTime)
+					{
+						AF._flag_AnagleOutOfLimit = true;
+						AF.AngleLimit_Out_Clocking = 0;
+					}
+				}
+			}
+			else
+			{
+				AF._flag_AnagleOutOfLimit = false;
+				AF.AngleLimit_Out_Clocking = 0;
 			}
 			//--------------------------------------------------------------------------//
 			if (PF._flag_Filter_AngleRate_CutOff != 0)
@@ -1319,8 +1336,16 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			else
 				PF._uORB_PID_GYaw_Output = SF._uORB_MPU_Data._uORB_Gryo___Yaw;
 			//--------------------------------------------------------------------------//
-			PF._uORB_PID__Roll_Input = PF._uORB_PID_AngleRate__Roll;
-			PF._uORB_PID_Pitch_Input = PF._uORB_PID_AngleRate_Pitch;
+			if (AF.AutoPilotMode == APModeINFO::AltHold ||
+				AF.AutoPilotMode == APModeINFO::AutoStable ||
+				AF.AutoPilotMode == APModeINFO::SpeedHold ||
+				AF.AutoPilotMode == APModeINFO::PositionHold ||
+				AF.AutoPilotMode == APModeINFO::UserAuto)
+			{
+				PF._uORB_PID__Roll_Input = PF._uORB_PID_AngleRate__Roll;
+				PF._uORB_PID_Pitch_Input = PF._uORB_PID_AngleRate_Pitch;
+			}
+			//--------------------------------------------------------------------------//
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
 				PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
@@ -2014,6 +2039,26 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 			AF._flag_PreARM_Check_Lock = true;
 		}
 	}
+
+	// FailedSafeCheck
+	{
+		if (AF._flag_RC_Error)
+			AF._flag_FailedSafe_Level |= FailedSafeFlag::_flag_FailedSafe_RCLose;
+		else
+			AF._flag_FailedSafe_Level &= ~FailedSafeFlag::_flag_FailedSafe_RCLose;
+		if (AF._flag_FakeRC_Error)
+			AF._flag_FailedSafe_Level |= FailedSafeFlag::_flag_FailedSafe_FakeRCLose;
+		else
+			AF._flag_FailedSafe_Level &= ~FailedSafeFlag::_flag_FailedSafe_FakeRCLose;
+
+		if (AF._flag_AnagleOutOfLimit)
+		{
+			AF._flag_FailedSafe_Level |= FailedSafeFlag::_flag_FailedSafe_AngleLimit;
+			AF._flag_Error == true;
+		}
+		else
+			AF._flag_FailedSafe_Level &= ~FailedSafeFlag::_flag_FailedSafe_AngleLimit;
+	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
@@ -2037,9 +2082,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	{
 		std::cout << " SpeedHold         ";
 	}
-	else if (AF.AutoPilotMode == APModeINFO::ManualHold)
+	else if (AF.AutoPilotMode == APModeINFO::RateHold)
 	{
-		std::cout << " ManualHold        ";
+		std::cout << " RateHold        ";
 	}
 	else if (AF.AutoPilotMode == APModeINFO::UserAuto)
 	{
@@ -2155,6 +2200,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::bitset<16> x(AF._flag_PreARM_Check_Level);
 	std::cout << " PreARMCheckInfo:    " << x << "                  \n";
+	std::bitset<16> s(AF._flag_FailedSafe_Level);
+	std::cout << " FailedSafekInfo:    " << s << "                  \n";
 
 	std::cout << " Flag_ESC_ARMED:         " << std::setw(3) << std::setfill(' ') << AF._flag_ESC_ARMED << " |";
 	std::cout << " Flag_Error:             " << std::setw(3) << std::setfill(' ') << AF._flag_Error << " |";
@@ -2245,7 +2292,7 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerARMED()
 
 void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)
 {
-	if (APMode == APModeINFO::AutoStable || APMode == APModeINFO::ManualHold)
+	if (APMode == APModeINFO::AutoStable || APMode == APModeINFO::RateHold)
 	{
 		if (AF._flag_Device_setupFailed == false)
 		{

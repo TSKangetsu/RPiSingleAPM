@@ -42,6 +42,8 @@
 #define ESCRANGE 800.f
 #define LINUX_SYSTEM_SLEEP_DELAY 50
 
+#define AngleLimitTime 30000000.f
+
 namespace SingleAPMAPI
 {
 	struct APMSettinngs
@@ -215,7 +217,7 @@ namespace SingleAPMAPI
 	enum APModeINFO
 	{
 		//AutoPilot Bank0
-		ManualHold,
+		RateHold,
 		//AutoPilot Bank1
 		AutoStable,
 		AltHold,
@@ -285,6 +287,8 @@ namespace SingleAPMAPI
 			bool _flag_FakeRC_Error;
 			bool _flag_GPS_Error;
 			bool _flag_ClockingTime_Error;
+			bool _flag_AnagleOutOfLimit;
+
 			bool _flag_PreARM_Check;
 			bool _flag_PreARM_Check_Lock;
 
@@ -307,6 +311,7 @@ namespace SingleAPMAPI
 			long int GPS_Lose_Clocking;
 			long int Flow_Lose_Clocking;
 			long int FakeRC_Deprive_Clocking;
+			long int AngleLimit_Out_Clocking;
 
 			bool _flag_MS5611_Async;
 			bool _flag_GPSData_Async;
