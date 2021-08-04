@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 		{
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", setting);
-			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.RPiSingleAPMHotLoad(setting);
 			APM_Settle.APMCalibrator(ESCCalibration, CaliESCStart, 0, data);
 		}
 		break;
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 		{
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", setting);
-			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.RPiSingleAPMHotLoad(setting);
 			while (true)
 			{
 				int s;
@@ -179,6 +179,8 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.OC._flag_B2_Pin = Configdata["_flag_B2_Pin"].get<int>();
 	APMInit.OC._flag_YAWOut_Reverse = Configdata["_flag_YAWOut_Reverse"].get<float>();
 	APMInit.OC._flag_ESC_Lazy_Per = Configdata["_flag_ESC_Lazy_Per"].get<float>();
+	APMInit.OC.ESCPLFrequency = Configdata["ESCPLFrequency"].get<int>();
+	APMInit.OC.ESCControllerType = Configdata["ESCControllerType"].get<int>();
 	//==================================================================PID cofig==/
 	APMInit.PC._flag_PID_P__Roll_Gain = Configdata["_flag_PID_P__Roll_Gain"].get<float>();
 	APMInit.PC._flag_PID_P_Pitch_Gain = Configdata["_flag_PID_P_Pitch_Gain"].get<float>();

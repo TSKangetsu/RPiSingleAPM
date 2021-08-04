@@ -31,18 +31,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
-		if (DF.PCA9658_fd == -1)
-			DF.PCA9658_fd = pca9685Setup(DF.PCA9685_PinBase, DF.PCA9685_Address, DF.PWM_Freq);
-		else
-			pca9685PWMReset(DF.PCA9658_fd);
-		if (DF.PCA9658_fd == -1)
-		{
-			AF._flag_Device_setupFailed = true;
-#ifdef RPiDEBUGStart
-			std::cout << "[RPiSingleAPM]ESCControllerInitFailed \n";
-#endif
-			return -1;
-		}
+		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, EF.ESCPLFrequency));
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -217,9 +206,9 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	if (TF.FlowTask.joinable())
 		TF.FlowTask.join();
 	//--------------------------------------------------------------------//
-	pca9685PWMWrite(DF.PCA9658_fd, 16, 0, 0);
 	usleep(5000);
-	close(DF.PCA9658_fd);
+	DF.ESCDevice->ESCClear(PCA9685_ALL_PIN);
+	DF.ESCDevice.reset();
 	DF.IbusInit.reset();
 	DF.SbusInit.reset();
 	DF.MS5611S.reset();
@@ -941,21 +930,17 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 
 				if (AF._flag_ESC_ARMED)
 				{
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
+					DF.ESCDevice->ESCUpdate(EF._flag_A1_Pin, EF._Flag_Lock_Throttle);
+					DF.ESCDevice->ESCUpdate(EF._flag_A2_Pin, EF._Flag_Lock_Throttle);
+					DF.ESCDevice->ESCUpdate(EF._flag_B1_Pin, EF._Flag_Lock_Throttle);
+					DF.ESCDevice->ESCUpdate(EF._flag_B2_Pin, EF._Flag_Lock_Throttle);
 				}
 				if (!AF._flag_ESC_ARMED)
 				{
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0,
-									EF._uORB_A1_Speed);
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0,
-									EF._uORB_A2_Speed);
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0,
-									EF._uORB_B1_Speed);
-					pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0,
-									EF._uORB_B2_Speed);
+					DF.ESCDevice->ESCUpdate(EF._flag_A1_Pin, EF._uORB_A1_Speed);
+					DF.ESCDevice->ESCUpdate(EF._flag_A2_Pin, EF._uORB_A2_Speed);
+					DF.ESCDevice->ESCUpdate(EF._flag_B1_Pin, EF._uORB_B1_Speed);
+					DF.ESCDevice->ESCUpdate(EF._flag_B2_Pin, EF._uORB_B2_Speed);
 				}
 				//
 				TF._Tmp_ServoThreadClock++;
@@ -1013,27 +998,28 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 {
 	if (controller == ESCCalibration)
 	{
+		DF.ESCDevice.reset();
+		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, EF.ESCPLFrequency));
 		if (action == CaliESCStart)
 		{
-			pca9685PWMReset(DF.PCA9658_fd);
 			sleep(5);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Max__Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Max__Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Max__Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Max__Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_A1_Pin, EF._Flag_Max__Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_A2_Pin, EF._Flag_Max__Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_B1_Pin, EF._Flag_Max__Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_B2_Pin, EF._Flag_Max__Throttle);
 			sleep(15);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, EF._Flag_Lock_Throttle);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, EF._Flag_Lock_Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_A1_Pin, EF._Flag_Lock_Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_A2_Pin, EF._Flag_Lock_Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_B1_Pin, EF._Flag_Lock_Throttle);
+			DF.ESCDevice->ESCUpdate(EF._flag_B2_Pin, EF._Flag_Lock_Throttle);
 			return 0;
 		}
 		else if (action == CaliESCUserDefine)
 		{
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A1_Pin, 0, input);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_A2_Pin, 0, input);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B1_Pin, 0, input);
-			pca9685PWMWrite(DF.PCA9658_fd, EF._flag_B2_Pin, 0, input);
+			DF.ESCDevice->ESCUpdate(EF._flag_A1_Pin, input);
+			DF.ESCDevice->ESCUpdate(EF._flag_A2_Pin, input);
+			DF.ESCDevice->ESCUpdate(EF._flag_B1_Pin, input);
+			DF.ESCDevice->ESCUpdate(EF._flag_B2_Pin, input);
 			return 1;
 		}
 	}
@@ -1160,6 +1146,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	EF._flag_YAWOut_Reverse = APMInit.OC._flag_YAWOut_Reverse;
 	EF._flag_ESC_Lazy_Per = APMInit.OC._flag_ESC_Lazy_Per;
 	EF._Flag_Lazy_Throttle = (EF._Flag_Lock_Throttle + ESCRANGE * EF._flag_ESC_Lazy_Per);
+	EF.ESCPLFrequency = APMInit.OC.ESCPLFrequency;
+	EF.ESCControllerType = (GeneratorType)APMInit.OC.ESCControllerType;
 	//==================================================================PID config==/
 	PF._flag_PID_P__Roll_Gain = APMInit.PC._flag_PID_P__Roll_Gain;
 	PF._flag_PID_P_Pitch_Gain = APMInit.PC._flag_PID_P_Pitch_Gain;

@@ -11,8 +11,8 @@
 #include <thread>
 #include <iostream>
 #include <linux/i2c-dev.h>
-#include "_thirdparty/pca9685.h"
 #include "_thirdparty/EKFImpement.hpp"
+#include "_thirdparty/ESCGenerator.hpp"
 #include "_thirdparty/RPiMS5611LIB/src/MS5611LIB.h"
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
@@ -143,6 +143,9 @@ namespace SingleAPMAPI
 			int _flag_B2_Pin;
 			float _flag_YAWOut_Reverse;
 			float _flag_ESC_Lazy_Per;
+
+			int ESCPLFrequency;
+			int ESCControllerType;
 		} OC;
 
 		struct RCConfig
@@ -318,10 +321,6 @@ namespace SingleAPMAPI
 
 		struct DeviceINFO
 		{
-			int PCA9658_fd = -1;
-			const int PWM_Freq = 400;
-			const int PCA9685_PinBase = 65;
-			const int PCA9685_Address = 0x40;
 			int MPU9250_SPI_Channel = 1;
 			const int MPU9250_ADDR = 0x68;
 			std::string RCDevice;
@@ -337,6 +336,7 @@ namespace SingleAPMAPI
 			std::unique_ptr<Ibus> IbusInit;
 			std::unique_ptr<MS5611> MS5611S;
 			std::unique_ptr<GPSUart> GPSInit;
+			std::unique_ptr<ESCGenerator> ESCDevice;
 			std::unique_ptr<GPSI2CCompass> CompassDevice;
 			std::unique_ptr<RPiMPU9250> MPUDevice;
 			std::unique_ptr<MSPUartFlow> FlowInit;
@@ -635,6 +635,9 @@ namespace SingleAPMAPI
 
 		struct ESCINFO
 		{
+			int ESCPLFrequency = 1526;
+			GeneratorType ESCControllerType = GeneratorType::Hardware_ONESHOT125;
+
 			int _uORB_A1_Speed = 0;
 			int _uORB_A2_Speed = 0;
 			int _uORB_B1_Speed = 0;
@@ -647,10 +650,10 @@ namespace SingleAPMAPI
 			int _flag_A2_Pin = 1;
 			int _flag_B1_Pin = 2;
 			int _flag_B2_Pin = 3;
-			int _Flag_Lazy_Throttle = 2300;
+			int _Flag_Lazy_Throttle = 1050;
 			float _flag_ESC_Lazy_Per = 0.06f;
-			const int _Flag_Lock_Throttle = 2200;
-			const int _Flag_Max__Throttle = 3000;
+			const int _Flag_Lock_Throttle = 1000;
+			const int _Flag_Max__Throttle = 2000;
 			double _uORB_Total_Throttle = 0.0;
 			float _flag_YAWOut_Reverse = 1.f;
 

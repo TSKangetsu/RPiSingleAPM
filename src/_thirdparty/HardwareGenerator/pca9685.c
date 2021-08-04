@@ -13,14 +13,12 @@
 
 #define PIN_ALL 16
 
-
 // Declare
-static void myPwmWrite(struct wiringPiNodeStruct* node, int pin, int value);
-static void myOnOffWrite(struct wiringPiNodeStruct* node, int pin, int value);
-static int myOffRead(struct wiringPiNodeStruct* node, int pin);
-static int myOnRead(struct wiringPiNodeStruct* node, int pin);
+static void myPwmWrite(struct wiringPiNodeStruct *node, int pin, int value);
+static void myOnOffWrite(struct wiringPiNodeStruct *node, int pin, int value);
+static int myOffRead(struct wiringPiNodeStruct *node, int pin);
+static int myOnRead(struct wiringPiNodeStruct *node, int pin);
 int baseReg(int pin);
-
 
 /**
  * Setup a PCA9685 device with wiringPi.
@@ -32,7 +30,7 @@ int baseReg(int pin);
 int pca9685Setup(const int pinBase, const int i2cAddress, float freq)
 {
 	// Create a node with 16 pins [0..15] + [16] for all
-	struct wiringPiNodeStruct* node = wiringPiNewNode(pinBase, PIN_ALL + 1);
+	struct wiringPiNodeStruct *node = wiringPiNewNode(pinBase, PIN_ALL + 1);
 
 	// Check if pinBase is available
 	if (!node)
@@ -53,7 +51,6 @@ int pca9685Setup(const int pinBase, const int i2cAddress, float freq)
 	if (freq > 0)
 		pca9685PWMFreq(fd, freq);
 
-
 	node->fd = fd;
 	node->pwmWrite = myPwmWrite;
 	node->digitalWrite = myOnOffWrite;
@@ -70,7 +67,7 @@ int pca9685Setup(const int pinBase, const int i2cAddress, float freq)
 void pca9685PWMFreq(int fd, float freq)
 {
 	// Cap at min and max
-	freq = (freq > 1000 ? 1000 : (freq < 40 ? 40 : freq));
+	freq = (freq > 1526 ? 1526 : (freq < 24 ? 24 : freq));
 
 	// To set pwm frequency we have to set the prescale register. The formula is:
 	// prescale = round(osc_clock / (4096 * frequency))) - 1 where osc_clock = 25 MHz
@@ -78,10 +75,10 @@ void pca9685PWMFreq(int fd, float freq)
 	int prescale = (int)(25000000.0f / (4096 * freq) - 0.5f);
 
 	// Get settings and calc bytes for the different states.
-	int settings = wiringPiI2CReadReg8(fd, PCA9685_MODE1) & 0x7F;	// Set restart bit to 0
-	int sleep = settings | 0x10;									// Set sleep bit to 1
-	int wake = settings & 0xEF;									// Set sleep bit to 0
-	int restart = wake | 0x80;										// Set restart bit to 1
+	int settings = wiringPiI2CReadReg8(fd, PCA9685_MODE1) & 0x7F; // Set restart bit to 0
+	int sleep = settings | 0x10;								  // Set sleep bit to 1
+	int wake = settings & 0xEF;									  // Set sleep bit to 0
+	int restart = wake | 0x80;									  // Set restart bit to 1
 
 	// Go to sleep, set prescale and wake up again.
 	wiringPiI2CWriteReg8(fd, PCA9685_MODE1, sleep);
@@ -115,13 +112,25 @@ void pca9685PWMWrite(int fd, int pin, int on, int off)
 	wiringPiI2CWriteReg16(fd, reg + 2, off & 0x0FFF);
 }
 
+void pca9685PWMWriteS(int fd, int pin, int off)
+{
+	int reg = baseReg(pin);
+	wiringPiI2CWriteReg16(fd, reg + 2, off & 0x0FFF);
+}
+
+void pca9685PWMResetON(int fd, int pin)
+{
+	int reg = baseReg(pin);
+	wiringPiI2CWriteReg16(fd, reg, (0 & 0x0FFF));
+}
+
 /**
  * Reads both on and off registers as 16 bit of data
  * To get PWM: mask each value with 0xFFF
  * To get full-on or off bit: mask with 0x1000
  * Note: ALL_LED pin will always return 0
  */
-void pca9685PWMRead(int fd, int pin, int* on, int* off)
+void pca9685PWMRead(int fd, int pin, int *on, int *off)
 {
 	int reg = baseReg(pin);
 
@@ -138,7 +147,7 @@ void pca9685PWMRead(int fd, int pin, int* on, int* off)
  */
 void pca9685FullOn(int fd, int pin, int tf)
 {
-	int reg = baseReg(pin) + 1;		// LEDX_ON_H
+	int reg = baseReg(pin) + 1; // LEDX_ON_H
 	int state = wiringPiI2CReadReg8(fd, reg);
 
 	// Set bit 4 to 1 or 0 accordingly
@@ -158,7 +167,7 @@ void pca9685FullOn(int fd, int pin, int tf)
  */
 void pca9685FullOff(int fd, int pin, int tf)
 {
-	int reg = baseReg(pin) + 3;		// LEDX_OFF_H
+	int reg = baseReg(pin) + 3; // LEDX_OFF_H
 	int state = wiringPiI2CReadReg8(fd, reg);
 
 	// Set bit 4 to 1 or 0 accordingly
@@ -175,17 +184,11 @@ int baseReg(int pin)
 	return (pin >= PIN_ALL ? LEDALL_ON_L : LED0_ON_L + 4 * pin);
 }
 
-
-
-
 //------------------------------------------------------------------------------------------------------------------
 //
 //	WiringPi functions
 //
 //------------------------------------------------------------------------------------------------------------------
-
-
-
 
 /**
  * Simple PWM control which sets on-tick to 0 and off-tick to value.
@@ -193,7 +196,7 @@ int baseReg(int pin)
  * If value is >= 4096, full-on will be enabled
  * Every value in between enables PWM output
  */
-static void myPwmWrite(struct wiringPiNodeStruct* node, int pin, int value)
+static void myPwmWrite(struct wiringPiNodeStruct *node, int pin, int value)
 {
 	int fd = node->fd;
 	int ipin = pin - node->pinBase;
@@ -201,7 +204,7 @@ static void myPwmWrite(struct wiringPiNodeStruct* node, int pin, int value)
 	if (value >= 4096)
 		pca9685FullOn(fd, ipin, 1);
 	else if (value > 0)
-		pca9685PWMWrite(fd, ipin, 0, value);	// (Deactivates full-on and off by itself)
+		pca9685PWMWrite(fd, ipin, 0, value); // (Deactivates full-on and off by itself)
 	else
 		pca9685FullOff(fd, ipin, 1);
 }
@@ -211,7 +214,7 @@ static void myPwmWrite(struct wiringPiNodeStruct* node, int pin, int value)
  * If value is 0, full-off will be enabled
  * If value is not 0, full-on will be enabled
  */
-static void myOnOffWrite(struct wiringPiNodeStruct* node, int pin, int value)
+static void myOnOffWrite(struct wiringPiNodeStruct *node, int pin, int value)
 {
 	int fd = node->fd;
 	int ipin = pin - node->pinBase;
@@ -228,7 +231,7 @@ static void myOnOffWrite(struct wiringPiNodeStruct* node, int pin, int value)
  * To get full-off bit: mask with 0x1000
  * Note: ALL_LED pin will always return 0
  */
-static int myOffRead(struct wiringPiNodeStruct* node, int pin)
+static int myOffRead(struct wiringPiNodeStruct *node, int pin)
 {
 	int fd = node->fd;
 	int ipin = pin - node->pinBase;
@@ -245,7 +248,7 @@ static int myOffRead(struct wiringPiNodeStruct* node, int pin)
  * To get full-on bit: mask with 0x1000
  * Note: ALL_LED pin will always return 0
  */
-static int myOnRead(struct wiringPiNodeStruct* node, int pin)
+static int myOnRead(struct wiringPiNodeStruct *node, int pin)
 {
 	int fd = node->fd;
 	int ipin = pin - node->pinBase;

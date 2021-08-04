@@ -1,5 +1,6 @@
 aux_source_directory(. SingleFlight3rd)
 aux_source_directory("EKFImplement/src/." EKFLIB)
+aux_source_directory("HardwareGenerator/." HardwareGenerator)
 add_subdirectory(RaspberryPiMPU/src)
-add_library(SingleFlight3rd ${SingleFlight3rd} ${EKFLIB})
+add_library(SingleFlight3rd ${SingleFlight3rd} ${EKFLIB} ${HardwareGenerator})
 target_link_libraries(SingleFlight3rd PRIVATE RPiMPU)

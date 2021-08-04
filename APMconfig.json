@@ -3,7 +3,9 @@
     "IsTested ? ": false
   },
   "7inch-1450kv": {
-    "ESC_Freqeucy": 400,
+    "ESC_Freqeucy": 1000,
+    "ESCPLFrequency": 1526,
+    "ESCControllerType": 2,
     "IMU_Freqeucy": 4000,
     "RXT_Freqeucy": 250,
     "Type_IMUFilter": 0,
@@ -32,7 +34,7 @@
     "_flag_COMPASS_Y_Scaler": 1,
     "_flag_COMPASS_Z_Offset": 0,
     "_flag_COMPASS_Z_Scaler": 1,
-    "_flag_ESC_Lazy_Per": 0.07,
+    "_flag_ESC_Lazy_Per": 0.15,
     "_flag_Filter_Accel_CutOff": 15,
     "_flag_Filter_Accel_Type": 1,
     "_flag_Filter_AngleMix_Alpha": 0.03,
