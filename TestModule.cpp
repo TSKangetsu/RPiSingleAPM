@@ -214,7 +214,7 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 
 	APMInit.PC._flag_PID_Hover_Throttle = Configdata["_flag_PID_Hover_Throttle"].get<float>();
 	APMInit.PC._flag_PID_Level_Max = Configdata["_flag_PID_Level_Max"].get<float>();
-	APMInit.PC._flag_PID_Rate_Litmit = Configdata["_flag_PID_Rate_Litmit"].get<float>();
+	APMInit.PC._flag_PID_Rate_Limit = Configdata["_flag_PID_Rate_Limit"].get<float>();
 	APMInit.PC._flag_PID_Alt_Level_Max = Configdata["_flag_PID_Alt_Level_Max"].get<float>();
 	APMInit.PC._flag_PID_Pos_Level_Max = Configdata["_flag_PID_Pos_Level_Max"].get<float>();
 
@@ -225,6 +225,9 @@ void configSettle(const char *configDir, APMSettinngs &APMInit)
 	APMInit.PC._flag_PID_Pos_Accel_Max = Configdata["_flag_PID_Pos_Accel_Max"].get<float>();
 	APMInit.PC._flag_PID_Pos_Speed_Max = Configdata["_flag_PID_Pos_Speed_Max"].get<float>();
 	APMInit.PC._flag_PID_AngleRate_Gain = Configdata["_flag_PID_AngleRate_Gain"].get<float>();
+
+	APMInit.PC._flag_PID_RCRate_Gain = Configdata["_flag_PID_RCRate_Gain"].get<float>();
+	APMInit.PC._flag_PID_RCAngle_Gain = Configdata["_flag_PID_RCAngle_Gain"].get<float>();
 
 	APMInit.PC._flag_PID_TPA_Trust = Configdata["_flag_PID_TPA_Trust"].get<float>();
 	APMInit.PC._flag_PID_TPA_BreakPoint = Configdata["_flag_PID_TPA_BreakPoint"].get<float>();

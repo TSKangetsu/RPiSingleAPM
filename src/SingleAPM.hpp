@@ -99,10 +99,13 @@ namespace SingleAPMAPI
 			float _flag_PID_Hover_Throttle;
 
 			float _flag_PID_Level_Max;
-			float _flag_PID_Rate_Litmit;
+			float _flag_PID_Rate_Limit;
 			float _flag_PID_AngleRate_Gain;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Pos_Level_Max;
+
+			float _flag_PID_RCRate_Gain;
+			float _flag_PID_RCAngle_Gain;
 
 			float _flag_PID_Takeoff_Altitude;
 			float _flag_PID_Alt_Speed_Max;
@@ -478,12 +481,16 @@ namespace SingleAPMAPI
 			float _uORB_PID_AngleRate__Roll;
 
 			float _flag_PID_Level_Max = 0;
-			float _flag_PID_Rate_Litmit = 500.f;
-			float _flag_PID_AngleRate_Gain = 15;
+			float _flag_PID_Rate_Limit = 500.f;
+
 			float _flag_Filter_AngleRate_CutOff = 255;
 			float _flag_Filter_PID_I_CutOff = 30.f;
 			float _flag_Filter_PID_D_ST1_CutOff = 100.f;
 			float _flag_Filter_PID_D_ST2_CutOff = 200.f;
+
+			float _flag_PID_RCRate_Gain = 1.5;
+			float _flag_PID_RCAngle_Gain = 0.6;
+			float _flag_PID_AngleRate_Gain = 5.f;
 
 			float _uORB_PID_TPA_Beta = 1.f;
 			float _flag_PID_TPA_Trust = 1.f;

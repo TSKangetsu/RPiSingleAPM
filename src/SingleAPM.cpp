@@ -1187,7 +1187,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 
 	PF._flag_PID_Hover_Throttle = APMInit.PC._flag_PID_Hover_Throttle;
 	PF._flag_PID_Level_Max = APMInit.PC._flag_PID_Level_Max;
-	PF._flag_PID_Rate_Litmit = APMInit.PC._flag_PID_Rate_Litmit;
+	PF._flag_PID_Rate_Limit = APMInit.PC._flag_PID_Rate_Limit;
 	PF._flag_PID_Alt_Level_Max = APMInit.PC._flag_PID_Alt_Level_Max;
 	PF._flag_PID_Pos_Level_Max = APMInit.PC._flag_PID_Pos_Level_Max;
 
@@ -1198,6 +1198,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_Pos_Speed_Max = APMInit.PC._flag_PID_Pos_Speed_Max;
 	PF._flag_PID_Pos_Accel_Max = APMInit.PC._flag_PID_Pos_Accel_Max;
 	PF._flag_PID_AngleRate_Gain = APMInit.PC._flag_PID_AngleRate_Gain;
+
+	PF._flag_PID_RCRate_Gain = APMInit.PC._flag_PID_RCRate_Gain;
+	PF._flag_PID_RCAngle_Gain = APMInit.PC._flag_PID_RCAngle_Gain;
 
 	PF._flag_PID_TPA_Trust = APMInit.PC._flag_PID_TPA_Trust;
 	PF._flag_PID_TPA_BreakPoint = APMInit.PC._flag_PID_TPA_BreakPoint;
@@ -1336,20 +1339,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			else
 				PF._uORB_PID_GYaw_Output = SF._uORB_MPU_Data._uORB_Gryo___Yaw;
 			//--------------------------------------------------------------------------//
-			if (AF.AutoPilotMode == APModeINFO::AltHold ||
-				AF.AutoPilotMode == APModeINFO::AutoStable ||
-				AF.AutoPilotMode == APModeINFO::SpeedHold ||
-				AF.AutoPilotMode == APModeINFO::PositionHold ||
-				AF.AutoPilotMode == APModeINFO::UserAuto)
-			{
-				PF._uORB_PID__Roll_Input = PF._uORB_PID_AngleRate__Roll;
-				PF._uORB_PID_Pitch_Input = PF._uORB_PID_AngleRate_Pitch;
-			}
-			else if (AF.AutoPilotMode == APModeINFO::RateHold)
-			{
-				PF._uORB_PID__Roll_Input = 0;
-				PF._uORB_PID_Pitch_Input = 0;
-			}
+			PF._uORB_PID__Roll_Input = 0;
+			PF._uORB_PID_Pitch_Input = 0;
 			//--------------------------------------------------------------------------//
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
@@ -1359,28 +1350,47 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowAvalible)
 			{
 				if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
-					PF._uORB_PID__Roll_Input -= (RF._uORB_RC_Out__Roll / 15.f);
+					PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle_Gain;
 				else
 					PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
 				if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
-					PF._uORB_PID_Pitch_Input -= (RF._uORB_RC_Out_Pitch / 15.f);
+					PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Gain;
 				else
 					PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
 			}
 			else if (AF.AutoPilotMode == APModeINFO::AutoStable ||
-					 AF.AutoPilotMode == APModeINFO::AltHold ||
-					 AF.AutoPilotMode == APModeINFO::RateHold)
+					 AF.AutoPilotMode == APModeINFO::AltHold)
 			{
-				PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll / 15.f;
-				PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch / 15.f;
+				PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle_Gain;
+				PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Gain;
+			}
+			else if (AF.AutoPilotMode == APModeINFO::RateHold)
+			{
+				PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCRate_Gain;
+				PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCRate_Gain;
 			}
 			//--------------------------------------------------------------------------//
-			PF._uORB_PID__Roll_Input *= PF._flag_PID_AngleRate_Gain;
-			PF._uORB_PID_Pitch_Input *= PF._flag_PID_AngleRate_Gain;
-			SF._uORB_MPU_Data._uORB_Gryo_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch > PF._flag_PID_Rate_Litmit ? PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo_Pitch;
-			SF._uORB_MPU_Data._uORB_Gryo_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch < -1 * PF._flag_PID_Rate_Litmit ? -1 * PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo_Pitch;
-			SF._uORB_MPU_Data._uORB_Gryo__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll > PF._flag_PID_Rate_Litmit ? PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo__Roll;
-			SF._uORB_MPU_Data._uORB_Gryo__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll < -1 * PF._flag_PID_Rate_Litmit ? -1 * PF._flag_PID_Rate_Litmit : SF._uORB_MPU_Data._uORB_Gryo__Roll;
+			if (AF.AutoPilotMode == APModeINFO::AltHold ||
+				AF.AutoPilotMode == APModeINFO::AutoStable ||
+				AF.AutoPilotMode == APModeINFO::SpeedHold ||
+				AF.AutoPilotMode == APModeINFO::PositionHold ||
+				AF.AutoPilotMode == APModeINFO::UserAuto)
+			{
+				float AngleEXPO__Roll = PF._uORB_PID_AngleRate__Roll * PF._flag_PID_AngleRate_Gain;
+				float AngleEXPO_Pitch = PF._uORB_PID_AngleRate_Pitch * PF._flag_PID_AngleRate_Gain;
+				PF._uORB_PID__Roll_Input += AngleEXPO__Roll;
+				PF._uORB_PID_Pitch_Input += AngleEXPO_Pitch;
+			}
+			else if (AF.AutoPilotMode == APModeINFO::RateHold)
+			{
+				PF._uORB_PID__Roll_Input += 0;
+				PF._uORB_PID_Pitch_Input += 0;
+			}
+			//--------------------------------------------------------------------------//
+			SF._uORB_MPU_Data._uORB_Gryo_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch > PF._flag_PID_Rate_Limit ? PF._flag_PID_Rate_Limit : SF._uORB_MPU_Data._uORB_Gryo_Pitch;
+			SF._uORB_MPU_Data._uORB_Gryo_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch < -1 * PF._flag_PID_Rate_Limit ? -1 * PF._flag_PID_Rate_Limit : SF._uORB_MPU_Data._uORB_Gryo_Pitch;
+			SF._uORB_MPU_Data._uORB_Gryo__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll > PF._flag_PID_Rate_Limit ? PF._flag_PID_Rate_Limit : SF._uORB_MPU_Data._uORB_Gryo__Roll;
+			SF._uORB_MPU_Data._uORB_Gryo__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll < -1 * PF._flag_PID_Rate_Limit ? -1 * PF._flag_PID_Rate_Limit : SF._uORB_MPU_Data._uORB_Gryo__Roll;
 			PF._uORB_PID__Roll_Input += SF._uORB_MPU_Data._uORB_Gryo__Roll;
 			PF._uORB_PID_Pitch_Input += SF._uORB_MPU_Data._uORB_Gryo_Pitch;
 			//--------------------------------------------------------------------------//
