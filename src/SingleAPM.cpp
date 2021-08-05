@@ -30,6 +30,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_FailedSafe_Level = 0;
 		AF._flag_PreARM_Check_Level = 0;
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
+
+		TF._Tmp_IMUNavThreadDT = GetTimestamp();
+		TF._Tmp_IMUNavThreadLast = GetTimestamp();
 	}
 	ConfigReader(APMInit);
 	//--------------------------------------------------------------------//
@@ -264,7 +267,13 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 
-				NavigationUpdate();
+				if (TF._Tmp_IMUNavThreadClock >= (TF._flag_IMUThreadFreq / NAVIGATION_HZ))
+				{
+					NavigationUpdate();
+					TF._Tmp_IMUNavThreadClock = 0;
+				}
+				TF._Tmp_IMUNavThreadClock++;
+
 				AttitudeUpdate();
 
 				if (AF._flag_MPU9250_first_StartUp)
@@ -1557,23 +1566,25 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 
 void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 {
+	TF._Tmp_IMUNavThreadDT = GetTimestamp() - TF._Tmp_IMUNavThreadLast;
+
 	SF._uORB_MPU_Data._uORB_Acceleration_X -= PF._uORB_PID_AccelX_Bias;
-	SF._uORB_True_Movement_X += (int)SF._uORB_True_Speed_X * (TF._flag_IMUThreadTimeMax / 1000000.f);
-	SF._uORB_True_Movement_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
-	SF._uORB_True_Speed_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
+	SF._uORB_True_Movement_X += (int)SF._uORB_True_Speed_X * (TF._Tmp_IMUNavThreadDT / 1000000.f);
+	SF._uORB_True_Movement_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * pow((TF._Tmp_IMUNavThreadDT / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
+	SF._uORB_True_Speed_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * (TF._Tmp_IMUNavThreadDT / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
 	//---------------------------------------------------------//
 	SF._uORB_MPU_Data._uORB_Acceleration_Y -= PF._uORB_PID_AccelY_Bias;
-	SF._uORB_True_Movement_Y += (int)SF._uORB_True_Speed_Y * (TF._flag_IMUThreadTimeMax / 1000000.f);
-	SF._uORB_True_Movement_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
-	SF._uORB_True_Speed_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
+	SF._uORB_True_Movement_Y += (int)SF._uORB_True_Speed_Y * (TF._Tmp_IMUNavThreadDT / 1000000.f);
+	SF._uORB_True_Movement_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * pow((TF._Tmp_IMUNavThreadDT / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
+	SF._uORB_True_Speed_Y += (int)SF._uORB_MPU_Data._uORB_Acceleration_Y * (TF._Tmp_IMUNavThreadDT / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
 	//---------------------------------------------------------//
 	SF._uORB_MPU_Data._uORB_Acceleration_Z -= PF._uORB_PID_AccelZ_Bias;
-	SF._uORB_True_Movement_Z += (int)SF._uORB_True_Speed_Z * (TF._flag_IMUThreadTimeMax / 1000000.f);
-	SF._uORB_True_Movement_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * pow((TF._flag_IMUThreadTimeMax / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
-	SF._uORB_True_Speed_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * (TF._flag_IMUThreadTimeMax / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
+	SF._uORB_True_Movement_Z += (int)SF._uORB_True_Speed_Z * (TF._Tmp_IMUNavThreadDT / 1000000.f);
+	SF._uORB_True_Movement_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * pow((TF._Tmp_IMUNavThreadDT / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
+	SF._uORB_True_Speed_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * (TF._Tmp_IMUNavThreadDT / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
 	//---------------------------------------------------------//
-	SF._uORB_Gryo_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_X / 65.5) / TF._flag_IMUThreadFreq;
-	SF._uORB_Gryo_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y + ((float)SF._uORB_MPU_Data._uORB_MPU9250_G_Y / 65.5) / TF._flag_IMUThreadFreq;
+	SF._uORB_Gryo_Body_Asix_X += ((float)SF._uORB_MPU_Data._uORB_Gryo_Pitch) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
+	SF._uORB_Gryo_Body_Asix_Y += ((float)SF._uORB_MPU_Data._uORB_Gryo__Roll) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
 	//POS Controller Reseter
 	{
 		if (!(AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
@@ -1607,6 +1618,9 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		{
 			AF._flag_IsINUHDiable = true;
 			PF._uORB_PID_Sonar_GroundOffset = 0 - SF._uORB_MS5611_Altitude;
+			PF._uORB_PID_AccelX_Bias = 0;
+			PF._uORB_PID_AccelY_Bias = 0;
+			PF._uORB_PID_AccelZ_Bias = 0;
 		}
 		else
 		{
@@ -1676,39 +1690,39 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		{
 			PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
 											PF._uORB_Sonar_Dynamic_Beta *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
 											 (PF._uORB_Sonar_Dynamic_Beta / 1.15f) *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
 										(PF._uORB_Sonar_Dynamic_Beta / 1.5f) * PF._uORB_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;
 		}
 		if (DF._IsMS5611Enable)
 		{
 			PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
 											PF._uORB_Baro_Dynamic_Beta *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
 											 pow(PF._uORB_Baro_Dynamic_Beta, 2) *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
 										pow(PF._uORB_Baro_Dynamic_Beta, 2) * PF._uORB_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_MS5611_AltInput;
 		}
 		else
 		{
 			PF._uORB_PID_MoveZCorrection += (0.f - SF._uORB_True_Movement_Z) *
 											SpeedUnusableRES *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_SpeedZCorrection += (0.f - SF._uORB_True_Speed_Z) *
 											 SpeedUnusableRES *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_AccelZ_Bias -= (0.f - SF._uORB_True_Speed_Z) *
 										SpeedUnusableRES * PF._uORB_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 		}
 		//===============================================//
 		SF._uORB_True_Movement_Z += PF._uORB_PID_MoveZCorrection;
@@ -1730,7 +1744,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 							   PF._uORB_PID_Alt_Throttle, PF._uORB_PID_I_Last_Value_SpeedZ, PF._uORB_PID_D_Last_Value_SpeedZ,
 							   PF._flag_PID_P_SpeedZ_Gain, PF._flag_PID_I_SpeedZ_Gain / 100.f, PF._flag_PID_D_SpeedZ_Gain,
 							   PF._flag_PID_Alt_Level_Max);
-			PF._uORB_PID_Alt_Throttle = pt1FilterApply4(&DF.ThrottleLPF, PF._uORB_PID_Alt_Throttle, FILTERTHROTTLELPFCUTOFF, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+			PF._uORB_PID_Alt_Throttle = pt1FilterApply4(&DF.ThrottleLPF, PF._uORB_PID_Alt_Throttle, FILTERTHROTTLELPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
 			PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle > PF._flag_PID_Alt_Level_Max ? PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
 			PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle < -1 * PF._flag_PID_Alt_Level_Max ? -1 * PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
 		}
@@ -1863,45 +1877,45 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		{
 			PF._uORB_PID_MoveXCorrection += (PF._uORB_PID_Flow_PosInput_X - SF._uORB_True_Movement_X) *
 											PF._flag_Flow_Dynamic_Beta *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_SpeedXCorrection += (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
 											 (PF._flag_Flow_Dynamic_Beta / 1.15f) *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_AccelX_Bias -= (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
 										(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 
 			PF._uORB_PID_MoveYCorrection += (PF._uORB_PID_Flow_PosInput_Y - SF._uORB_True_Movement_Y) *
 											PF._flag_Flow_Dynamic_Beta *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_SpeedYCorrection += (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
 											 (PF._flag_Flow_Dynamic_Beta / 1.15f) *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_AccelY_Bias -= (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
 										(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 		}
 		else
 		{
 			PF._uORB_PID_MoveXCorrection += (0.f - SF._uORB_True_Movement_X) *
 											SpeedUnusableRES *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_SpeedXCorrection += (0.f - SF._uORB_True_Speed_X) *
 											 SpeedUnusableRES *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_AccelX_Bias -= (0.f - SF._uORB_True_Speed_X) *
 										SpeedUnusableRES * PF._uORB_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 
 			PF._uORB_PID_MoveYCorrection += (0.f - SF._uORB_True_Movement_Y) *
 											SpeedUnusableRES *
-											((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_SpeedYCorrection += (0.f - SF._uORB_True_Speed_Y) *
 											 SpeedUnusableRES *
-											 ((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
 			PF._uORB_PID_AccelY_Bias -= (0.f - SF._uORB_True_Speed_Y) *
 										SpeedUnusableRES * PF._uORB_AccelBias_Beta *
-										((float)TF._flag_IMUThreadTimeMax / 1000000.f);
+										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 		}
 
 		SF._uORB_True_Movement_X += PF._uORB_PID_MoveXCorrection;
@@ -1978,10 +1992,12 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 							   PF._flag_PID_P_SpeedY_Gain, PF._flag_PID_I_SpeedY_Gain / 100.f, PF._flag_PID_D_SpeedY_Gain, PF._flag_PID_Pos_Level_Max);
 			PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
 			PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
-			PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, FILTERPOSOUTLPFCUTOFF, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
-			PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, FILTERPOSOUTLPFCUTOFF, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+			PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
+			PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
 		}
 	}
+
+	TF._Tmp_IMUNavThreadLast = GetTimestamp();
 }
 
 void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
@@ -2243,7 +2259,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " IMULoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeLoop;
 	std::cout << " IMUNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeNext;
 	std::cout << " IMUErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_IMUErrorTimes;
-	std::cout << " IMUMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadError << "    \n";
+	std::cout << " IMUMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadError;
+	std::cout << " IMUNAVDT:    " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUNavThreadDT << "    \n";
 	std::cout << " RXTLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadTimeLoop;
 	std::cout << " RXTNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_RXTThreadTimeNext;
 	std::cout << " RXTErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_RXTErrorTimes;
