@@ -267,12 +267,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 
-				if (TF._Tmp_IMUNavThreadClock >= (TF._flag_IMUThreadFreq / NAVIGATION_HZ))
-				{
+				if (SF._uORB_MPU_Data._uORB_MPU9250_AccelCountDown == 1)
 					NavigationUpdate();
-					TF._Tmp_IMUNavThreadClock = 0;
-				}
-				TF._Tmp_IMUNavThreadClock++;
 
 				AttitudeUpdate();
 
@@ -564,15 +560,15 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					if (RF._flag_RC_ARM_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] &&
 						RF._uORB_RC_Channel_PWM[RF._flag_RC_ARM_PWM_Channel] < RF._flag_RC_ARM_PWM_Value + 50)
 					{
-						if (AF.AutoPilotMode == APModeINFO::AutoStable)
+						if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::RateHold)
 						{
 							if (RF._uORB_RC_Out_Throttle > RF._flag_RC_Min_PWM_Value + 20)
 							{
 								AF._flag_StartUP_Protect = true;
 							}
 						}
-						if (AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
-							AF.AutoPilotMode == APModeINFO::UserAuto)
+						if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
+							AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto)
 						{
 							if (!(RF._flag_RC_Mid_PWM_Value - 100 < RF._uORB_RC_Out_Throttle && RF._uORB_RC_Out_Throttle < RF._flag_RC_Mid_PWM_Value + 100))
 							{

@@ -693,7 +693,6 @@ namespace SingleAPMAPI
 		{
 			float _Tmp_IMUNavThreadDT = 0;
 			float _Tmp_IMUNavThreadLast = 0;
-			float _Tmp_IMUNavThreadClock = 0;
 
 			int _Tmp_IMUThreadTimeStart = 0;
 			int _Tmp_IMUThreadTimeEnd = 0;
