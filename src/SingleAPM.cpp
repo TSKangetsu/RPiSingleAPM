@@ -1339,19 +1339,19 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			//--------------------------------------------------------------------------//
 			if (PF._flag_Filter_AngleRate_CutOff != 0)
 				PF._uORB_PID_AngleRate__Roll = pt1FilterApply4(&DF.AngleRateLPF[0], SF._uORB_MPU_Data._uORB_Real__Roll,
-															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			else
 				PF._uORB_PID_AngleRate__Roll = SF._uORB_MPU_Data._uORB_Real__Roll;
 			//
 			if (PF._flag_Filter_AngleRate_CutOff != 0)
 				PF._uORB_PID_AngleRate_Pitch = pt1FilterApply4(&DF.AngleRateLPF[1], SF._uORB_MPU_Data._uORB_Real_Pitch,
-															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			else
 				PF._uORB_PID_AngleRate_Pitch = SF._uORB_MPU_Data._uORB_Real_Pitch;
 			//
 			if (SF._flag_Filter_GYaw_CutOff != 0)
 				PF._uORB_PID_GYaw_Output = pt1FilterApply4(&DF.AngleRateLPF[2], SF._uORB_MPU_Data._uORB_Gryo___Yaw,
-														   SF._flag_Filter_GYaw_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+														   SF._flag_Filter_GYaw_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			else
 				PF._uORB_PID_GYaw_Output = SF._uORB_MPU_Data._uORB_Gryo___Yaw;
 			//--------------------------------------------------------------------------//
@@ -1426,11 +1426,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			float ROLLITERM = PF._uORB_PID__Roll_Input;
 			float ROLLDTERM = ROLLDInput;
 			if (PF._flag_Filter_PID_I_CutOff)
-				ROLLITERM = pt1FilterApply4(&DF.ItermFilterRoll, PF._uORB_PID__Roll_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				ROLLITERM = pt1FilterApply4(&DF.ItermFilterRoll, PF._uORB_PID__Roll_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST1_CutOff)
-				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, ROLLDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, ROLLDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
-				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			PID_CaculateHyper((PF._uORB_PID__Roll_Input),
 							  (ROLLITERM * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
 							  (ROLLDTERM / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
@@ -1450,11 +1450,11 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			float PITCHITERM = PF._uORB_PID_Pitch_Input;
 			float PITCHDTERM = PITCHDInput;
 			if (PF._flag_Filter_PID_I_CutOff)
-				PITCHITERM = pt1FilterApply4(&DF.ItermFilterPitch, PF._uORB_PID_Pitch_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				PITCHITERM = pt1FilterApply4(&DF.ItermFilterPitch, PF._uORB_PID_Pitch_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST1_CutOff)
-				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PITCHDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PITCHDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
-				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
+				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
 			PID_CaculateHyper((PF._uORB_PID_Pitch_Input),
 							  (PITCHITERM * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
 							  (PITCHDTERM / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
