@@ -101,12 +101,18 @@ namespace SingleAPMAPI
 
 			float _flag_PID_Level_Max;
 			float _flag_PID_Rate_Limit;
-			float _flag_PID_AngleRate_Gain;
 			float _flag_PID_Alt_Level_Max;
 			float _flag_PID_Pos_Level_Max;
 
-			float _flag_PID_RCRate_Gain;
-			float _flag_PID_RCAngle_Gain;
+			float _flag_PID_AngleRate__Roll_Gain;
+			float _flag_PID_AngleRate_Pitch_Gain;
+			float _flag_PID_AngleRate___Yaw_Gain;
+			float _flag_PID_RCRate__Roll_Gain;
+			float _flag_PID_RCRate_Pitch_Gain;
+			float _flag_PID_RCRate___Yaw_Gain;
+			float _flag_PID_RCAngle__Roll_Gain;
+			float _flag_PID_RCAngle_Pitch_Gain;
+			float _flag_PID_RCAngle___Yaw_Gain;
 
 			float _flag_PID_Takeoff_Altitude;
 			float _flag_PID_Alt_Speed_Max;
@@ -489,9 +495,15 @@ namespace SingleAPMAPI
 			float _flag_Filter_PID_D_ST1_CutOff = 100.f;
 			float _flag_Filter_PID_D_ST2_CutOff = 200.f;
 
-			float _flag_PID_RCRate_Gain = 1.5;
-			float _flag_PID_RCAngle_Gain = 0.6;
-			float _flag_PID_AngleRate_Gain = 5.f;
+			float _flag_PID_RCRate__Roll_Gain = 1.5;
+			float _flag_PID_RCRate_Pitch_Gain = 1.5;
+			float _flag_PID_RCRate___Yaw_Gain = 1.5;
+			float _flag_PID_RCAngle__Roll_Gain = 0.6;
+			float _flag_PID_RCAngle_Pitch_Gain = 0.6;
+			float _flag_PID_RCAngle___Yaw_Gain = 0.6;
+			float _flag_PID_AngleRate__Roll_Gain = 5.f;
+			float _flag_PID_AngleRate_Pitch_Gain = 5.f;
+			float _flag_PID_AngleRate___Yaw_Gain = 5.f;
 
 			float _uORB_PID_TPA_Beta = 1.f;
 			float _flag_PID_TPA_Trust = 1.f;
@@ -626,6 +638,10 @@ namespace SingleAPMAPI
 			int _uORB_RC_Out_Pitch = 0;
 			int _uORB_RC_Out_Throttle = 0;
 			int _uORB_RC_Out___Yaw = 0;
+
+			float _uORB_RC_D__Roll_Gain = 0.f;
+			float _uORB_RC_D_Pitch_Gain = 0.f;
+			float _uORB_RC_D___Yaw_Gain = 0.f;
 
 			int _uORB_RC_Out_AltHoldSpeed = 0;
 			int _uORB_RC_Out_PosHoldSpeedX = 0;
