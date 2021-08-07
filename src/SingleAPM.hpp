@@ -44,7 +44,7 @@
 
 #define AngleLimitTime 30000000.f
 #define NAVIGATION_HZ 250
-#define PI_DT_DEFAULT 250.f
+#define PID_DT_DEFAULT 250.f
 
 namespace SingleAPMAPI
 {

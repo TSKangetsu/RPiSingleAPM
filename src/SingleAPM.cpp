@@ -1432,8 +1432,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
 				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			PID_CaculateHyper((PF._uORB_PID__Roll_Input),
-							  (ROLLITERM * (TF._Tmp_IMUAttThreadDT / PI_DT_DEFAULT)),
-							  (ROLLDTERM / (TF._Tmp_IMUAttThreadDT / PI_DT_DEFAULT)),
+							  (ROLLITERM * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
+							  (ROLLDTERM / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
 							  PF._uORB_Leveling__Roll, PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
 							  (PF._flag_PID_P__Roll_Gain * PF._uORB_PID_TPA_Beta),
 							  (PF._flag_PID_I__Roll_Gain * PF._uORB_PID_I_Dynamic_Gain),
@@ -1456,8 +1456,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
 				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._flag_IMUThreadTimeMax / 1000000.f));
 			PID_CaculateHyper((PF._uORB_PID_Pitch_Input),
-							  (PITCHITERM * (TF._Tmp_IMUAttThreadDT / PI_DT_DEFAULT)),
-							  (PITCHDTERM / (TF._Tmp_IMUAttThreadDT / PI_DT_DEFAULT)),
+							  (PITCHITERM * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
+							  (PITCHDTERM / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
 							  PF._uORB_Leveling_Pitch, PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
 							  (PF._flag_PID_P_Pitch_Gain * PF._uORB_PID_TPA_Beta),
 							  (PF._flag_PID_I_Pitch_Gain * PF._uORB_PID_I_Dynamic_Gain),
@@ -1470,8 +1470,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 
 			//Yaw PID Mix
 			PID_CaculateExtend((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain),
-							   ((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) * (TF._Tmp_IMUAttThreadDT / PI_DT_DEFAULT)),
-							   ((((PF._uORB_PID_GYaw_Output) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) / (TF._Tmp_IMUAttThreadDT / PI_DT_DEFAULT)),
+							   ((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
+							   ((((PF._uORB_PID_GYaw_Output) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
 							   PF._uORB_Leveling___Yaw, PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
 							   PF._flag_PID_P___Yaw_Gain, (PF._flag_PID_I___Yaw_Gain * PF._uORB_PID_I_Dynamic_Gain), PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
 
