@@ -44,6 +44,7 @@
 
 #define AngleLimitTime 30000000.f
 #define NAVIGATION_HZ 250
+#define PI_DT_DEFAULT 250.f
 
 namespace SingleAPMAPI
 {
@@ -709,6 +710,8 @@ namespace SingleAPMAPI
 		{
 			float _Tmp_IMUNavThreadDT = 0;
 			float _Tmp_IMUNavThreadLast = 0;
+			float _Tmp_IMUAttThreadDT = 0;
+			float _Tmp_IMUAttThreadLast = 0;
 
 			int _Tmp_IMUThreadTimeStart = 0;
 			int _Tmp_IMUThreadTimeEnd = 0;
