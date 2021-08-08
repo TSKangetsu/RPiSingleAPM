@@ -4,7 +4,7 @@
 using namespace SingleAPMAPI;
 
 void configWrite(const char *configDir, const char *Target, double obj);
-void configSettle(const char *configDir, APMSettinngs &APMInit);
+void configSettle(const char *configDir, const char *substr, APMSettinngs &APMInit);
 
 int main(int argc, char *argv[])
 {
@@ -12,18 +12,18 @@ int main(int argc, char *argv[])
 	int argvs;
 	double data[10];
 	APMSettinngs setting;
-	while ((argvs = getopt(argc, argv, "vteECrha")) != -1)
+	while ((argvs = getopt(argc, argv, "e:E:C:r:a:hv")) != -1)
 	{
 		switch (argvs)
 		{
 		case 'v':
-			std::cout << "[RPiSingleAPM] version 1.0.f Beta , Acess By TSKangetsu\n"
+			std::cout << "[RPiSingleAPM] version 0.9.0 Beta , Acess By TSKangetsu\n"
 					  << "	checkout : https://github.com/TSKangetsu/RPiSingleAPM \n";
 			break;
 		case 'r':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", setting);
+			configSettle("/etc/APMconfig.json", optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.TaskThreadBlock();
 		}
@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 		case 'e':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", setting);
+			configSettle("/etc/APMconfig.json", optarg, setting);
 			APM_Settle.RPiSingleAPMHotLoad(setting);
 			APM_Settle.APMCalibrator(ESCCalibration, CaliESCStart, 0, data);
 		}
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		case 'E':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", setting);
+			configSettle("/etc/APMconfig.json", optarg, setting);
 			APM_Settle.RPiSingleAPMHotLoad(setting);
 			while (true)
 			{
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		case 'C':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", setting);
+			configSettle("/etc/APMconfig.json", optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.APMCalibrator(COMPASSCalibration, -1, -1, data);
 			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Y_Scaler", data[CompassYScaler]);
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 			int a;
 			double tmp[50] = {0};
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", setting);
+			configSettle("/etc/APMconfig.json", optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			std::cout << "start calibration Nose Up and Type int and enter:"
 					  << " \n";
@@ -110,9 +110,6 @@ int main(int argc, char *argv[])
 		//--------------------------------------------------------------------------------//
 		case 'h':
 		{
-			std::cout << "using ArgeMent: \n"
-					  << " -r : starting AirController \n"
-					  << " -c : starting CalibrationESC \n";
 		}
 		break;
 			//--------------------------------------------------------------------------------//
@@ -120,12 +117,13 @@ int main(int argc, char *argv[])
 	}
 }
 
-void configSettle(const char *configDir, APMSettinngs &APMInit)
+void configSettle(const char *configDir, const char *substr, APMSettinngs &APMInit)
 {
 	std::ifstream config(configDir);
 	std::string content((std::istreambuf_iterator<char>(config)),
 						(std::istreambuf_iterator<char>()));
-	nlohmann::json Configdata = nlohmann::json::parse(content);
+	nlohmann::json Mas = nlohmann::json::parse(content);
+	nlohmann::json Configdata = Mas[substr];
 	//==========================================================Device Type=======/
 	APMInit.DC.RC_Type = Configdata["Type_RC"].get<int>();
 	APMInit.DC.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
