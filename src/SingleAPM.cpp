@@ -269,6 +269,40 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 
+				//============Online Catlibration======================================//
+				{
+					if (AF._flag_MPUCalibrating == 1)
+					{
+						if (AF._flag_ESC_ARMED &&
+							((AF._flag_PreARM_Check_Level & FailedSafeFlag::_flag_PreARMFailed_GyroNotStable) ||
+							 (AF._flag_PreARM_Check_Level & FailedSafeFlag::_flag_PreARMFailed_AccelNotStable)))
+						{
+							AF._flag_MPUCalibrating = DF.MPUDevice->MPUCalibrationOnline();
+							AF._flag_MPUCalibratingSet = true;
+						}
+						SF._flag_MPUCalibratorWaitClock = 0;
+					}
+					else if (SF._flag_MPUCalibratorWaitClock > CalibratorLimitTime)
+					{
+						if (AF._flag_ESC_ARMED &&
+							((AF._flag_PreARM_Check_Level & FailedSafeFlag::_flag_PreARMFailed_GyroNotStable) ||
+							 (AF._flag_PreARM_Check_Level & FailedSafeFlag::_flag_PreARMFailed_AccelNotStable)))
+						{
+							AF._flag_MPUCalibrating = 1;
+						}
+						else
+							AF._flag_MPUCalibrating = 0;
+						AF._flag_MPUCalibratingSet = false;
+						SF._flag_MPUCalibratorWaitClock = 0;
+					}
+					else
+					{
+						SF._flag_MPUCalibratorWaitClock += 1.f / (float)TF._flag_IMUThreadTimeMax * 1000000.f;
+						AF._flag_MPUCalibratingSet = false;
+					}
+				}
+				//=====================================================================//
+
 				if (SF._uORB_MPU_Data._uORB_MPU9250_AccelCountDown == 1)
 					NavigationUpdate();
 
@@ -2048,9 +2082,12 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 				AF._flag_PreARM_Check_Level |= FailedSafeFlag::_flag_PreARMFailed_AngleNotSync;
 			}
 			//
-			if ((int)SF._uORB_MPU_Data._uORB_Gryo__Roll == 0 ||
-				(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch == 0 ||
-				(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw == 0)
+			if (SF._uORB_MPU_Data._uORB_Gryo__Roll > -1.f &&
+				SF._uORB_MPU_Data._uORB_Gryo__Roll < 1.f &&
+				SF._uORB_MPU_Data._uORB_Gryo_Pitch > -1.f &&
+				SF._uORB_MPU_Data._uORB_Gryo_Pitch < 1.f &&
+				SF._uORB_MPU_Data._uORB_Gryo___Yaw > -1.f &&
+				SF._uORB_MPU_Data._uORB_Gryo___Yaw < 1.f)
 			{
 				AF._flag_PreARM_Check = true;
 				AF._flag_PreARM_Check_Level &= ~FailedSafeFlag::_flag_PreARMFailed_GyroNotStable;
@@ -2071,9 +2108,12 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 				AF._flag_PreARM_Check = false;
 				AF._flag_PreARM_Check_Level |= FailedSafeFlag::_flag_PreARMFailed_NavigationNotSync;
 			}
-			if ((int)SF._uORB_MPU_Data._uORB_Acceleration_X == 0 ||
-				(int)SF._uORB_MPU_Data._uORB_Acceleration_Y == 0 ||
-				(int)SF._uORB_MPU_Data._uORB_Acceleration_Z == 0)
+			if ((int)SF._uORB_MPU_Data._uORB_Acceleration_X > -10.f &&
+				(int)SF._uORB_MPU_Data._uORB_Acceleration_X < 10.f &&
+				(int)SF._uORB_MPU_Data._uORB_Acceleration_Y > -10.f &&
+				(int)SF._uORB_MPU_Data._uORB_Acceleration_Y < 10.f &&
+				(int)SF._uORB_MPU_Data._uORB_Acceleration_Z > -10.f &&
+				(int)SF._uORB_MPU_Data._uORB_Acceleration_Z < 10.f)
 			{
 				AF._flag_PreARM_Check = true;
 				AF._flag_PreARM_Check_Level &= ~FailedSafeFlag::_flag_PreARMFailed_AccelNotStable;
@@ -2097,11 +2137,13 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 			AF._flag_FailedSafe_Level |= FailedSafeFlag::_flag_FailedSafe_FakeRCLose;
 		else
 			AF._flag_FailedSafe_Level &= ~FailedSafeFlag::_flag_FailedSafe_FakeRCLose;
+		if (AF._flag_RC_Error && AF._flag_FakeRC_Error)
+			AF._flag_Error = true;
 
 		if (AF._flag_AnagleOutOfLimit)
 		{
 			AF._flag_FailedSafe_Level |= FailedSafeFlag::_flag_FailedSafe_AngleLimit;
-			AF._flag_Error == true;
+			AF._flag_Error = true;
 		}
 		else
 			AF._flag_FailedSafe_Level &= ~FailedSafeFlag::_flag_FailedSafe_AngleLimit;
@@ -2263,11 +2305,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_FakeRC_Error:      " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Error << " |";
 	std::cout << " Flag_FakeRC_Disconnect: " << std::setw(3) << std::setfill(' ') << AF.FakeRC_Lose_Clocking << " |";
 	std::cout << " Flag_FakeRC_Deprive:    " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Deprive << " |";
+	std::cout << " Flag_MPUCalibrating:    " << std::setw(3) << std::setfill(' ') << AF._flag_MPUCalibratingSet << " |";
 	std::cout << " Flag_IsNotTakeOff:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsNotTakeOff << "           \n";
 	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";
 	std::cout << " Flag_IsSonarAvalible:   " << std::setw(3) << std::setfill(' ') << AF._flag_IsSonarAvalible << " |";
 	std::cout << " GPS_Lose_Clocking:      " << std::setw(3) << std::setfill(' ') << AF.GPS_Lose_Clocking << " |";
-	std::cout << " MinxRangeBeta:          " << std::setw(3) << std::setfill(' ') << EF._uORB_ESC_MIX_Range << " |";
+	std::cout << " Flag_RC_Error:          " << std::setw(3) << std::setfill(' ') << AF._flag_RC_Error << " |";
 	std::cout << " RC_Lose_Clocking:       " << std::setw(3) << std::setfill(' ') << AF.RC_Lose_Clocking << "                        \n\n";
 
 	std::cout << " IMULoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUThreadTimeLoop;
@@ -2373,7 +2416,8 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerDISARM(APModeINFO APMode)
 						AF._flag_IsAutoTakeoffRequire = true;
 						AF._flag_IsAutoTakeoffLock = true;
 					}
-					AF._flag_ESC_ARMED = false;
+					if (AF._flag_PreARM_Check)
+						AF._flag_ESC_ARMED = false;
 				}
 			}
 			else

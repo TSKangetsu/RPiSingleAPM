@@ -43,6 +43,7 @@
 #define LINUX_SYSTEM_SLEEP_DELAY 50
 
 #define AngleLimitTime 30000000.f
+#define CalibratorLimitTime 10000000.f
 #define NAVIGATION_HZ 250
 #define PID_DT_DEFAULT 250.f
 
@@ -302,6 +303,8 @@ namespace SingleAPMAPI
 
 			bool _flag_PreARM_Check;
 			bool _flag_PreARM_Check_Lock;
+			bool _flag_MPUCalibrating;
+			bool _flag_MPUCalibratingSet;
 
 			bool _flag_IsAutoTakeoffLock;
 			bool _flag_IsAutoTakeoffRequire;
@@ -400,6 +403,7 @@ namespace SingleAPMAPI
 			int _flag_Filter_Accel_CutOff;
 			double _flag_Filter_AngleMix_Alpha;
 			double _flag_MPU_Accel_Cali[20];
+			int _flag_MPUCalibratorWaitClock = 0;
 			double _uORB_True_Speed_X = 0;
 			double _uORB_True_Speed_Y = 0;
 			double _uORB_True_Speed_Z = 0;
