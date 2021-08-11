@@ -15,8 +15,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
-      with:
-        submodules: 'true'
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
        
     - name: Install wiringpi
       run: sudo apt-get install wiringpi pigpio
