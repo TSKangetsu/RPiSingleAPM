@@ -516,6 +516,8 @@ namespace SingleAPMAPI
 			//===============AltHoldPID=========//
 			//Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
+			int _uORB_PID_Sonar_GroundTimeOut = 0;
+			bool _uORB_PID_Sonar_GroundValid = false;
 			float _uORB_PID_Sonar_GroundOffset = 0;
 			float _uORB_PID_MS5611_AltInput = 0;
 			float _uORB_PID_MoveZCorrection = 0;

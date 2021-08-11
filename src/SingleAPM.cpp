@@ -1669,10 +1669,19 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_AccelX_Bias = 0;
 			PF._uORB_PID_AccelY_Bias = 0;
 			PF._uORB_PID_AccelZ_Bias = 0;
+			PF._uORB_PID_Sonar_GroundValid = true;
+			PF._uORB_PID_Sonar_GroundTimeOut = GetTimestamp() + 250000;
 		}
 		else
 		{
 			AF._flag_IsINUHDiable = false;
+			if (SF._uORB_True_Movement_Z > 15)
+			{
+				if (GetTimestamp() > PF._uORB_PID_Sonar_GroundTimeOut)
+				{
+					PF._uORB_PID_Sonar_GroundValid = false;
+				}
+			}
 		}
 		//
 		if (AF._flag_IsINUHDiable)
@@ -1733,6 +1742,10 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_Sonar_AltInput = SF._uORB_Flow_Altitude_Final / 10.f;
 			AF._flag_SonarData_Async = false;
 		}
+		//===============================================//
+		//Air cushion effect
+		bool isAirCushionEffectDetected = (PF._uORB_PID_Sonar_GroundValid && (PF._uORB_PID_MS5611_AltInput < -1.f * PF._uORB_PID_Sonar_GroundOffset));
+		PF._uORB_PID_MS5611_AltInput = (isAirCushionEffectDetected ? 0 : PF._uORB_PID_MS5611_AltInput);
 		//===============================================//
 		if (AF._flag_IsSonarAvalible)
 		{
