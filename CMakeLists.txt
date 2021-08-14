@@ -16,8 +16,7 @@ IF(UNIX)
     target_link_libraries(SingleFlight PRIVATE  RPiSingleAPI)
     target_link_libraries(SingleFlight PRIVATE Threads::Threads)
     target_link_libraries(SingleFlight PRIVATE  ${wiringPi_LIB})
-
-
+    
     INSTALL(TARGETS SingleFlight DESTINATION "/usr/bin/")
     INSTALL(FILES APMconfig.json DESTINATION "/etc/")
     set(CPACK_PACKAGE_NAME "SingleFlight")

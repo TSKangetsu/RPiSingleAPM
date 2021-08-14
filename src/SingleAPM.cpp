@@ -141,6 +141,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		config.DynamicNotchEnable = SF._flag_Filter_Gryo_DynamicNotchEnable;
 		config.DynamicNotchMinFreq = SF._flag_Filter_Gryo_DynamicNotchMinFreq;
 		//
+		config.AccTargetFreqency = ACCEL_UPDATE_HZ;
 		config.AccelFilterType = SF._flag_Filter_Accel_Type;
 		config.AccelFilterCutOff = SF._flag_Filter_Accel_CutOff;
 		DF.MPUDevice.reset(new RPiMPU9250(config));
@@ -2216,15 +2217,25 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " AccePitch:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel_Pitch << "    "
 			  << " AcceRoll:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Accel__Roll << "    "
-			  << " AccelG  :    " << std::setw(2) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_A_Vector << "    "
+			  << " AccelG  :    " << std::setw(7) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_A_Vector << "    "
+			  << "                        "
+			  << std::endl;
+	std::cout << " AccelXG:     " << std::setw(7) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_ADF_X << "    "
+			  << " AccelYG:     " << std::setw(7) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y << "    "
+			  << " AccelZG:     " << std::setw(7) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_ADF_Z << "    "
+			  << "                        "
+			  << std::endl;
+	std::cout << " VIBEX:       " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU_Data._uORB_Accel_VIBE_X * 1000.f) << "    "
+			  << " VIBEY:       " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU_Data._uORB_Accel_VIBE_X * 1000.f) << "    "
+			  << " VIBEZ:       " << std::setw(2) << std::setfill(' ') << (int)(SF._uORB_MPU_Data._uORB_Accel_VIBE_X * 1000.f) << "    "
 			  << "                        "
 			  << std::endl;
 	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw << "    "
 			  << " MAGSYAW:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_StaticYaw << "    "
 			  << " IMUTIME:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_IMUUpdateTime << "         \n"
-			  << " MAGRawX:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawX
-			  << " MAGRawY:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawY
-			  << " MAGRawZ:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawZ
+			  << " MAGRawX:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawX << "    "
+			  << " MAGRawY:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawY << "    "
+			  << " MAGRawZ:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawZ << "    "
 			  << std::endl;
 	std::cout << " AccelrationX:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Acceleration_X << "cms2"
 			  << " AccelrationY:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Acceleration_Y << "cms2"

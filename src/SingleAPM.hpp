@@ -45,6 +45,7 @@
 #define AngleLimitTime 30000000.f
 #define CalibratorLimitTime 10000000.f
 #define NAVIGATION_HZ 250
+#define ACCEL_UPDATE_HZ 1000
 #define PID_DT_DEFAULT 250.f
 
 namespace SingleAPMAPI
