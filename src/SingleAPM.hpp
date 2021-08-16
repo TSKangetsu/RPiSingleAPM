@@ -25,6 +25,7 @@
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #define PI 3.1415926
 #define SpeedUnusableRES 1.5
+#define ACC_CLIPPING_RC_CONSTANT 0.10f
 
 #define RCIsIbus 0
 #define RCIsSbus 1
@@ -411,6 +412,7 @@ namespace SingleAPMAPI
 			double _uORB_True_Movement_X = 0;
 			double _uORB_True_Movement_Y = 0;
 			double _uORB_True_Movement_Z = 0;
+			int _uORB_Accel_Clipped_Count = 0;
 			//=========================MS5611======//
 			int _Tmp_MS5611_Error = 0;
 			double _Tmp_MS5611_Data[10] = {1000, 1000, 1000, 0};

@@ -1617,6 +1617,19 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 {
 	TF._Tmp_IMUNavThreadDT = GetTimestamp() - TF._Tmp_IMUNavThreadLast;
 
+	// If accelerometer measurement is clipped - drop the acc weight to zero
+	// and gradually restore weight back to 1.0 over time
+	if (SF._uORB_MPU_Data._uORB_MPU9250_ACC_Clipped)
+	{
+		SF._uORB_Accel_Clipped_Count++;
+		PF._uORB_Accel_Dynamic_Beta = 0.f;
+	}
+	else
+	{
+		const float relAlpha = (TF._Tmp_IMUNavThreadDT / 1000000.f) / ((TF._Tmp_IMUNavThreadDT / 1000000.f) + ACC_CLIPPING_RC_CONSTANT);
+		PF._uORB_Accel_Dynamic_Beta = PF._uORB_Accel_Dynamic_Beta * (1.0f - relAlpha) + 1.0f * relAlpha;
+	}
+
 	SF._uORB_MPU_Data._uORB_Acceleration_X -= PF._uORB_PID_AccelX_Bias;
 	SF._uORB_True_Movement_X += (int)SF._uORB_True_Speed_X * (TF._Tmp_IMUNavThreadDT / 1000000.f);
 	SF._uORB_True_Movement_X += (int)SF._uORB_MPU_Data._uORB_Acceleration_X * pow((TF._Tmp_IMUNavThreadDT / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
@@ -1687,13 +1700,11 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		//
 		if (AF._flag_IsINUHDiable)
 		{
-			PF._uORB_Accel_Dynamic_Beta = 0.f;
 			PF._uORB_Sonar_Dynamic_Beta = 1.f;
 			PF._uORB_Baro_Dynamic_Beta = 1.f;
 		}
 		else
 		{
-			PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
 			PF._uORB_Sonar_Dynamic_Beta = PF._flag_Sonar_Config_Beta;
 			PF._uORB_Baro_Dynamic_Beta = PF._flag_Baro_Config_Beta;
 		}
@@ -2227,7 +2238,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " VIBEX:       " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU_Data._uORB_Accel_VIBE_X * 1000.f) << "    "
 			  << " VIBEY:       " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU_Data._uORB_Accel_VIBE_X * 1000.f) << "    "
-			  << " VIBEZ:       " << std::setw(2) << std::setfill(' ') << (int)(SF._uORB_MPU_Data._uORB_Accel_VIBE_X * 1000.f) << "    "
+			  << " VIBEZ:       " << std::setw(7) << std::setfill(' ') << (int)(SF._uORB_MPU_Data._uORB_Accel_VIBE_X * 1000.f) << "    "
+			  << "                        "
+			  << std::endl;
+	std::cout << " AccelClipped:" << std::setw(7) << std::setfill(' ') << SF._uORB_MPU_Data._uORB_MPU9250_ACC_Clipped << "    "
+			  << " AccelClCount:" << std::setw(7) << std::setfill(' ') << SF._uORB_Accel_Clipped_Count << "    "
+			  << " AccelDynamic:" << std::setw(7) << std::setfill(' ') << PF._uORB_Accel_Dynamic_Beta << "    "
 			  << "                        "
 			  << std::endl;
 	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw << "    "
