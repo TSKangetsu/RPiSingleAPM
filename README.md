@@ -2,7 +2,7 @@
 
 <img src="https://github.com/TSKangetsu/RPiSingleAPM/blob/master/Document/Header.jpg" style="transform:rotate(90deg);">
 
-SingleFlight is flight controller C++ API used to fly quad-rotor craft.
+SingleFlight is linux-userland C++ flight controller, without any external micro-controller
 
 This project differs from Baseflight and inav in that it focuses on running controller in ARM-Linux, and suit for indoor navigation. Project use some parts of Cleanfilght and inav , but it's not a fork.<br/>
 
