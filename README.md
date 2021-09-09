@@ -15,6 +15,7 @@ This project differs from Baseflight and inav in that it focuses on running cont
   - [Configure RaspberryPi For Controller](#Configure-RaspberryPi-For-Controller)
   
 # Features
+  * Run in Linux User Land, not require any realtime os
   * Run in Raspberrypi4B without any external controller
   * 4kHZ with Attitude Control and 100HZ IMU navigation
   * ESC oneshot125 support with PCA9685, YES, it's ONESHOT125, Up to 1.5KHZ
