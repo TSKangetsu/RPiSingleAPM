@@ -10,3 +10,6 @@
 [submodule "src/_thirdparty/EKFImplement"]
 	path = src/_thirdparty/EKFImplement
 	url = https://github.com/simondlevy/TinyEKF
+[submodule "src/_thirdparty/RaspberryPiBARO"]
+	path = src/_thirdparty/RaspberryPiBARO
+	url = https://github.com/TSKangetsu/RaspberryPiBARO

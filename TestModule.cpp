@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
+			APM_Settle.RPiSingleAPMStartUp();
 			APM_Settle.TaskThreadBlock();
 		}
 		break;
@@ -32,7 +33,7 @@ int main(int argc, char *argv[])
 		{
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", optarg, setting);
-			APM_Settle.RPiSingleAPMHotLoad(setting);
+			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.APMCalibrator(ESCCalibration, CaliESCStart, 0, data);
 		}
 		break;
@@ -40,12 +41,14 @@ int main(int argc, char *argv[])
 		{
 			RPiSingleAPM APM_Settle;
 			configSettle("/etc/APMconfig.json", optarg, setting);
-			APM_Settle.RPiSingleAPMHotLoad(setting);
+			APM_Settle.RPiSingleAPMInit(setting);
 			while (true)
 			{
-				int s;
-				std::cin >> s;
-				APM_Settle.APMCalibrator(ESCCalibration, CaliESCUserDefine, s, data);
+				int PIN, VALUE;
+				std::cin >> PIN;
+				std::cin >> VALUE;
+				data[0] = PIN;
+				APM_Settle.APMCalibrator(ESCCalibration, CaliESCUserDefine, VALUE, data);
 			}
 		}
 		break;

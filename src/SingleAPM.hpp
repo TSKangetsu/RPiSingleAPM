@@ -247,6 +247,8 @@ namespace SingleAPMAPI
 	public:
 		int RPiSingleAPMInit(APMSettinngs APMInit);
 
+		void RPiSingleAPMStartUp();
+
 		void RPiSingleAPMHotLoad(APMSettinngs APMInit) { ConfigReader(APMInit); };
 
 		void RPiSingleAPMDeInit();
@@ -364,7 +366,7 @@ namespace SingleAPMAPI
 
 			std::unique_ptr<Sbus> SbusInit;
 			std::unique_ptr<Ibus> IbusInit;
-			std::unique_ptr<MS5611> MS5611S;
+			std::unique_ptr<MS5611> BaroDevice;
 			std::unique_ptr<GPSUart> GPSInit;
 			std::unique_ptr<ESCGenerator> ESCDevice;
 			std::unique_ptr<GPSI2CCompass> CompassDevice;

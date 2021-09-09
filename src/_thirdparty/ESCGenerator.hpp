@@ -31,7 +31,12 @@ public:
 
     inline void ESCClear(int ID);
 
-    inline ~ESCGenerator() { close(GeneratorFD); };
+    inline ~ESCGenerator()
+    {
+        pca9685PWMReset(GeneratorFD);
+        pca9685PWMResetON(GeneratorFD, PCA9685_ALL_PIN);
+        close(GeneratorFD);
+    };
 
 private:
     GeneratorType Generator;

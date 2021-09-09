@@ -69,8 +69,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Checking MS5611 ... ";
 			std::cout.flush();
 #endif
-			DF.MS5611S.reset(new MS5611());
-			if (!DF.MS5611S->MS5611Init(1, 0, -1))
+			DF.BaroDevice.reset(new MS5611());
+			if (!DF.BaroDevice->MS5611Init(1, 0, -1))
 			{
 				AF._flag_Device_setupFailed = true;
 #ifdef RPiDEBUGStart
@@ -81,7 +81,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			else
 			{
 				pt1FilterInit(&DF.BAROLPF, FILTERBAROLPFCUTOFF, 0.0f);
-				DF.MS5611S->MS5611Calibration(SF._Tmp_MS5611_Data, false);
+				DF.BaroDevice->MS5611Calibration(SF._Tmp_MS5611_Data, false);
 #ifdef RPiDEBUGStart
 				std::cout << "Done! "
 						  << "\n";
@@ -174,6 +174,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		pt1FilterInit(&DF.RCLPF[2], RF._flag_Filter_RC_CutOff, 0.f);
 	}
 	//--------------------------------------------------------------------//
+	sleep(2);
+	system("clear");
+	AF._flag_Device_setupFailed = false;
+	return 0;
+}
+
+void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMStartUp()
+{
 	{
 		IMUSensorsTaskReg();
 
@@ -185,11 +193,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 		ESCUpdateTaskReg();
 	}
-	//--------------------------------------------------------------------//
-	sleep(2);
-	system("clear");
-	AF._flag_Device_setupFailed = false;
-	return 0;
 }
 
 void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
@@ -223,7 +226,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	DF.ESCDevice.reset();
 	DF.IbusInit.reset();
 	DF.SbusInit.reset();
-	DF.MS5611S.reset();
+	DF.BaroDevice.reset();
 	DF.GPSInit.reset();
 	DF.CompassDevice.reset();
 	DF.FlowInit.reset();
@@ -351,7 +354,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 					TF._Tmp_ALTThreadTimeStart = GetTimestamp();
 					TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-					SF._Tmp_MS5611_Error = DF.MS5611S->MS5611PreReader(SF._Tmp_MS5611_Data);
+					SF._Tmp_MS5611_Error = DF.BaroDevice->MS5611PreReader(SF._Tmp_MS5611_Data);
 					//
 					SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[MS5611RawPressure];
 					SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_Data[MS5611FastPressure];
@@ -359,7 +362,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 					SF._uORB_MS5611_PressureFinal = SF._Tmp_MS5611_PressureFill;
 					//
 					float DT = (TF._flag_ALTThreadTimeMax / 1000000.f);
-					SF._Tmp_MS5611_Altitude = ((int)(DF.MS5611S->Pressure2Altitude(SF._Tmp_MS5611_Pressure) * 100.f));
+					SF._Tmp_MS5611_Altitude = ((int)(DF.BaroDevice->Pressure2Altitude(SF._Tmp_MS5611_Pressure) * 100.f));
 					SF._uORB_MS5611_Altitude = pt1FilterApply3(&DF.BAROLPF, SF._Tmp_MS5611_Altitude, DT);
 					//
 					AF._flag_MS5611_Async = true;
@@ -1046,8 +1049,6 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 {
 	if (controller == ESCCalibration)
 	{
-		DF.ESCDevice.reset();
-		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, EF.ESCPLFrequency));
 		if (action == CaliESCStart)
 		{
 			sleep(5);
@@ -1064,10 +1065,7 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 		}
 		else if (action == CaliESCUserDefine)
 		{
-			DF.ESCDevice->ESCUpdate(EF._flag_A1_Pin, input);
-			DF.ESCDevice->ESCUpdate(EF._flag_A2_Pin, input);
-			DF.ESCDevice->ESCUpdate(EF._flag_B1_Pin, input);
-			DF.ESCDevice->ESCUpdate(EF._flag_B2_Pin, input);
+			DF.ESCDevice->ESCUpdate((int)data[0], input);
 			return 1;
 		}
 	}
