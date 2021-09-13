@@ -33,11 +33,6 @@ This project differs from Baseflight and inav in that it focuses on running cont
   *  PCA9685 PWM controller to ESC
   *  Sbus and Ibus RC support
 
-# Special thanks
-  * Attitude and PID , Looping core reference from <a href="https://www.youtube.com/channel/UCpJ5uKSLxP84TXQtwiRNm1g">Joop Brokking</a>
-  * Navigation core reference from <a href="https://github.com/iNavFlight/inav">INAV</a>
-  * Filter reference <a href="https://github.com/cleanflight/cleanflight">cleanflight</a>
-
 # BuildConfigure 
 ### Build Test Module And Fly On RaspberryPi:
 ```SHELL
