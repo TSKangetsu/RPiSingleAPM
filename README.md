@@ -4,7 +4,7 @@
 
 SingleFlight is linux-userland C++ flight controller, without any external micro-controller
 
-This project differs from Baseflight and inav in that it focuses on running controller in ARM-Linux, and suit for indoor navigation. Project use some parts of Cleanfilght and inav , but it's not a fork.<br/>
+This project differs from Baseflight and inav in that it focuses on running controller in ARM-Linux, and suit for indoor navigation. And it's not a fork.<br/>
 
 #
 - GetStarted
