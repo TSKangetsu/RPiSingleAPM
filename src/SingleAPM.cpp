@@ -1142,7 +1142,6 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	//==========================================================Device Type=======/
 	RF.RC_Type = APMInit.DC.RC_Type;
 	SF.MPU9250_Type = APMInit.DC.MPU9250_Type;
-	SF.IMUFilter_Type = APMInit.DC.IMUFilter_Type;
 
 	DF.RCDevice = APMInit.DC.__RCDevice;
 	DF.GPSDevice = APMInit.DC.__GPSDevice;

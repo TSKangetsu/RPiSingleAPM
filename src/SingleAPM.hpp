@@ -60,7 +60,6 @@ namespace SingleAPMAPI
 			int IMU_Freqeuncy;
 			int RXT_Freqeuncy;
 			int ESC_Freqeuncy;
-			int IMUFilter_Type;
 
 			std::string __RCDevice;
 			std::string __GPSDevice;
@@ -139,11 +138,6 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_A_X_Scal;
 			double _flag_MPU9250_A_Y_Scal;
 			double _flag_MPU9250_A_Z_Scal;
-			double _flag_MPU9250_M_X_Offset;
-			double _flag_MPU9250_M_Y_Offset;
-			double _flag_MPU9250_M_Z_Offset;
-			double _flag_MPU9250_M_Y_Scaler;
-			double _flag_MPU9250_M_Z_Scaler;
 			double _flag_MPU9250_Head_Asix;
 			double _flag_COMPASS_Y_Scaler;
 			double _flag_COMPASS_Z_Scaler;
@@ -391,7 +385,6 @@ namespace SingleAPMAPI
 		{
 			//=========================MPU9250======//
 			int MPU9250_Type;
-			int IMUFilter_Type;
 			MPUData _uORB_MPU_Data;
 			int _flag_Filter_Gryo_Type;
 			int _flag_Filter_GryoST2_Type;

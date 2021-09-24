@@ -18,7 +18,7 @@ IF(UNIX)
     target_link_libraries(SingleFlight PRIVATE  ${wiringPi_LIB})
     
     INSTALL(TARGETS SingleFlight DESTINATION "/usr/bin/")
-    INSTALL(FILES APMconfig.json DESTINATION "/etc/")
+    INSTALL(FILES APMconfig.json DESTINATION "/boot/")
     set(CPACK_PACKAGE_NAME "SingleFlight")
     set(CPACK_PACKAGE_VERSION "0.9.0BETA") 
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "pigpio,wiringpi")

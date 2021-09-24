@@ -3,6 +3,8 @@
 #include "Drive_Json.hpp"
 using namespace SingleAPMAPI;
 
+#define CONFIGDIR "/boot/APMConfig.json"
+
 void configWrite(const char *configDir, const char *Target, double obj);
 void configSettle(const char *configDir, const char *substr, APMSettinngs &APMInit);
 
@@ -23,7 +25,7 @@ int main(int argc, char *argv[])
 		case 'r':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", optarg, setting);
+			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.RPiSingleAPMStartUp();
 			APM_Settle.TaskThreadBlock();
@@ -32,7 +34,7 @@ int main(int argc, char *argv[])
 		case 'e':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", optarg, setting);
+			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.APMCalibrator(ESCCalibration, CaliESCStart, 0, data);
 		}
@@ -40,7 +42,7 @@ int main(int argc, char *argv[])
 		case 'E':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", optarg, setting);
+			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			while (true)
 			{
@@ -55,14 +57,14 @@ int main(int argc, char *argv[])
 		case 'C':
 		{
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", optarg, setting);
+			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.APMCalibrator(COMPASSCalibration, -1, -1, data);
-			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Y_Scaler", data[CompassYScaler]);
-			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Z_Scaler", data[CompassZScaler]);
-			configWrite("/etc/APMconfig.json", "_flag_COMPASS_X_Offset", data[CompassXOffset]);
-			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Y_Offset", data[CompassYOffset]);
-			configWrite("/etc/APMconfig.json", "_flag_COMPASS_Z_Offset", data[CompassZOffset]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_Y_Scaler", data[CompassYScaler]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_Z_Scaler", data[CompassZScaler]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_X_Offset", data[CompassXOffset]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_Y_Offset", data[CompassYOffset]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_Z_Offset", data[CompassZOffset]);
 		}
 		break;
 		case 'a':
@@ -70,7 +72,7 @@ int main(int argc, char *argv[])
 			int a;
 			double tmp[50] = {0};
 			RPiSingleAPM APM_Settle;
-			configSettle("/etc/APMconfig.json", optarg, setting);
+			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			std::cout << "start calibration Nose Up and Type int and enter:"
 					  << " \n";
@@ -102,12 +104,12 @@ int main(int argc, char *argv[])
 				std::cout << tmp[i] << " \n";
 			}
 
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_X_Cali", tmp[MPUAccelCaliX]);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Y_Cali", tmp[MPUAccelCaliY]);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Z_Cali", tmp[MPUAccelCaliZ]);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_X_Scal", tmp[MPUAccelScalX]);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Y_Scal", tmp[MPUAccelScalY]);
-			configWrite("/etc/APMconfig.json", "_flag_MPU9250_A_Z_Scal", tmp[MPUAccelScalZ]);
+			configWrite(CONFIGDIR, "_flag_MPU9250_A_X_Cali", tmp[MPUAccelCaliX]);
+			configWrite(CONFIGDIR, "_flag_MPU9250_A_Y_Cali", tmp[MPUAccelCaliY]);
+			configWrite(CONFIGDIR, "_flag_MPU9250_A_Z_Cali", tmp[MPUAccelCaliZ]);
+			configWrite(CONFIGDIR, "_flag_MPU9250_A_X_Scal", tmp[MPUAccelScalX]);
+			configWrite(CONFIGDIR, "_flag_MPU9250_A_Y_Scal", tmp[MPUAccelScalY]);
+			configWrite(CONFIGDIR, "_flag_MPU9250_A_Z_Scal", tmp[MPUAccelScalZ]);
 		}
 		break;
 		//--------------------------------------------------------------------------------//
@@ -128,9 +130,8 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	nlohmann::json Mas = nlohmann::json::parse(content);
 	nlohmann::json Configdata = Mas[substr];
 	//==========================================================Device Type=======/
-	APMInit.DC.RC_Type = Configdata["Type_RC"].get<int>();
-	APMInit.DC.MPU9250_Type = Configdata["Type_MPU9250"].get<int>();
-	APMInit.DC.IMUFilter_Type = Configdata["Type_IMUFilter"].get<int>();
+	APMInit.DC.RC_Type = Configdata["RC_Type"].get<int>();
+	APMInit.DC.MPU9250_Type = Configdata["MPU9250_Type"].get<int>();
 
 	APMInit.DC.__RCDevice = Configdata["__RCDevice"].get<std::string>(),
 	APMInit.DC.__GPSDevice = Configdata["__GPSDevice"].get<std::string>(),
@@ -141,9 +142,9 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.DC._IsMS5611Enable = Configdata["_IsMS5611Enable"].get<bool>();
 	APMInit.DC._IsRCSafeEnable = Configdata["_IsRCSafeEnable"].get<bool>();
 
-	APMInit.DC.IMU_Freqeuncy = Configdata["IMU_Freqeucy"].get<int>();
-	APMInit.DC.RXT_Freqeuncy = Configdata["RXT_Freqeucy"].get<int>();
-	APMInit.DC.ESC_Freqeuncy = Configdata["ESC_Freqeucy"].get<int>();
+	APMInit.DC.IMU_Freqeuncy = Configdata["IMU_Freqeuncy"].get<int>();
+	APMInit.DC.RXT_Freqeuncy = Configdata["RXT_Freqeuncy"].get<int>();
+	APMInit.DC.ESC_Freqeuncy = Configdata["ESC_Freqeuncy"].get<int>();
 	//==========================================================Controller cofig==/
 	APMInit.RC._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();
 	APMInit.RC._flag_RC_Mid_PWM_Value = Configdata["_flag_RC_Mid_PWM_Value"].get<int>();
