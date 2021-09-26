@@ -4,6 +4,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
 	wiringPiSetup();
 	{
+		DF.APMStatus = -1;
 		AF.RC_Lose_Clocking = 0;
 		AF.GPS_Lose_Clocking = 0;
 		AF.Flow_Lose_Clocking = 0;
@@ -177,6 +178,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	sleep(2);
 	system("clear");
 	AF._flag_Device_setupFailed = false;
+	DF.APMStatus = 1;
 	return 0;
 }
 
@@ -192,6 +194,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMStartUp()
 		PositionTaskReg();
 
 		ESCUpdateTaskReg();
+
+		DF.APMStatus += 1;
 	}
 }
 
@@ -257,6 +261,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		AF._flag_FailedSafe_Level = 0;
 		AF._flag_PreARM_Check_Level = 0;
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
+		DF.APMStatus = -2;
 	}
 }
 
@@ -1027,10 +1032,10 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 
 void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 {
-#ifdef RPiDEBUG
 	TF._flag_Block_Task_Running = true;
 	while (TF._flag_Block_Task_Running)
 	{
+#ifdef RPiDEBUG
 		DebugOutPut();
 		TF.DEBUGOuputCleaner++;
 		if (TF.DEBUGOuputCleaner > 60)
@@ -1038,11 +1043,15 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 			system("clear");
 			TF.DEBUGOuputCleaner = 0;
 		}
-
+#endif
 		SaftyCheck();
+		if (DF.APMStatus == -2)
+		{
+			TF._flag_Block_Task_Running = false;
+			break;
+		}
 		usleep(50000);
 	}
-#endif
 }
 
 int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int input, double *data)
@@ -2072,11 +2081,14 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 
 void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 {
+	// SIG System Signal detect
+	if (SystemSignal == SIGTERM || SystemSignal == SIGINT)
+		RPiSingleAPMDeInit();
+	//Error ARMED
 	if (AF._flag_Error == true)
 	{
 		AF._flag_ESC_ARMED = true;
 	}
-
 	//PreARM Checking
 	{
 		if (!AF._flag_PreARM_Check_Lock)

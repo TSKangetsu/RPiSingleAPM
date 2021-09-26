@@ -10,6 +10,7 @@
 #include <math.h>
 #include <thread>
 #include <bitset>
+#include <csignal>
 #include <iostream>
 #include <linux/i2c-dev.h>
 #include "_thirdparty/EKFImpement.hpp"
@@ -51,6 +52,8 @@
 
 namespace SingleAPMAPI
 {
+	inline volatile std::sig_atomic_t SystemSignal;
+
 	struct APMSettinngs
 	{
 		struct DeviceConfig
@@ -347,6 +350,11 @@ namespace SingleAPMAPI
 
 		struct DeviceINFO
 		{
+			//if APM Init before started , it will be -1
+			//if APM Device InitComplete , it will be 1
+			//if APM Thread all complete , it will be 2
+			//if APM is stop and DeInit  , it will be -2
+			int APMStatus = -1;
 			int MPU9250_SPI_Channel = 1;
 			const int MPU9250_ADDR = 0x68;
 			std::string RCDevice;

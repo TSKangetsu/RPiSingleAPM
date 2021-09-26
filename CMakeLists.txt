@@ -7,6 +7,7 @@ IF(UNIX)
 ###########################code Definetion##################
     add_definitions(-DRPiDEBUGStart)
     add_definitions(-DRPiDEBUG)
+    add_definitions(-DSELF_SIG_MANAGE)
 #############################################################
     cmake_minimum_required(VERSION 3.10)
     find_library(wiringPi_LIB wiringPi)

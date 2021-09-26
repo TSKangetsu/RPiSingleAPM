@@ -7,6 +7,7 @@ using namespace SingleAPMAPI;
 
 void configWrite(const char *configDir, const char *Target, double obj);
 void configSettle(const char *configDir, const char *substr, APMSettinngs &APMInit);
+void SignalCatch(int Signal);
 
 int main(int argc, char *argv[])
 {
@@ -27,6 +28,10 @@ int main(int argc, char *argv[])
 			RPiSingleAPM APM_Settle;
 			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
+			// Because of PiGPIO ,if you must handle Signal, should be call after RPiSingleAPMInit()
+			std::signal(SIGINT, SignalCatch);
+			std::signal(SIGTERM, SignalCatch);
+			//
 			APM_Settle.RPiSingleAPMStartUp();
 			APM_Settle.TaskThreadBlock();
 		}
@@ -300,3 +305,8 @@ void configWrite(const char *configDir, const char *Target, double obj)
 	configs << std::setw(4) << Configdata << std::endl;
 	configs.close();
 }
+
+void SignalCatch(int Signal)
+{
+	SingleAPMAPI::SystemSignal = Signal;
+};
