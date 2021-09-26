@@ -1,9 +1,6 @@
 [submodule "src/_thirdparty/RaspberryPiRC"]
 	path = src/_thirdparty/RaspberryPiRC
 	url = https://github.com/TSKangetsu/RaspberryPiRC
-[submodule "src/_thirdparty/RPiMS5611LIB"]
-	path = src/_thirdparty/RPiMS5611LIB
-	url = https://github.com/TSKangetsu/RPiMS5611LIB
 [submodule "src/_thirdparty/RaspberryPiMPU"]
 	path = src/_thirdparty/RaspberryPiMPU
 	url = https://github.com/TSKangetsu/RaspberryPiMPU.git
