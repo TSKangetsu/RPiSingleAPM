@@ -64,30 +64,16 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	//--------------------------------------------------------------------//
 	{
-		if (DF._IsMS5611Enable)
+		if (DF._IsBAROEnable)
 		{
 #ifdef RPiDEBUGStart
-			std::cout << "[RPiSingleAPM]Checking MS5611 ... ";
+			std::cout << "[RPiSingleAPM]Baro initializating ......";
+#endif
 			std::cout.flush();
-#endif
-			DF.BaroDevice.reset(new MS5611());
-			if (!DF.BaroDevice->MS5611Init(1, 0, -1))
-			{
-				AF._flag_Device_setupFailed = true;
+			DF.BaroDeviceD.reset(new BaroDevice(BaroType::MS5611, "/dev/i2c-1", 0x77));
 #ifdef RPiDEBUGStart
-				std::cout << "[RPiSingleAPM]MS5611InitError \n";
+			std::cout << "Done!\n";
 #endif
-				return -1;
-			}
-			else
-			{
-				pt1FilterInit(&DF.BAROLPF, FILTERBAROLPFCUTOFF, 0.0f);
-				DF.BaroDevice->MS5611Calibration(SF._Tmp_MS5611_Data, false);
-#ifdef RPiDEBUGStart
-				std::cout << "Done! "
-						  << "\n";
-#endif
-			}
 		}
 	}
 	//--------------------------------------------------------------------//
@@ -173,6 +159,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		pt1FilterInit(&DF.RCLPF[0], RF._flag_Filter_RC_CutOff, 0.f);
 		pt1FilterInit(&DF.RCLPF[1], RF._flag_Filter_RC_CutOff, 0.f);
 		pt1FilterInit(&DF.RCLPF[2], RF._flag_Filter_RC_CutOff, 0.f);
+		pt1FilterInit(&DF.BAROLPF, FILTERBAROLPFCUTOFF, 0.0f);
 	}
 	//--------------------------------------------------------------------//
 	sleep(2);
@@ -230,7 +217,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	DF.ESCDevice.reset();
 	DF.IbusInit.reset();
 	DF.SbusInit.reset();
-	DF.BaroDevice.reset();
+	DF.BaroDeviceD.reset();
 	DF.GPSInit.reset();
 	DF.CompassDevice.reset();
 	DF.FlowInit.reset();
@@ -348,7 +335,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 
 void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 {
-	if (DF._IsMS5611Enable)
+	if (DF._IsBAROEnable)
 	{
 		TF.ALTTask = std::thread(
 			[&]
@@ -359,18 +346,11 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 					TF._Tmp_ALTThreadTimeStart = GetTimestamp();
 					TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-					SF._Tmp_MS5611_Error = DF.BaroDevice->MS5611PreReader(SF._Tmp_MS5611_Data);
-					//
-					SF._Tmp_MS5611_Pressure = SF._Tmp_MS5611_Data[MS5611RawPressure];
-					SF._Tmp_MS5611_PressureFast = SF._Tmp_MS5611_Data[MS5611FastPressure];
-					SF._Tmp_MS5611_PressureFill = SF._Tmp_MS5611_Data[MS5611FilterPressure];
-					SF._uORB_MS5611_PressureFinal = SF._Tmp_MS5611_PressureFill;
-					//
+					SF._uORB_BARO_Data = DF.BaroDeviceD->BaroRead();
 					float DT = (TF._flag_ALTThreadTimeMax / 1000000.f);
-					SF._Tmp_MS5611_Altitude = ((int)(DF.BaroDevice->Pressure2Altitude(SF._Tmp_MS5611_Pressure) * 100.f));
-					SF._uORB_MS5611_Altitude = pt1FilterApply3(&DF.BAROLPF, SF._Tmp_MS5611_Altitude, DT);
+					SF._uORB_BARO_Altitude = pt1FilterApply3(&DF.BAROLPF, (SF._uORB_BARO_Data.AltitudeM * 100.f), DT);
 					//
-					AF._flag_MS5611_Async = true;
+					AF._flag_BARO_Async = true;
 
 					TF._Tmp_ALTThreadTimeEnd = GetTimestamp();
 					TF._Tmp_ALTThreadTimeLoop = TF._Tmp_ALTThreadTimeEnd - TF._Tmp_ALTThreadTimeStart;
@@ -636,14 +616,14 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					}
 					else if (RF._flag_RC_AP_AltHold_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_AltHold_PWM_Channel] &&
 							 RF._flag_RC_AP_AltHold_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_AltHold_PWM_Channel] &&
-							 (DF._IsMS5611Enable || DF._IsFlowEnable))
+							 (DF._IsBAROEnable || DF._IsFlowEnable))
 					{
 						AF.AutoPilotMode = APModeINFO::AltHold;
 					}
 					else if (RF._flag_RC_AP_PositionHold_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_PositionHold_PWM_Channel] &&
 							 RF._flag_RC_AP_PositionHold_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_PositionHold_PWM_Channel])
 					{
-						if ((DF._IsGPSEnable && DF._IsMS5611Enable) || DF._IsFlowEnable)
+						if ((DF._IsGPSEnable && DF._IsBAROEnable) || DF._IsFlowEnable)
 							AF.AutoPilotMode = APModeINFO::PositionHold;
 						else
 							AF.AutoPilotMode = APModeINFO::AltHold;
@@ -651,7 +631,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					else if (RF._flag_RC_AP_SpeedHold_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_SpeedHold_PWM_Channel] &&
 							 RF._flag_RC_AP_SpeedHold_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_SpeedHold_PWM_Channel])
 					{
-						if ((DF._IsGPSEnable && DF._IsMS5611Enable) || DF._IsFlowEnable)
+						if ((DF._IsGPSEnable && DF._IsBAROEnable) || DF._IsFlowEnable)
 							AF.AutoPilotMode = APModeINFO::SpeedHold;
 						else
 							AF.AutoPilotMode = APModeINFO::AltHold;
@@ -659,7 +639,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					else if (RF._flag_RC_AP_UserAuto_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_UserAuto_PWM_Channel] &&
 							 RF._flag_RC_AP_UserAuto_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_UserAuto_PWM_Channel])
 					{
-						if ((DF._IsGPSEnable && DF._IsMS5611Enable) || DF._IsFlowEnable)
+						if ((DF._IsGPSEnable && DF._IsBAROEnable) || DF._IsFlowEnable)
 							AF.AutoPilotMode = APModeINFO::UserAuto;
 						else
 							AF.AutoPilotMode = APModeINFO::AltHold;
@@ -1159,7 +1139,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	DF._IsGPSEnable = APMInit.DC._IsGPSEnable;
 	DF._IsFlowEnable = APMInit.DC._IsFlowEnable;
 	DF._IsRCSafeEnable = APMInit.DC._IsRCSafeEnable;
-	DF._IsMS5611Enable = APMInit.DC._IsMS5611Enable;
+	DF._IsBAROEnable = APMInit.DC._IsBAROEnable;
 
 	TF._flag_IMUThreadFreq = APMInit.DC.IMU_Freqeuncy;
 	TF._flag_IMUThreadTimeMax = 1.f / (float)TF._flag_IMUThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
@@ -1685,7 +1665,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		if (AF._flag_ESC_ARMED)
 		{
 			AF._flag_IsINUHDiable = true;
-			PF._uORB_PID_Sonar_GroundOffset = 0 - SF._uORB_MS5611_Altitude;
+			PF._uORB_PID_Sonar_GroundOffset = 0 - SF._uORB_BARO_Altitude;
 			PF._uORB_PID_AccelX_Bias = 0;
 			PF._uORB_PID_AccelY_Bias = 0;
 			PF._uORB_PID_AccelZ_Bias = 0;
@@ -1750,10 +1730,10 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		PF._uORB_PID_MoveZCorrection = 0;
 		PF._uORB_PID_SpeedZCorrection = 0;
 		//===============================================//
-		if (AF._flag_MS5611_Async)
+		if (AF._flag_BARO_Async)
 		{
-			PF._uORB_PID_MS5611_AltInput = SF._uORB_MS5611_Altitude + PF._uORB_PID_Sonar_GroundOffset;
-			AF._flag_MS5611_Async = false;
+			PF._uORB_PID_BARO_AltInput = SF._uORB_BARO_Altitude + PF._uORB_PID_Sonar_GroundOffset;
+			AF._flag_BARO_Async = false;
 		}
 		if (AF._flag_SonarData_Async)
 		{
@@ -1762,8 +1742,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		}
 		//===============================================//
 		//Air cushion effect
-		bool isAirCushionEffectDetected = (PF._uORB_PID_Sonar_GroundValid && (PF._uORB_PID_MS5611_AltInput < -1.f * PF._uORB_PID_Sonar_GroundOffset));
-		PF._uORB_PID_MS5611_AltInput = (isAirCushionEffectDetected ? 0 : PF._uORB_PID_MS5611_AltInput);
+		bool isAirCushionEffectDetected = (PF._uORB_PID_Sonar_GroundValid && (PF._uORB_PID_BARO_AltInput < -1.f * PF._uORB_PID_Sonar_GroundOffset));
+		PF._uORB_PID_BARO_AltInput = (isAirCushionEffectDetected ? 0 : PF._uORB_PID_BARO_AltInput);
 		//===============================================//
 		if (AF._flag_IsSonarAvalible)
 		{
@@ -1776,20 +1756,20 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
 										(PF._uORB_Sonar_Dynamic_Beta / 1.5f) * PF._uORB_AccelBias_Beta *
 										(TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_MS5611_Altitude;
+			PF._uORB_PID_Sonar_GroundOffset = PF._uORB_PID_Sonar_AltInput - SF._uORB_BARO_Altitude;
 		}
-		if (DF._IsMS5611Enable)
+		if (DF._IsBAROEnable)
 		{
-			PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
+			PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_BARO_AltInput - SF._uORB_True_Movement_Z) *
 											PF._uORB_Baro_Dynamic_Beta *
 											(TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
+			PF._uORB_PID_SpeedZCorrection += (PF._uORB_PID_BARO_AltInput - SF._uORB_True_Movement_Z) *
 											 pow(PF._uORB_Baro_Dynamic_Beta, 2) *
 											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_MS5611_AltInput - SF._uORB_True_Movement_Z) *
+			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_BARO_AltInput - SF._uORB_True_Movement_Z) *
 										pow(PF._uORB_Baro_Dynamic_Beta, 2) * PF._uORB_AccelBias_Beta *
 										(TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_MS5611_AltInput;
+			PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_BARO_AltInput;
 		}
 		else
 		{
@@ -2278,16 +2258,16 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << "                        "
 			  << std::endl;
 	std::cout
-		<< "MS5611ParseDataINFO:"
+		<< "BAROParseDataINFO:"
 		<< "\n";
-	std::cout << " ||FilterPressureFast: " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MS5611_PressureFinal << " hpa";
-	std::cout << " ||Altitude:           " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_MS5611_AltInput << "  cm";
+	std::cout << " ||FilterPressure:     " << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2)
+			  << SF._uORB_BARO_Data.PressureHPA << " hpa";
+	std::cout << " ||Altitude:           " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_BARO_AltInput << "  cm";
 	std::cout << " ||Temp:               " << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2)
-			  << (SF._Tmp_MS5611_Data[MS5611Temp] / 100.0) << "   C";
+			  << (SF._uORB_BARO_Data.TemperatureC) << "   C";
 	std::cout << " ||AltHoldTarget:      " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_AltHold_Target << "  cm\n";
 	std::cout << " ||AltholdThrottle:    " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Alt_Throttle << "    ";
-	std::cout << " ||TargetSpeed:        " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_InputTarget << "    "
-			  << " ||ClimbeRate:         " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MS5611_ClimbeRate << "cm/s \n";
+	std::cout << " ||TargetSpeed:        " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_InputTarget << "    \n";
 	std::cout
 		<< "FlowParseDataINFO:"
 		<< "\n";

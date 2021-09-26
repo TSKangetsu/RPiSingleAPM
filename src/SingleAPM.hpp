@@ -15,7 +15,7 @@
 #include <linux/i2c-dev.h>
 #include "_thirdparty/EKFImpement.hpp"
 #include "_thirdparty/ESCGenerator.hpp"
-#include "_thirdparty/RPiMS5611LIB/src/MS5611LIB.h"
+#include "_thirdparty/RaspberryPiBARO/src/BaroDevice.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
@@ -71,7 +71,7 @@ namespace SingleAPMAPI
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;
 			bool _IsRCSafeEnable;
-			bool _IsMS5611Enable;
+			bool _IsBAROEnable;
 		} DC;
 
 		struct PIDConfig
@@ -328,7 +328,7 @@ namespace SingleAPMAPI
 			long int FakeRC_Deprive_Clocking;
 			long int AngleLimit_Out_Clocking;
 
-			bool _flag_MS5611_Async;
+			bool _flag_BARO_Async;
 			bool _flag_GPSData_Async;
 			bool _flag_FlowData_Async;
 			bool _flag_SonarData_Async;
@@ -364,11 +364,11 @@ namespace SingleAPMAPI
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;
 			bool _IsRCSafeEnable;
-			bool _IsMS5611Enable;
+			bool _IsBAROEnable;
 
 			std::unique_ptr<Sbus> SbusInit;
 			std::unique_ptr<Ibus> IbusInit;
-			std::unique_ptr<MS5611> BaroDevice;
+			std::unique_ptr<BaroDevice> BaroDeviceD;
 			std::unique_ptr<GPSUart> GPSInit;
 			std::unique_ptr<ESCGenerator> ESCDevice;
 			std::unique_ptr<GPSI2CCompass> CompassDevice;
@@ -391,7 +391,7 @@ namespace SingleAPMAPI
 
 		struct SensorsINFO
 		{
-			//=========================MPU9250======//
+			//=========================MPU=======//
 			int MPU9250_Type;
 			MPUData _uORB_MPU_Data;
 			int _flag_Filter_Gryo_Type;
@@ -416,16 +416,9 @@ namespace SingleAPMAPI
 			double _uORB_True_Movement_Y = 0;
 			double _uORB_True_Movement_Z = 0;
 			int _uORB_Accel_Clipped_Count = 0;
-			//=========================MS5611======//
-			int _Tmp_MS5611_Error = 0;
-			double _Tmp_MS5611_Data[10] = {1000, 1000, 1000, 0};
-			double _Tmp_MS5611_Pressure = 0;
-			double _Tmp_MS5611_PressureFast = 0;
-			double _Tmp_MS5611_PressureFill = 0;
-			double _uORB_MS5611_PressureFinal = 0;
-			int _Tmp_MS5611_Altitude = 0;
-			int _uORB_MS5611_Altitude = 0;
-			double _uORB_MS5611_ClimbeRate = 0;
+			//=========================Baro=====//
+			BaroData _uORB_BARO_Data;
+			float _uORB_BARO_Altitude;
 			//=========================GPS=========//
 			GPSUartData _uORB_GPS_Data;
 			int _uORB_GPS_COR_Lat = 0;
@@ -525,7 +518,7 @@ namespace SingleAPMAPI
 			int _uORB_PID_Sonar_GroundTimeOut = 0;
 			bool _uORB_PID_Sonar_GroundValid = false;
 			float _uORB_PID_Sonar_GroundOffset = 0;
-			float _uORB_PID_MS5611_AltInput = 0;
+			float _uORB_PID_BARO_AltInput = 0;
 			float _uORB_PID_MoveZCorrection = 0;
 			float _uORB_PID_SpeedZCorrection = 0;
 			float _uORB_PID_AltInput_Final = 0;

@@ -144,7 +144,7 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 
 	APMInit.DC._IsGPSEnable = Configdata["_IsGPSEnable"].get<bool>();
 	APMInit.DC._IsFlowEnable = Configdata["_IsFlowEnable"].get<bool>();
-	APMInit.DC._IsMS5611Enable = Configdata["_IsMS5611Enable"].get<bool>();
+	APMInit.DC._IsBAROEnable = Configdata["_IsBAROEnable"].get<bool>();
 	APMInit.DC._IsRCSafeEnable = Configdata["_IsRCSafeEnable"].get<bool>();
 
 	APMInit.DC.IMU_Freqeuncy = Configdata["IMU_Freqeuncy"].get<int>();
