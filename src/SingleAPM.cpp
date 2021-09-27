@@ -213,7 +213,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		TF.FlowTask.join();
 	//--------------------------------------------------------------------//
 	usleep(5000);
-	DF.ESCDevice->ESCClear(PCA9685_ALL_PIN);
+	if (DF.ESCDevice.get() != nullptr)
+		DF.ESCDevice->ESCClear(PCA9685_ALL_PIN);
 	DF.ESCDevice.reset();
 	DF.IbusInit.reset();
 	DF.SbusInit.reset();
