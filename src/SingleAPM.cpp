@@ -163,7 +163,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	//--------------------------------------------------------------------//
 	sleep(2);
+#ifdef RPiDEBUGStart
 	system("clear");
+#endif
 	AF._flag_Device_setupFailed = false;
 	DF.APMStatus = 1;
 	return 0;
