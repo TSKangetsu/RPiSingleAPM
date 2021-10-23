@@ -258,8 +258,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 {
 	TF.IMUTask = std::thread(
-		[&]
-		{
+		[&] {
 			TF._flag_IMU_Task_Running = true;
 			while (TF._flag_IMU_Task_Running)
 			{
@@ -341,8 +340,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 	if (DF._IsBAROEnable)
 	{
 		TF.ALTTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_ALT_Task_Running = true;
 				while (TF._flag_ALT_Task_Running)
 				{
@@ -384,8 +382,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 {
 	TF.RXTask = std::thread(
-		[&]
-		{
+		[&] {
 			TF._flag_RXT_Task_Running = true;
 			while (TF._flag_RXT_Task_Running)
 			{
@@ -504,10 +501,10 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				}
 				//RC Safty Checking
 				{
-					if (RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[0] && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Max_PWM_Value ||
-						RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[1] && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Max_PWM_Value ||
-						RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[2] && RF._uORB_RC_Channel_PWM[2] > RF._flag_RC_Max_PWM_Value ||
-						RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value)
+					if ((RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[0] && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Max_PWM_Value) ||
+						(RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[1] && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Max_PWM_Value) ||
+						(RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[2] && RF._uORB_RC_Channel_PWM[2] > RF._flag_RC_Max_PWM_Value) ||
+						(RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[3] && RF._uORB_RC_Channel_PWM[3] > RF._flag_RC_Max_PWM_Value))
 						AF._flag_RC_Disconnected = true;
 					if (AF._flag_RC_Disconnected == true)
 					{
@@ -737,8 +734,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsGPSEnable)
 	{
 		TF.GPSTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_GPS_Task_Running = true;
 				DF.GPSInit->GPSReOpen();
 				TF._Tmp_GPSThreadSMooth = 10;
@@ -809,8 +805,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		int rc = pthread_setaffinity_np(TF.GPSTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 
 		TF.MAGTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_MAG_Task_Running = true;
 				while (TF._flag_MAG_Task_Running)
 				{
@@ -850,8 +845,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsFlowEnable)
 	{
 		TF.FlowTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_Flow_Task_Running = true;
 				while (TF._flag_Flow_Task_Running)
 				{
@@ -959,8 +953,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 {
 	TF.ESCTask = std::thread(
-		[&]
-		{
+		[&] {
 			TF._flag_ESC_Task_Running = true;
 			while (TF._flag_ESC_Task_Running)
 			{
@@ -1069,6 +1062,7 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 	{
 		DF.CompassDevice->CompassCalibration(true, data);
 	}
+	return -1;
 }
 
 //=-----------------------------------------------------------------------------------------==//
@@ -2042,7 +2036,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		PF._uORB_PID_PosYTarget = TargetAccelY + SF._uORB_MPU_Data._uORB_Acceleration_Y;
 		//
 		if (AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
-			AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible)
+			(AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 		{
 			PID_CaculateExtend(PF._uORB_PID_PosXTarget, PF._uORB_PID_PosXTarget, PF._uORB_PID_PosXTarget,
 							   PF._uORB_PID_PosX_Output, PF._uORB_PID_I_Last_Value_SpeedX, PF._uORB_PID_D_Last_Value_SpeedX,
