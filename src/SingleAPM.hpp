@@ -290,59 +290,59 @@ namespace SingleAPMAPI
 		struct SafyINFO
 		{
 			APModeINFO AutoPilotMode;
-			uint16_t _flag_FailedSafe_Level = 0;
-			uint16_t _flag_PreARM_Check_Level = 0;
-			bool _flag_Error = false;
-			bool _flag_RC_Error = false;
-			bool _flag_FakeRC_Error = false;
-			bool _flag_GPS_Error = false;
-			bool _flag_ClockingTime_Error = false;
-			bool _flag_AnagleOutOfLimit = false;
+			uint16_t _flag_FailedSafe_Level;
+			uint16_t _flag_PreARM_Check_Level;
+			bool _flag_Error;
+			bool _flag_RC_Error;
+			bool _flag_FakeRC_Error;
+			bool _flag_GPS_Error;
+			bool _flag_ClockingTime_Error;
+			bool _flag_AnagleOutOfLimit;
 
-			bool _flag_PreARM_Check = false;
-			bool _flag_PreARM_Check_Lock = false;
-			bool _flag_MPUCalibrating = false;
-			bool _flag_MPUCalibratingSet = false;
+			bool _flag_PreARM_Check;
+			bool _flag_PreARM_Check_Lock;
+			bool _flag_MPUCalibrating;
+			bool _flag_MPUCalibratingSet;
 
-			bool _flag_IsAutoTakeoffLock = false;
-			bool _flag_IsAutoTakeoffRequire = false;
+			bool _flag_IsAutoTakeoffLock;
+			bool _flag_IsAutoTakeoffRequire;
 
-			bool _flag_ESC_ARMED = false;
-			bool _flag_ESC_DISARMED_Request = false;
-			bool _flag_StartUP_Protect = false;
+			bool _flag_ESC_ARMED;
+			bool _flag_ESC_DISARMED_Request;
+			bool _flag_StartUP_Protect;
 
-			bool _flag_Device_setupFailed = false;
-			bool _flag_MPU9250_first_StartUp = false;
+			bool _flag_Device_setupFailed;
+			bool _flag_MPU9250_first_StartUp;
 
-			bool _flag_FakeRC_Deprive = false;
-			bool _flag_RC_Disconnected = false;
-			bool _flag_FakeRC_Disconnected = false;
-			bool _flag_GPS_Disconnected = false;
-			long int RC_Lose_Clocking = 0;
-			long int FakeRC_Lose_Clocking = 0;
-			long int GPS_Lose_Clocking = 0;
-			long int Flow_Lose_Clocking = 0;
-			long int FakeRC_Deprive_Clocking = 0;
-			long int AngleLimit_Out_Clocking = 0;
+			bool _flag_FakeRC_Deprive;
+			bool _flag_RC_Disconnected;
+			bool _flag_FakeRC_Disconnected;
+			bool _flag_GPS_Disconnected;
+			long int RC_Lose_Clocking;
+			long int FakeRC_Lose_Clocking;
+			long int GPS_Lose_Clocking;
+			long int Flow_Lose_Clocking;
+			long int FakeRC_Deprive_Clocking;
+			long int AngleLimit_Out_Clocking;
 
-			bool _flag_BARO_Async = false;
-			bool _flag_GPSData_Async = false;
-			bool _flag_FlowData_Async = false;
-			bool _flag_SonarData_Async = false;
-			bool _flag_IsSonarAvalible = false;
-			bool _flag_IsFlowAvalible = false;
-			bool _flag_IsFakeRCUpdated = false;
+			bool _flag_BARO_Async;
+			bool _flag_GPSData_Async;
+			bool _flag_FlowData_Async;
+			bool _flag_SonarData_Async;
+			bool _flag_IsSonarAvalible;
+			bool _flag_IsFlowAvalible;
+			bool _flag_IsFakeRCUpdated;
 
-			bool _flag_IsNotTakeOff = false;
-			bool _flag_IsNotTakeOff_Lock = false;
+			bool _flag_IsNotTakeOff;
+			bool _flag_IsNotTakeOff_Lock;
 
-			bool _flag_IsINUHDiable = false;
-			bool _flag_IsPositionXChange = false;
-			bool _flag_IsPositionYChange = false;
-			bool _flag_IsBrakingXSet = false;
-			bool _flag_IsBrakingYSet = false;
-			bool _flag_IsBrakingXBlock = false;
-			bool _flag_IsBrakingYBlock = false;
+			bool _flag_IsINUHDiable;
+			bool _flag_IsPositionXChange;
+			bool _flag_IsPositionYChange;
+			bool _flag_IsBrakingXSet;
+			bool _flag_IsBrakingYSet;
+			bool _flag_IsBrakingXBlock;
+			bool _flag_IsBrakingYBlock;
 		} AF;
 
 		struct DeviceINFO
