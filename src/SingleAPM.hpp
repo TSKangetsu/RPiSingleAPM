@@ -1,7 +1,4 @@
 #pragma once
-#include <wiringPi.h>
-#include <wiringPiI2C.h>
-#include <wiringPiSPI.h>
 #include <math.h>
 #include <thread>
 #include <string>
@@ -371,7 +368,7 @@ namespace SingleAPMAPI
 			std::unique_ptr<BaroDevice> BaroDeviceD;
 			std::unique_ptr<GPSUart> GPSInit;
 			std::unique_ptr<ESCGenerator> ESCDevice;
-			std::unique_ptr<GPSI2CCompass> CompassDevice;
+			// std::unique_ptr<GPSI2CCompass> CompassDevice;
 			std::unique_ptr<RPiMPU9250> MPUDevice;
 			std::unique_ptr<MSPUartFlow> FlowInit;
 			TotalEKF EKFDevice;

@@ -2,7 +2,6 @@
 
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
-	wiringPiSetup();
 	{
 		DF.APMStatus = -1;
 		AF.RC_Lose_Clocking = 0;
@@ -43,7 +42,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
-		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, EF.ESCPLFrequency));
+		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, "/dev/i2c-7", EF.ESCPLFrequency));
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -85,8 +84,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
-			DF.CompassDevice.reset(new GPSI2CCompass(COMPASS_QMC5883L));
-			DF.CompassDevice->CompassCalibration(false, SF._flag_MPU_MAG_Cali);
+			// DF.CompassDevice.reset(new GPSI2CCompass(COMPASS_QMC5883L));
+			// DF.CompassDevice->CompassCalibration(false, SF._flag_MPU_MAG_Cali);
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
 #endif
@@ -222,7 +221,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	DF.SbusInit.reset();
 	DF.BaroDeviceD.reset();
 	DF.GPSInit.reset();
-	DF.CompassDevice.reset();
+	// DF.CompassDevice.reset();
 	DF.FlowInit.reset();
 	DF.MPUDevice.reset();
 	//--------------------------------------------------------------------//
@@ -258,7 +257,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 {
 	TF.IMUTask = std::thread(
-		[&] {
+		[&]
+		{
 			TF._flag_IMU_Task_Running = true;
 			while (TF._flag_IMU_Task_Running)
 			{
@@ -340,7 +340,8 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 	if (DF._IsBAROEnable)
 	{
 		TF.ALTTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_ALT_Task_Running = true;
 				while (TF._flag_ALT_Task_Running)
 				{
@@ -382,7 +383,8 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 {
 	TF.RXTask = std::thread(
-		[&] {
+		[&]
+		{
 			TF._flag_RXT_Task_Running = true;
 			while (TF._flag_RXT_Task_Running)
 			{
@@ -734,7 +736,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsGPSEnable)
 	{
 		TF.GPSTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_GPS_Task_Running = true;
 				DF.GPSInit->GPSReOpen();
 				TF._Tmp_GPSThreadSMooth = 10;
@@ -805,17 +808,18 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		int rc = pthread_setaffinity_np(TF.GPSTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 
 		TF.MAGTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_MAG_Task_Running = true;
 				while (TF._flag_MAG_Task_Running)
 				{
 					TF._Tmp_MAGThreadTimeStart = GetTimestamp();
 					TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 					{
-						DF.CompassDevice->CompassUpdate();
-						DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_Yaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
+						// DF.CompassDevice->CompassUpdate();
+						// DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_Yaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
 						// DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
-						DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
+						// DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
 					}
 					TF._Tmp_MAGThreadTimeEnd = GetTimestamp();
 					TF._Tmp_MAGThreadTimeLoop = TF._Tmp_MAGThreadTimeEnd - TF._Tmp_MAGThreadTimeStart;
@@ -845,7 +849,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsFlowEnable)
 	{
 		TF.FlowTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_Flow_Task_Running = true;
 				while (TF._flag_Flow_Task_Running)
 				{
@@ -953,7 +958,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 {
 	TF.ESCTask = std::thread(
-		[&] {
+		[&]
+		{
 			TF._flag_ESC_Task_Running = true;
 			while (TF._flag_ESC_Task_Running)
 			{
@@ -1060,7 +1066,7 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 	}
 	else if (controller == COMPASSCalibration)
 	{
-		DF.CompassDevice->CompassCalibration(true, data);
+		// DF.CompassDevice->CompassCalibration(true, data);
 	}
 	return -1;
 }

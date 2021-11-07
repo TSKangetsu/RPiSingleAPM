@@ -33,14 +33,10 @@ if(${LinkAsSingle})
   aux_source_directory("_thirdparty/RaspberryPiMPU/src" MPU)
   
   aux_source_directory(. RPiSingleAPI)
-  find_library(wiringPi_LIB wiringPi)
-  find_library(PIGPIO pigpio)
   find_package(Threads REQUIRED)
 
   add_library(RPiSingleAPI ${RPiSingleAPI} ${SingleFlight3rd} ${EKFLIB} ${HardwareGenerator} ${MPU})
   target_link_libraries(RPiSingleAPI PRIVATE Threads::Threads)
-  target_link_libraries(RPiSingleAPI PRIVATE ${wiringPi_LIB})
-  target_link_libraries(RPiSingleAPI PRIVATE ${PIGPIO})
 #================================================================
 else()
   aux_source_directory(. RPiSingleAPI)

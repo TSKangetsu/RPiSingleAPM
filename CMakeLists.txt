@@ -10,13 +10,11 @@ IF(UNIX)
     add_definitions(-DSELF_SIG_MANAGE)
 #############################################################
     cmake_minimum_required(VERSION 3.10)
-    find_library(wiringPi_LIB wiringPi)
     find_package(Threads REQUIRED)
     add_subdirectory(src)
     add_executable(SingleFlight "TestModule.cpp")
     target_link_libraries(SingleFlight PRIVATE  RPiSingleAPI)
     target_link_libraries(SingleFlight PRIVATE Threads::Threads)
-    target_link_libraries(SingleFlight PRIVATE  ${wiringPi_LIB})
     
     INSTALL(TARGETS SingleFlight DESTINATION "/usr/bin/")
     INSTALL(FILES APMconfig.json DESTINATION "/boot/")

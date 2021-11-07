@@ -1,5 +1,4 @@
 #pragma once
-#include <pigpio.h>
 #include "HardwareGenerator/pca9685.h"
 #define PWM_MAX_US 2000.f
 #define PWM_MIN_US 1000.f
@@ -7,7 +6,7 @@
 #define PCA9685_PWM_MAX 3000.f
 #define PCA9685_PWM_MIN 2300.f
 #define PCA9685_RANGE 4096.f
-#define PCA9685_DEFAULT_PINBASE 65
+#define PCA9685_DEFAULT_DEVICE "/dev/i2c-0"
 #define PCA9685_DEFAULT_ADDRESS 0x40
 #define PCA9685_ALL_PIN 16
 #define ONESHOT125_RANGE_LOW 125.f
@@ -25,7 +24,7 @@ class ESCGenerator
 {
 public:
     // Frequency is not update frequency
-    inline ESCGenerator(GeneratorType generator, int Frequency);
+    inline ESCGenerator(GeneratorType generator, const char *device, int Frequency);
     // Range 1000us - 2000us, Will Caculate auto
     inline void ESCUpdate(int ID, int Range);
 
@@ -49,7 +48,7 @@ private:
     int Hardware_OffState = 0;
 };
 
-ESCGenerator::ESCGenerator(GeneratorType generator, int Frequency)
+ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, int Frequency)
 {
     Generator = generator;
     PlFrequency = Frequency;
@@ -57,7 +56,7 @@ ESCGenerator::ESCGenerator(GeneratorType generator, int Frequency)
     {
     case GeneratorType::Hardware_PWM:
     {
-        GeneratorFD = pca9685Setup(PCA9685_DEFAULT_PINBASE,
+        GeneratorFD = pca9685Setup(device,
                                    PCA9685_DEFAULT_ADDRESS,
                                    PlFrequency);
         pca9685PWMReset(GeneratorFD);
@@ -70,7 +69,7 @@ ESCGenerator::ESCGenerator(GeneratorType generator, int Frequency)
 
     case GeneratorType::Hardware_ONESHOT125:
     {
-        GeneratorFD = pca9685Setup(PCA9685_DEFAULT_PINBASE,
+        GeneratorFD = pca9685Setup(device,
                                    PCA9685_DEFAULT_ADDRESS,
                                    PlFrequency);
         pca9685PWMReset(GeneratorFD);
