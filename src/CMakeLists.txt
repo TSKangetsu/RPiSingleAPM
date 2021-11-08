@@ -40,12 +40,10 @@ if(${LinkAsSingle})
 #================================================================
 else()
   aux_source_directory(. RPiSingleAPI)
-  find_library(wiringPi_LIB wiringPi)
   find_package(Threads REQUIRED)
   #================================================================
   add_library(RPiSingleAPI ${RPiSingleAPI})
   add_subdirectory(_thirdparty)
   target_link_libraries(RPiSingleAPI PRIVATE SingleFlight3rd)
   target_link_libraries(RPiSingleAPI PRIVATE Threads::Threads)
-  target_link_libraries(RPiSingleAPI PRIVATE ${wiringPi_LIB})
 endif()
