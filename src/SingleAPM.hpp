@@ -64,6 +64,7 @@ namespace SingleAPMAPI
 			std::string __RCDevice;
 			std::string __GPSDevice;
 			std::string __FlowDevice;
+			std::string __MPUDeviceSPI;
 
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;
@@ -352,11 +353,11 @@ namespace SingleAPMAPI
 			//if APM Thread all complete , it will be 2
 			//if APM is stop and DeInit  , it will be -2
 			int APMStatus = -1;
-			int MPU9250_SPI_Channel = 1;
 			const int MPU9250_ADDR = 0x68;
 			std::string RCDevice;
 			std::string GPSDevice;
 			std::string FlowDevice;
+			std::string __MPUDeviceSPI;
 
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;

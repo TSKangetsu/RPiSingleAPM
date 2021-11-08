@@ -42,7 +42,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
-		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, "/dev/i2c-7", EF.ESCPLFrequency));
+		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, "/dev/i2c-1", EF.ESCPLFrequency));
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -107,8 +107,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		MPUConfig config;
 		config.MPUType = SF.MPU9250_Type;
-		config.MPUSPIChannel = DF.MPU9250_SPI_Channel;
+		config.MPUSPIChannel = DF.__MPUDeviceSPI.c_str();
 		config.MPUI2CAddress = DF.MPU9250_ADDR;
+		config.MPU9250_SPI_Freq = 1000 * 1000;
 		//
 		config.TargetFreqency = TF._flag_IMUThreadFreq;
 		config.GyroToAccelBeta = SF._flag_Filter_AngleMix_Alpha;
@@ -1138,6 +1139,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	DF.RCDevice = APMInit.DC.__RCDevice;
 	DF.GPSDevice = APMInit.DC.__GPSDevice;
 	DF.FlowDevice = APMInit.DC.__FlowDevice;
+	DF.__MPUDeviceSPI =  APMInit.DC.__MPUDeviceSPI;
 
 	DF._IsGPSEnable = APMInit.DC._IsGPSEnable;
 	DF._IsFlowEnable = APMInit.DC._IsFlowEnable;

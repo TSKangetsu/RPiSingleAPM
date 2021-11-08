@@ -141,6 +141,7 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.DC.__RCDevice = Configdata["__RCDevice"].get<std::string>(),
 	APMInit.DC.__GPSDevice = Configdata["__GPSDevice"].get<std::string>(),
 	APMInit.DC.__FlowDevice = Configdata["__FlowDevice"].get<std::string>(),
+	APMInit.DC.__MPUDeviceSPI = Configdata["__MPUDeviceSPI"].get<std::string>(),
 
 	APMInit.DC._IsGPSEnable = Configdata["_IsGPSEnable"].get<bool>();
 	APMInit.DC._IsFlowEnable = Configdata["_IsFlowEnable"].get<bool>();
