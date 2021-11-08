@@ -24,9 +24,21 @@ elseif(${ISCXX17} MATCHES TRUE)
   message(STATUS "[SingleFlight] Compiler C++17 is Set")
 endif()
 
-
+message(STATUS "[Tips]: add set(MPUDriver 'pigpio' CACHE  INTERNAL '') to your major cmake header to change SPI driver for Better imu freq")
 if(${LinkAsSingle})
 #================================================================
+  message(STATUS "[SingleFlight] Link as Single .a mode")
+  if(${MPUDriver} MATCHES "spidev")
+    message(STATUS "[MPUInfo]MPUDriverType link comfirm: " ${MPUDriver})
+  elseif(${MPUDriver} MATCHES "pigpio")
+    message(STATUS "[MPUInfo]MPUDriverType link comfirm: " ${MPUDriver})
+    find_library(PIGPIO pigpio)
+    add_definitions(-DMPUSPI_PIGPIO)
+  else()
+    message(STATUS "[MPUInfo]MPUDriver no select! use spidev as default")
+  endif()
+
+
   aux_source_directory("_thirdparty/" SingleFlight3rd)
   aux_source_directory("_thirdparty/EKFImplement/src/." EKFLIB)
   aux_source_directory("_thirdparty/HardwareGenerator/." HardwareGenerator)
@@ -37,8 +49,17 @@ if(${LinkAsSingle})
 
   add_library(RPiSingleAPI ${RPiSingleAPI} ${SingleFlight3rd} ${EKFLIB} ${HardwareGenerator} ${MPU})
   target_link_libraries(RPiSingleAPI PRIVATE Threads::Threads)
+
+  if(${MPUDriver} MATCHES "spidev")
+    # do not thing, spidev is linux build-in function
+  elseif(${MPUDriver} MATCHES "pigpio")
+    target_link_libraries(RPiSingleAPI PRIVATE ${PIGPIO})
+  else()
+    # this is spidev
+  endif()
 #================================================================
 else()
+  message(STATUS "[SingleFlight] API Link as multiple .a mode")
   aux_source_directory(. RPiSingleAPI)
   find_package(Threads REQUIRED)
   #================================================================
