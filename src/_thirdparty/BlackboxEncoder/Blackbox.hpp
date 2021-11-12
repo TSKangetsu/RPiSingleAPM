@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include <deque>
 #include <queue>
 #include <vector>
 #define BlackboxHeader "H Product:Blackbox flight data recorder by Nicholas Sherlock\n"
@@ -50,7 +51,7 @@ public:
 private:
     int PINTNUM = 1;
     int PINTDEM = 1;
-    std::vector<int> PredictDataLast;
+    std::deque<std::vector<int>> PredictDataLast;
     BlackboxHeaderInfo HeaderInfo;
 
     inline static std::vector<uint8_t> dataEncode(int value, int type)
@@ -63,6 +64,12 @@ private:
 
         case 1:
             return unsignedBtyeEncode(value);
+
+        case 9:
+        {
+            return {};
+        }
+
         default:
             return {};
             break;
@@ -73,32 +80,49 @@ private:
     {
         if (data.size() == type.size())
         {
+            std::vector<int> dataHis = data;
             for (size_t i = 0; i < data.size(); i++)
             {
                 switch (type[i].FramePredictor)
                 {
                 case 0:
-                    data[i] = data[i];
+                    // do not thing..
                     break;
 
                 case 1:
                 {
-                    if (PredictDataLast.size() == data.size())
+                    if (PredictDataLast.size() > 0)
                     {
-                        int tmpdata = data[i];
-                        data[i] = data[i] - PredictDataLast[i];
-                        PredictDataLast[i] = tmpdata;
+                        if (PredictDataLast[PredictDataLast.size() - 1].size() == data.size())
+                        {
+                            data[i] = data[i] - PredictDataLast[PredictDataLast.size() - 1][i];
+                        }
                     }
                 }
+                break;
+                case 2:
+                {
+                    if (PredictDataLast.size() > 2)
+                    {
+                        if (PredictDataLast[0].size() == data.size() && PredictDataLast[1].size() == data.size())
+                        {
+                            data[i] = PredictDataLast[PredictDataLast.size() - 1][i] - PredictDataLast[PredictDataLast.size() - 2][i] * 2 + PredictDataLast[PredictDataLast.size() - 3][i];
+                        }
+                    }
+                }
+                break;
+
+                case 6:
+                    // do not thing..
+                    break;
+
                 default:
                     break;
                 }
-                //==//
-                if (PredictDataLast.size() != data.size())
-                {
-                    PredictDataLast.push_back(data[i]);
-                }
             }
+            PredictDataLast.push_back(dataHis);
+            if (PredictDataLast.size() > 3)
+                PredictDataLast.pop_front();
         }
 
         return data;
@@ -237,6 +261,14 @@ std::vector<uint8_t> BlackboxEncoder::BlackboxPIPush(std::vector<int> data)
         {
             std::vector<uint8_t> tmpBuffer = dataEncode(predicted[i], HeaderInfo.BlackBoxDataIInfo[i].FrameEncoder);
             FrameBuffer.insert(FrameBuffer.end(), tmpBuffer.begin(), tmpBuffer.end());
+        }
+        //
+        for (; !PredictDataLast.empty(); PredictDataLast.pop_front())
+            ;
+
+        for (size_t i = 0; i < 3; i++)
+        {
+            PredictDataLast.push_back(data);
         }
     }
     else if (Head == 'P' && HeaderInfo.BlackBoxDataPInfo.size() > 0)
