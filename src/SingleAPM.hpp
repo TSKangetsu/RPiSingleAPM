@@ -51,7 +51,7 @@
 
 #define BlackBoxIInterval 32
 #define BlackBoxPInterval "1/1"
-#define BlackBoxFirmware "Singleflight"
+#define BlackBoxFirmware "Cleanflight"
 #define BlackBoxLogDir "/var/log/Singleflight/"
 
 namespace SingleAPMAPI
@@ -808,6 +808,8 @@ namespace SingleAPMAPI
 			int _flag_BBQThreadTimeMax = 0;
 			bool _flag_BBQ_Task_Running = false;
 			std::thread BlackBoxQTask;
+			int _Tmp_BBQThreadTimeup = 0;
+			int _Tmp_BBQThreadloopIteration = 0;
 			bool _flag_BBW_Task_Running = false;
 			std::thread BlackBoxWTask;
 			std::queue<std::vector<uint8_t>> BlackBoxQeueue;

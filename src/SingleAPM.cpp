@@ -167,7 +167,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::time_t t = std::time(NULL);
 		std::strftime(outTime, sizeof(outTime), "%Y%m%d%H%M%S", std::localtime(&t));
 		std::string file = (std::string(BlackBoxLogDir, sizeof(BlackBoxLogDir) - 1) +
-							std::string(BlackBoxFirmware, sizeof(BlackBoxFirmware) - 1) +
+							std::string("Singleflight", sizeof("Singleflight") - 1) +
 							std::string("-", sizeof("-") - 1) +
 							std::string(outTime, sizeof(outTime) - 2) +
 							std::string(".log", sizeof(".log") - 1));
@@ -176,11 +176,69 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		std::vector<BlackboxList> BlackBoxIInfo = {
 			{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisP[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisP[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisP[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisI[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisI[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisI[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisD[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisD[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisD[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[3]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "motor[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			{.FrameName = "motor[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			{.FrameName = "motor[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			{.FrameName = "motor[3]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 		};
 
 		std::vector<BlackboxList> BlackBoxPInfo = {
 			{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 6, .FrameEncoder = 9},
-			{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 2, .FrameEncoder = 1},
+			{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 2, .FrameEncoder = 0},
+			{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisP[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisP[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisP[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisI[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisI[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisI[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisD[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisD[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "axisD[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "rcCommand[3]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "motor[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "motor[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "motor[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "motor[3]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 		};
 
 		DF.BlackBoxDevice.reset(new BlackboxEncoder({
@@ -189,7 +247,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			.FirmwareType = BlackBoxFirmware,
 			.BlackBoxDataIInfo = BlackBoxIInfo,
 			.BlackBoxDataPInfo = BlackBoxPInfo,
-			.BlackBoxCustom = {},
+			.BlackBoxCustom = {
+				"H acc_1G:2048\n",
+				"H gyro_scale:0x3f800000\n",
+				"H motorOutput:1000,2000\n",
+				"H minthrottle:1000\n",
+				"H maxthrottle:2000\n",
+				"H looptime:250\n",
+			},
 		}));
 	}
 	sleep(2);
@@ -1072,6 +1137,7 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 {
 	if (DF._IsBlackBoxEnable)
 	{
+		TF._Tmp_BBQThreadTimeup = GetTimestamp();
 		FileInjectSTR(DF.BlackBoxFile, DF.BlackBoxDevice->FullBlackboxHeader.c_str());
 
 		TF.BlackBoxQTask = std::thread([&] {
@@ -1083,7 +1149,42 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 				//
 				if (!AF._flag_ESC_ARMED)
 				{
-					// TODO: FileInjectQueue(DF.BlackBoxFile,{});
+
+					FileInjectQueue(DF.BlackBoxFile,
+									DF.BlackBoxDevice->BlackboxPIPush({
+										TF._Tmp_BBQThreadloopIteration,
+										GetTimestamp() - TF._Tmp_BBQThreadTimeup,
+										(int)PF._uORB_Leveling__Roll,
+										(int)PF._uORB_Leveling_Pitch,
+										(int)PF._uORB_Leveling___Yaw,
+										0,
+										0,
+										0,
+										0,
+										0,
+										0,
+										0,
+										0,
+										0,
+										(RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value),
+										(RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value),
+										(RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value),
+										(RF._uORB_RC_Channel_PWM[2]),
+										(int)SF._uORB_MPU_Data._uORB_Real__Roll,
+										(int)SF._uORB_MPU_Data._uORB_Real_Pitch,
+										(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+										(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
+										(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
+										(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
+										SF._uORB_MPU_Data._uORB_MPU9250_A_X,
+										SF._uORB_MPU_Data._uORB_MPU9250_A_Y,
+										SF._uORB_MPU_Data._uORB_MPU9250_A_Z,
+										EF._uORB_A1_Speed,
+										EF._uORB_A2_Speed,
+										EF._uORB_B1_Speed,
+										EF._uORB_B2_Speed,
+									}));
+					TF._Tmp_BBQThreadloopIteration++;
 				}
 				//
 				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();

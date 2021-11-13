@@ -95,10 +95,7 @@ private:
                 {
                     if (PredictDataLast.size() > 0)
                     {
-                        if (PredictDataLast[PredictDataLast.size() - 1].size() == data.size())
-                        {
                             data[i] = data[i] - PredictDataLast[PredictDataLast.size() - 1][i];
-                        }
                     }
                 }
                 break;
@@ -106,13 +103,17 @@ private:
                 {
                     if (PredictDataLast.size() > 2)
                     {
-                        if (PredictDataLast[0].size() == data.size() && PredictDataLast[1].size() == data.size())
-                        {
-                            data[i] = PredictDataLast[PredictDataLast.size() - 1][i] - PredictDataLast[PredictDataLast.size() - 2][i] * 2 + PredictDataLast[PredictDataLast.size() - 3][i];
-                        }
+                        data[i] = PredictDataLast[PredictDataLast.size() - 1][i] - PredictDataLast[PredictDataLast.size() - 2][i] * 2 + PredictDataLast[PredictDataLast.size() - 3][i];
                     }
                 }
                 break;
+                case 3:
+                {
+                    if (PredictDataLast.size() > 1)
+                    {
+                        data[i] = ((PredictDataLast[PredictDataLast.size() - 1][i] + PredictDataLast[PredictDataLast.size() - 2][i]) / 2);
+                    }
+                }
 
                 case 6:
                     // do not thing..
@@ -236,6 +237,11 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
     FullBlackboxHeader += BlackboxFirmwareType;
     FullBlackboxHeader += Info.FirmwareType;
     FullBlackboxHeader += "\n";
+
+    for (auto sts : Info.BlackBoxCustom)
+    {
+        FullBlackboxHeader += sts;
+    }
 
     HeaderInfo = Info;
 };
