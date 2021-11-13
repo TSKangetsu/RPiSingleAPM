@@ -5,6 +5,8 @@
 #include <deque>
 #include <queue>
 #include <vector>
+#include <fstream>
+#include <sstream>
 #define BlackboxHeader "H Product:Blackbox flight data recorder by Nicholas Sherlock\n"
 #define BlackboxVerion "H Data version: 2\n";
 //
@@ -236,8 +238,6 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
     FullBlackboxHeader += "\n";
 
     HeaderInfo = Info;
-
-    std::cout << FullBlackboxHeader << "\n";
 };
 
 std::vector<uint8_t> BlackboxEncoder::BlackboxPIPush(std::vector<int> data)
@@ -286,4 +286,17 @@ std::vector<uint8_t> BlackboxEncoder::BlackboxPIPush(std::vector<int> data)
     }
 
     return FrameBuffer;
+}
+
+inline void FileInjectSTR(std::ofstream &file, const char *header)
+{
+    file << header;
+}
+
+inline void FileInjectQueue(std::ofstream &file, std::vector<uint8_t> data)
+{
+    for (size_t i = 0; i < data.size(); i++)
+    {
+        file << data[i];
+    }
 }

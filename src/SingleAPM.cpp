@@ -107,7 +107,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		MPUConfig config;
 		config.MPUType = SF.MPU9250_Type;
-		config.MPUSPIChannel = DF.__MPUDeviceSPI.c_str();
+		config.MPUSPIChannel = DF.MPUDeviceSPI.c_str();
 		config.MPUI2CAddress = DF.MPU9250_ADDR;
 		config.MPU9250_SPI_Freq = 1000 * 1000;
 		//
@@ -162,6 +162,36 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		pt1FilterInit(&DF.BAROLPF, FILTERBAROLPFCUTOFF, 0.0f);
 	}
 	//--------------------------------------------------------------------//
+	{
+		char outTime[16];
+		std::time_t t = std::time(NULL);
+		std::strftime(outTime, sizeof(outTime), "%Y%m%d%H%M%S", std::localtime(&t));
+		std::string file = (std::string(BlackBoxLogDir, sizeof(BlackBoxLogDir) - 1) +
+							std::string(BlackBoxFirmware, sizeof(BlackBoxFirmware) - 1) +
+							std::string("-", sizeof("-") - 1) +
+							std::string(outTime, sizeof(outTime) - 2) +
+							std::string(".log", sizeof(".log") - 1));
+		DF.BlackBoxFile.open(file.c_str(), std::ios::out | std::ios::binary);
+
+		std::vector<BlackboxList> BlackBoxIInfo = {
+			{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+		};
+
+		std::vector<BlackboxList> BlackBoxPInfo = {
+			{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 6, .FrameEncoder = 9},
+			{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 2, .FrameEncoder = 1},
+		};
+
+		DF.BlackBoxDevice.reset(new BlackboxEncoder({
+			.IInterval = BlackBoxIInterval,
+			.PInterval = BlackBoxPInterval,
+			.FirmwareType = BlackBoxFirmware,
+			.BlackBoxDataIInfo = BlackBoxIInfo,
+			.BlackBoxDataPInfo = BlackBoxPInfo,
+			.BlackBoxCustom = {},
+		}));
+	}
 	sleep(2);
 #ifdef RPiDEBUGStart
 	system("clear");
@@ -184,6 +214,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMStartUp()
 
 		ESCUpdateTaskReg();
 
+		BlackBoxTaskReg();
+
 		DF.APMStatus += 1;
 	}
 }
@@ -199,6 +231,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	TF._flag_MAG_Task_Running = false;
 	TF._flag_Flow_Task_Running = false;
 	TF._flag_Block_Task_Running = false;
+	TF._flag_BBQ_Task_Running = false;
+	TF._flag_BBW_Task_Running = false;
 	if (TF.IMUTask.joinable())
 		TF.IMUTask.join();
 	if (TF.RXTask.joinable())
@@ -213,6 +247,10 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		TF.MAGTask.join();
 	if (TF.FlowTask.joinable())
 		TF.FlowTask.join();
+	if (TF.BlackBoxQTask.joinable())
+		TF.BlackBoxQTask.join();
+	if (TF.BlackBoxWTask.joinable())
+		TF.BlackBoxWTask.join();
 	//--------------------------------------------------------------------//
 	usleep(5000);
 	if (DF.ESCDevice.get() != nullptr)
@@ -225,6 +263,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	// DF.CompassDevice.reset();
 	DF.FlowInit.reset();
 	DF.MPUDevice.reset();
+	DF.BlackBoxDevice.reset();
+	DF.BlackBoxFile.close();
 	//--------------------------------------------------------------------//
 	{
 		AF.RC_Lose_Clocking = 0;
@@ -258,8 +298,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 {
 	TF.IMUTask = std::thread(
-		[&]
-		{
+		[&] {
 			TF._flag_IMU_Task_Running = true;
 			while (TF._flag_IMU_Task_Running)
 			{
@@ -341,8 +380,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 	if (DF._IsBAROEnable)
 	{
 		TF.ALTTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_ALT_Task_Running = true;
 				while (TF._flag_ALT_Task_Running)
 				{
@@ -384,8 +422,7 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 {
 	TF.RXTask = std::thread(
-		[&]
-		{
+		[&] {
 			TF._flag_RXT_Task_Running = true;
 			while (TF._flag_RXT_Task_Running)
 			{
@@ -737,11 +774,9 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsGPSEnable)
 	{
 		TF.GPSTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_GPS_Task_Running = true;
 				DF.GPSInit->GPSReOpen();
-				TF._Tmp_GPSThreadSMooth = 10;
 				while (TF._flag_GPS_Task_Running)
 				{
 					TF._Tmp_GPSThreadTimeStart = GetTimestamp();
@@ -782,7 +817,6 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						//
 						AF._flag_GPSData_Async = true;
 					}
-					TF._Tmp_GPSThreadSMooth++;
 					TF._Tmp_GPSThreadTimeEnd = GetTimestamp();
 					TF._Tmp_GPSThreadTimeLoop = TF._Tmp_GPSThreadTimeEnd - TF._Tmp_GPSThreadTimeStart;
 					if (TF._Tmp_GPSThreadTimeLoop + TF._Tmp_GPSThreadTimeNext > TF._flag_GPSThreadTimeMax | TF._Tmp_GPSThreadTimeNext < 0)
@@ -809,8 +843,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		int rc = pthread_setaffinity_np(TF.GPSTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 
 		TF.MAGTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_MAG_Task_Running = true;
 				while (TF._flag_MAG_Task_Running)
 				{
@@ -850,8 +883,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsFlowEnable)
 	{
 		TF.FlowTask = std::thread(
-			[&]
-			{
+			[&] {
 				TF._flag_Flow_Task_Running = true;
 				while (TF._flag_Flow_Task_Running)
 				{
@@ -959,8 +991,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 {
 	TF.ESCTask = std::thread(
-		[&]
-		{
+		[&] {
 			TF._flag_ESC_Task_Running = true;
 			while (TF._flag_ESC_Task_Running)
 			{
@@ -1034,6 +1065,53 @@ void SingleAPMAPI::RPiSingleAPM::TaskThreadBlock()
 			break;
 		}
 		usleep(50000);
+	}
+}
+
+void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
+{
+	if (DF._IsBlackBoxEnable)
+	{
+		FileInjectSTR(DF.BlackBoxFile, DF.BlackBoxDevice->FullBlackboxHeader.c_str());
+
+		TF.BlackBoxQTask = std::thread([&] {
+			TF._flag_BBQ_Task_Running = true;
+			while (TF._flag_BBQ_Task_Running)
+			{
+				TF._Tmp_BBQThreadTimeStart = GetTimestamp();
+				TF._Tmp_BBQThreadTimeNext = TF._Tmp_BBQThreadTimeStart - TF._Tmp_BBQThreadTimeEnd;
+				//
+				if (!AF._flag_ESC_ARMED)
+				{
+					// TODO: FileInjectQueue(DF.BlackBoxFile,{});
+				}
+				//
+				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
+				TF._Tmp_BBQThreadTimeLoop = TF._Tmp_BBQThreadTimeEnd - TF._Tmp_BBQThreadTimeStart;
+				if (TF._Tmp_BBQThreadTimeLoop + TF._Tmp_BBQThreadTimeNext > TF._flag_BBQThreadTimeMax | TF._Tmp_BBQThreadTimeNext < 0)
+				{
+					usleep(100);
+				}
+				else
+				{
+					usleep(TF._flag_BBQThreadTimeMax - TF._Tmp_BBQThreadTimeLoop - TF._Tmp_BBQThreadTimeNext);
+				}
+				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
+			}
+		});
+
+		TF.BlackBoxWTask = std::thread([&] {
+			while (TF._flag_BBW_Task_Running)
+			{
+				if (TF.BlackBoxQeueue.size() > 0)
+				{
+				}
+				else
+				{
+					usleep(TF._flag_BBQThreadTimeMax * 2);
+				}
+			}
+		});
 	}
 }
 
@@ -1139,12 +1217,13 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	DF.RCDevice = APMInit.DC.__RCDevice;
 	DF.GPSDevice = APMInit.DC.__GPSDevice;
 	DF.FlowDevice = APMInit.DC.__FlowDevice;
-	DF.__MPUDeviceSPI =  APMInit.DC.__MPUDeviceSPI;
+	DF.MPUDeviceSPI = APMInit.DC.__MPUDeviceSPI;
 
 	DF._IsGPSEnable = APMInit.DC._IsGPSEnable;
 	DF._IsFlowEnable = APMInit.DC._IsFlowEnable;
 	DF._IsRCSafeEnable = APMInit.DC._IsRCSafeEnable;
 	DF._IsBAROEnable = APMInit.DC._IsBAROEnable;
+	DF._IsBlackBoxEnable = APMInit.DC._IsBlackBoxEnable;
 
 	TF._flag_IMUThreadFreq = APMInit.DC.IMU_Freqeuncy;
 	TF._flag_IMUThreadTimeMax = 1.f / (float)TF._flag_IMUThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
@@ -1153,6 +1232,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	TF._flag_ESCThreadFreq = APMInit.DC.ESC_Freqeuncy;
 	TF._flag_ESCThreadTimeMax = 1.f / (float)TF._flag_ESCThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
 	TF._flag_ServoThreadTimes = TF._flag_ESCThreadFreq / TF._flag_ServoThreadFreq;
+	TF._flag_BBQThreadFreq = APMInit.DC.BBC_Freqeuncy;
+	TF._flag_BBQThreadTimeMax = 1.f / (float)TF._flag_BBQThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
 	//==========================================================Controller config==/
 
 	RF._flag_RC_Min_PWM_Value = APMInit.RC._flag_RC_Min_PWM_Value;

@@ -22,6 +22,7 @@
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/Dense"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/BlackboxEncoder/Blackbox.hpp"
+
 #define PI 3.1415926
 #define SpeedUnusableRES 1.5
 #define ACC_CLIPPING_RC_CONSTANT 0.10f
@@ -48,6 +49,11 @@
 #define ACCEL_UPDATE_HZ 1000
 #define PID_DT_DEFAULT 250.f
 
+#define BlackBoxIInterval 32
+#define BlackBoxPInterval "1/1"
+#define BlackBoxFirmware "Singleflight"
+#define BlackBoxLogDir "/var/log/Singleflight/"
+
 namespace SingleAPMAPI
 {
 	inline volatile std::sig_atomic_t SystemSignal;
@@ -61,6 +67,7 @@ namespace SingleAPMAPI
 			int IMU_Freqeuncy;
 			int RXT_Freqeuncy;
 			int ESC_Freqeuncy;
+			int BBC_Freqeuncy;
 
 			std::string __RCDevice;
 			std::string __GPSDevice;
@@ -71,6 +78,7 @@ namespace SingleAPMAPI
 			bool _IsFlowEnable;
 			bool _IsRCSafeEnable;
 			bool _IsBAROEnable;
+			bool _IsBlackBoxEnable;
 		} DC;
 
 		struct PIDConfig
@@ -358,12 +366,13 @@ namespace SingleAPMAPI
 			std::string RCDevice;
 			std::string GPSDevice;
 			std::string FlowDevice;
-			std::string __MPUDeviceSPI;
+			std::string MPUDeviceSPI;
 
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;
 			bool _IsRCSafeEnable;
 			bool _IsBAROEnable;
+			bool _IsBlackBoxEnable;
 
 			std::unique_ptr<Sbus> SbusInit;
 			std::unique_ptr<Ibus> IbusInit;
@@ -373,6 +382,8 @@ namespace SingleAPMAPI
 			// std::unique_ptr<GPSI2CCompass> CompassDevice;
 			std::unique_ptr<RPiMPU9250> MPUDevice;
 			std::unique_ptr<MSPUartFlow> FlowInit;
+			std::unique_ptr<BlackboxEncoder> BlackBoxDevice;
+			std::ofstream BlackBoxFile;
 			TotalEKF EKFDevice;
 
 			pt1Filter_t BAROLPF;
@@ -761,7 +772,6 @@ namespace SingleAPMAPI
 			int _flag_ALTErrorTimes = 0;
 			bool _flag_ALT_Task_Running = false;
 			std::thread ALTTask;
-			int _Tmp_GPSThreadSMooth = 0;
 			int _Tmp_GPSThreadTimeStart = 0;
 			int _Tmp_GPSThreadTimeEnd = 0;
 			int _Tmp_GPSThreadTimeNext = 0;
@@ -771,7 +781,6 @@ namespace SingleAPMAPI
 			int _flag_GPSErrorTimes = 0;
 			bool _flag_GPS_Task_Running = false;
 			std::thread GPSTask;
-			int _Tmp_MAGThreadSMooth = 0;
 			int _Tmp_MAGThreadTimeStart = 0;
 			int _Tmp_MAGThreadTimeEnd = 0;
 			int _Tmp_MAGThreadTimeNext = 0;
@@ -791,6 +800,18 @@ namespace SingleAPMAPI
 			int _flag_FlowErrorTimes = 0;
 			bool _flag_Flow_Task_Running = false;
 			std::thread FlowTask;
+			int _Tmp_BBQThreadTimeStart = 0;
+			int _Tmp_BBQThreadTimeEnd = 0;
+			int _Tmp_BBQThreadTimeNext = 0;
+			int _Tmp_BBQThreadTimeLoop = 0;
+			int _flag_BBQThreadFreq;
+			int _flag_BBQThreadTimeMax = 0;
+			bool _flag_BBQ_Task_Running = false;
+			std::thread BlackBoxQTask;
+			bool _flag_BBW_Task_Running = false;
+			std::thread BlackBoxWTask;
+			std::queue<std::vector<uint8_t>> BlackBoxQeueue;
+			//
 			int DEBUGOuputCleaner = 0;
 			bool _flag_Block_Task_Running = false;
 		} TF;
@@ -813,6 +834,8 @@ namespace SingleAPMAPI
 		void PositionTaskReg();
 
 		void ESCUpdateTaskReg();
+
+		void BlackBoxTaskReg();
 
 		void PID_Caculate(float inputData, float &outputData,
 						  float &last_I_Data, float &last_D_Data,
