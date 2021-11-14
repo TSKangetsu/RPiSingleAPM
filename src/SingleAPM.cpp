@@ -179,15 +179,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisP[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisP[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisP[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisI[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisI[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisI[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisD[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisD[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisD[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
@@ -195,17 +186,12 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "rssi", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "debug[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "debug[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "debug[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "debug[3]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "motor[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			{.FrameName = "motor[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			{.FrameName = "motor[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
@@ -218,15 +204,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisP[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisP[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisP[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisI[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisI[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisI[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisD[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisD[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisD[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
@@ -234,17 +211,12 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "rssi", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "debug[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "debug[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "debug[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "debug[3]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "motor[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "motor[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "motor[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
@@ -258,12 +230,13 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			.BlackBoxDataIInfo = BlackBoxIInfo,
 			.BlackBoxDataPInfo = BlackBoxPInfo,
 			.BlackBoxCustom = {
-				"H acc_1G:2048\n",
+				"H Firmware revision:Singleflight 0.9.5 BETA Raspberrypi4B\n",
+				"H acc_1G:" + std::to_string((int)MPU9250_ACCEL_LSB) + "\n",
 				"H gyro_scale:0x3f800000\n",
 				"H motorOutput:1000,2000\n",
 				"H minthrottle:1000\n",
 				"H maxthrottle:2000\n",
-				"H looptime:250\n",
+				("H looptime:" + std::to_string(TF._flag_IMUThreadTimeMax + LINUX_SYSTEM_SLEEP_DELAY) + "\n"),
 			},
 		}));
 	}
@@ -1164,46 +1137,30 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 				//
 				if (!AF._flag_ESC_ARMED)
 				{
-
-					FileInjectQueue(DF.BlackBoxFile,
-									DF.BlackBoxDevice->BlackboxPIPush({
-										TF._Tmp_BBQThreadloopIteration,
-										GetTimestamp() - TF._Tmp_BBQThreadTimeup,
-										(int)PF._uORB_Leveling__Roll,
-										(int)PF._uORB_Leveling_Pitch,
-										(int)PF._uORB_Leveling___Yaw,
-										0,
-										0,
-										0,
-										0,
-										0,
-										0,
-										0,
-										0,
-										0,
-										(RF._uORB_RC_Channel_PWM[0] - RF._flag_RC_Mid_PWM_Value),
-										(RF._uORB_RC_Channel_PWM[1] - RF._flag_RC_Mid_PWM_Value),
-										(RF._uORB_RC_Channel_PWM[3] - RF._flag_RC_Mid_PWM_Value),
-										(RF._uORB_RC_Channel_PWM[2]),
-										(int)SF._uORB_MPU_Data._uORB_Real__Roll,
-										(int)SF._uORB_MPU_Data._uORB_Real_Pitch,
-										(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
-										0,
-										(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
-										(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
-										(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
-										SF._uORB_MPU_Data._uORB_MPU9250_A_X,
-										SF._uORB_MPU_Data._uORB_MPU9250_A_Y,
-										SF._uORB_MPU_Data._uORB_MPU9250_A_Z,
-										0,
-										0,
-										0,
-										0,
-										EF._uORB_A1_Speed,
-										EF._uORB_A2_Speed,
-										EF._uORB_B1_Speed,
-										EF._uORB_B2_Speed,
-									}));
+					TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxPIPush({
+						TF._Tmp_BBQThreadloopIteration,
+						GetTimestamp() - TF._Tmp_BBQThreadTimeup,
+						(int)PF._uORB_Leveling__Roll,
+						(int)PF._uORB_Leveling_Pitch,
+						(int)PF._uORB_Leveling___Yaw,
+						(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[0])), // Convert to Cleanflight output
+						(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1]),
+						(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
+						(RF._uORB_RC_Channel_PWM[2]),
+						(int)SF._uORB_MPU_Data._uORB_Real__Roll,
+						(int)SF._uORB_MPU_Data._uORB_Real_Pitch * -1, // Convert to Cleanflight output
+						(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+						(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
+						(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch * -1, // Convert to Cleanflight output
+						(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
+						(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y * MPU9250_ACCEL_LSB),
+						(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_X * MPU9250_ACCEL_LSB),
+						(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Z * MPU9250_ACCEL_LSB),
+						EF._uORB_B2_Speed,
+						EF._uORB_A2_Speed,
+						EF._uORB_B1_Speed,
+						EF._uORB_A1_Speed,
+					}));
 					TF._Tmp_BBQThreadloopIteration++;
 				}
 				//
@@ -1222,10 +1179,13 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 		});
 
 		TF.BlackBoxWTask = std::thread([&] {
+			TF._flag_BBW_Task_Running = true;
 			while (TF._flag_BBW_Task_Running)
 			{
-				if (TF.BlackBoxQeueue.size() > 0)
+				if (!TF.BlackBoxQeueue.empty())
 				{
+					FileInjectQueue(DF.BlackBoxFile, TF.BlackBoxQeueue.front());
+					TF.BlackBoxQeueue.pop();
 				}
 				else
 				{
