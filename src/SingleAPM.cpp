@@ -195,12 +195,17 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "rssi", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "debug[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "debug[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "debug[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "debug[3]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "motor[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			{.FrameName = "motor[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			{.FrameName = "motor[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
@@ -229,12 +234,17 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "rssi", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "debug[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "debug[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "debug[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "debug[3]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 			{.FrameName = "motor[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "motor[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "motor[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
@@ -329,6 +339,11 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	DF.FlowInit.reset();
 	DF.MPUDevice.reset();
 	DF.BlackBoxDevice.reset();
+	//
+	DF.BlackBoxFile << 'E';
+	DF.BlackBoxFile << (uint8_t)0xFF;
+	DF.BlackBoxFile << "End of log";
+	DF.BlackBoxFile << (uint8_t)0x00;
 	DF.BlackBoxFile.close();
 	//--------------------------------------------------------------------//
 	{
@@ -1173,12 +1188,17 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 										(int)SF._uORB_MPU_Data._uORB_Real__Roll,
 										(int)SF._uORB_MPU_Data._uORB_Real_Pitch,
 										(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+										0,
 										(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
 										(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
 										(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
 										SF._uORB_MPU_Data._uORB_MPU9250_A_X,
 										SF._uORB_MPU_Data._uORB_MPU9250_A_Y,
 										SF._uORB_MPU_Data._uORB_MPU9250_A_Z,
+										0,
+										0,
+										0,
+										0,
 										EF._uORB_A1_Speed,
 										EF._uORB_A2_Speed,
 										EF._uORB_B1_Speed,

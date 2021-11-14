@@ -95,7 +95,7 @@ private:
                 {
                     if (PredictDataLast.size() > 0)
                     {
-                            data[i] = data[i] - PredictDataLast[PredictDataLast.size() - 1][i];
+                        data[i] = data[i] - PredictDataLast[PredictDataLast.size() - 1][i];
                     }
                 }
                 break;
@@ -173,6 +173,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
         FullBlackboxHeader += sts.FrameName;
         FullBlackboxHeader += ",";
     }
+    // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+    FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
     FullBlackboxHeader += "\n";
 
     FullBlackboxHeader += BlackboxISigned;
@@ -181,6 +183,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
         FullBlackboxHeader += std::to_string(sts.FrameSigned);
         FullBlackboxHeader += ",";
     }
+    // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+    FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
     FullBlackboxHeader += "\n";
 
     FullBlackboxHeader += BlackboxIPredictor;
@@ -189,6 +193,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
         FullBlackboxHeader += std::to_string(sts.FramePredictor);
         FullBlackboxHeader += ",";
     }
+    // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+    FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
     FullBlackboxHeader += "\n";
 
     FullBlackboxHeader += BlackboxIEncoding;
@@ -197,6 +203,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
         FullBlackboxHeader += std::to_string(sts.FrameEncoder);
         FullBlackboxHeader += ",";
     }
+    // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+    FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
     FullBlackboxHeader += "\n";
     //=======================P FRAME INFO=============================//
     if (Info.BlackBoxDataPInfo.size() > 0)
@@ -207,6 +215,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
             FullBlackboxHeader += sts.FrameName;
             FullBlackboxHeader += ",";
         }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
         FullBlackboxHeader += "\n";
 
         FullBlackboxHeader += BlackboxPSigned;
@@ -215,6 +225,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
             FullBlackboxHeader += std::to_string(sts.FrameSigned);
             FullBlackboxHeader += ",";
         }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
         FullBlackboxHeader += "\n";
 
         FullBlackboxHeader += BlackboxPPredictor;
@@ -223,6 +235,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
             FullBlackboxHeader += std::to_string(sts.FramePredictor);
             FullBlackboxHeader += ",";
         }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
         FullBlackboxHeader += "\n";
 
         FullBlackboxHeader += BlackboxPEncoding;
@@ -231,6 +245,8 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
             FullBlackboxHeader += std::to_string(sts.FrameEncoder);
             FullBlackboxHeader += ",";
         }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
         FullBlackboxHeader += "\n";
     }
 
