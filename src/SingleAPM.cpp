@@ -196,6 +196,17 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "motor[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			{.FrameName = "motor[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			{.FrameName = "motor[3]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			{.FrameName = "BaroAlt", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navAcc[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navAcc[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navAcc[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navSpeed[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navSpeed[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navSpeed[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+			{.FrameName = "IMUDT", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 		};
 
 		std::vector<BlackboxList> BlackBoxPInfo = {
@@ -221,6 +232,17 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{.FrameName = "motor[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "motor[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			{.FrameName = "motor[3]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "BaroAlt", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navAcc[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navAcc[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navAcc[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navSpeed[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navSpeed[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navSpeed[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 		};
 
 		DF.BlackBoxDevice.reset(new BlackboxEncoder({
@@ -1160,6 +1182,17 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 						EF._uORB_A2_Speed,
 						EF._uORB_B1_Speed,
 						EF._uORB_A1_Speed,
+						(int)SF._uORB_BARO_Altitude,
+						(int)SF._uORB_MPU_Data._uORB_Acceleration_X,
+						(int)SF._uORB_MPU_Data._uORB_Acceleration_Y,
+						(int)SF._uORB_MPU_Data._uORB_Acceleration_Z,
+						(int)SF._uORB_True_Speed_X,
+						(int)SF._uORB_True_Speed_Y,
+						(int)SF._uORB_True_Speed_Z,
+						(int)SF._uORB_True_Movement_X,
+						(int)SF._uORB_True_Movement_Y,
+						(int)SF._uORB_True_Movement_Z,
+						(int)TF._Tmp_IMUAttThreadDT,
 					}));
 					TF._Tmp_BBQThreadloopIteration++;
 				}
