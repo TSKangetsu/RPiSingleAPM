@@ -430,6 +430,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
 				if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_IMUThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
 				{
+					usleep(TF._flag_IMUThreadTimeMax);
 					TF._flag_IMUErrorTimes++;
 					AF._flag_ClockingTime_Error = true;
 				}
