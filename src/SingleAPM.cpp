@@ -247,7 +247,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 
 		DF.BlackBoxDevice.reset(new BlackboxEncoder({
 			.IInterval = BlackBoxIInterval,
-			.PInterval = BlackBoxPInterval,
+			.PInterval = TF._flag_BBQThreadINT.c_str(),
 			.FirmwareType = BlackBoxFirmware,
 			.BlackBoxDataIInfo = BlackBoxIInfo,
 			.BlackBoxDataPInfo = BlackBoxPInfo,
@@ -430,7 +430,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeLoop = TF._Tmp_IMUThreadTimeEnd - TF._Tmp_IMUThreadTimeStart;
 				if (TF._Tmp_IMUThreadTimeLoop + TF._Tmp_IMUThreadTimeNext > TF._flag_IMUThreadTimeMax | TF._Tmp_IMUThreadTimeNext < 0)
 				{
-					usleep(TF._flag_IMUThreadTimeMax);
+					usleep(TF._flag_IMUThreadTimeMax); // FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
 					TF._flag_IMUErrorTimes++;
 					AF._flag_ClockingTime_Error = true;
 				}
@@ -1347,6 +1347,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	TF._flag_ESCThreadFreq = APMInit.DC.ESC_Freqeuncy;
 	TF._flag_ESCThreadTimeMax = 1.f / (float)TF._flag_ESCThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
 	TF._flag_ServoThreadTimes = TF._flag_ESCThreadFreq / TF._flag_ServoThreadFreq;
+	TF._flag_BBQThreadINT = APMInit.DC.BBC_PInterval;
 	TF._flag_BBQThreadFreq = APMInit.DC.BBC_Freqeuncy;
 	TF._flag_BBQThreadTimeMax = 1.f / (float)TF._flag_BBQThreadFreq * 1000000.f - LINUX_SYSTEM_SLEEP_DELAY;
 	//==========================================================Controller config==/
@@ -1496,6 +1497,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 {
 	TF._Tmp_IMUAttThreadDT = GetTimestamp() - TF._Tmp_IMUAttThreadLast;
+	 // FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
+	if(TF._Tmp_IMUAttThreadDT <= 0)
+		TF._Tmp_IMUAttThreadDT = TF._flag_IMUThreadTimeMax;
 	//PID Checking
 	{
 		if (AF._flag_ESC_ARMED == true)

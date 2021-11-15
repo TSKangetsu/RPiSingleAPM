@@ -153,6 +153,7 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.DC.RXT_Freqeuncy = Configdata["RXT_Freqeuncy"].get<int>();
 	APMInit.DC.ESC_Freqeuncy = Configdata["ESC_Freqeuncy"].get<int>();
 	APMInit.DC.BBC_Freqeuncy = Configdata["BBC_Freqeuncy"].get<int>();
+	APMInit.DC.BBC_PInterval = Configdata["BBC_PInterval"].get<std::string>();
 	//==========================================================Controller cofig==/
 	APMInit.RC._flag_RC_Min_PWM_Value = Configdata["_flag_RC_Min_PWM_Value"].get<int>();
 	APMInit.RC._flag_RC_Mid_PWM_Value = Configdata["_flag_RC_Mid_PWM_Value"].get<int>();

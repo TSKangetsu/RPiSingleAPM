@@ -68,6 +68,7 @@ namespace SingleAPMAPI
 			int RXT_Freqeuncy;
 			int ESC_Freqeuncy;
 			int BBC_Freqeuncy;
+			std::string BBC_PInterval;
 
 			std::string __RCDevice;
 			std::string __GPSDevice;
@@ -805,6 +806,7 @@ namespace SingleAPMAPI
 			int _Tmp_BBQThreadTimeNext = 0;
 			int _Tmp_BBQThreadTimeLoop = 0;
 			int _flag_BBQThreadFreq;
+			std::string _flag_BBQThreadINT;
 			int _flag_BBQThreadTimeMax = 0;
 			bool _flag_BBQ_Task_Running = false;
 			std::thread BlackBoxQTask;
