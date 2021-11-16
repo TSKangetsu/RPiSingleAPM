@@ -347,10 +347,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	DF.MPUDevice.reset();
 	DF.BlackBoxDevice.reset();
 	//
-	DF.BlackBoxFile << 'E';
-	DF.BlackBoxFile << (uint8_t)0xFF;
-	DF.BlackBoxFile << "End of log";
-	DF.BlackBoxFile << (uint8_t)0x00;
+	FileInjectQueue(DF.BlackBoxFile, DF.BlackBoxDevice->BlackboxEPush(BlackboxEvent::FLIGHT_LOG_EVENT_LOG_END, 0, 0, 0));
 	DF.BlackBoxFile.close();
 	//--------------------------------------------------------------------//
 	{
@@ -1161,9 +1158,11 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 	if (DF._IsBlackBoxEnable)
 	{
 		TF._Tmp_BBQThreadTimeup = GetTimestamp();
-		FileInjectSTR(DF.BlackBoxFile, DF.BlackBoxDevice->FullBlackboxHeader.c_str());
-
 		TF.BlackBoxQTask = std::thread([&] {
+			bool IsFirstStart = true;
+			bool DISARMLOGLock = true;
+			bool ARMLOGLock = true;
+			int BlackOvertime = TF._Tmp_BBQThreadTimeup;
 			TF._flag_BBQ_Task_Running = true;
 			while (TF._flag_BBQ_Task_Running)
 			{
@@ -1172,6 +1171,12 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 				//
 				if (!AF._flag_ESC_ARMED)
 				{
+					if (IsFirstStart || (!ARMLOGLock && (GetTimestamp() - TF._Tmp_BBQThreadTimeup) - BlackOvertime > 10000000))
+					{
+						std::vector<uint8_t> header(DF.BlackBoxDevice->FullBlackboxHeader.begin(), DF.BlackBoxDevice->FullBlackboxHeader.end());
+						TF.BlackBoxQeueue.push(header);
+					}
+
 					TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxPIPush({
 						TF._Tmp_BBQThreadloopIteration,
 						GetTimestamp() - TF._Tmp_BBQThreadTimeup,
@@ -1208,6 +1213,54 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 						(int)TF._Tmp_IMUAttThreadDT,
 					}));
 					TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
+
+					if (IsFirstStart)
+					{
+						TF.BlackBoxQeueue.push(
+							DF.BlackBoxDevice->BlackboxEPush(
+								BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
+								(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
+						IsFirstStart = false;
+						ARMLOGLock = true;
+					}
+					else if (!ARMLOGLock)
+					{
+						if ((GetTimestamp() - TF._Tmp_BBQThreadTimeup) - BlackOvertime > 10000000)
+						{
+							TF.BlackBoxQeueue.push(
+								DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
+									(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
+						}
+						else
+						{
+							TF.BlackBoxQeueue.push(
+								DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_LOGGING_RESUME,
+									(GetTimestamp() - TF._Tmp_BBQThreadTimeup),
+									TF._Tmp_BBQThreadloopIteration, 0));
+							TF.BlackBoxQeueue.push(
+								DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
+									(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
+						}
+						ARMLOGLock = true;
+					}
+
+					DISARMLOGLock = false;
+				}
+				else
+				{
+					if (!IsFirstStart)
+					{
+						if (!DISARMLOGLock)
+						{
+							TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(BlackboxEvent::FLIGHT_LOG_EVENT_DISARM, 0, 0, 4));
+							BlackOvertime = GetTimestamp() - TF._Tmp_BBQThreadTimeup;
+							DISARMLOGLock = true;
+						}
+					}
+					ARMLOGLock = false;
 				}
 				//
 				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();

@@ -43,12 +43,26 @@ struct BlackboxHeaderInfo
     std::vector<std::string> BlackBoxCustom;
 };
 
+enum BlackboxEvent
+{
+    FLIGHT_LOG_EVENT_SYNC_BEEP = 0,
+    FLIGHT_LOG_EVENT_AUTOTUNE_CYCLE_START = 10,  // UNUSED
+    FLIGHT_LOG_EVENT_AUTOTUNE_CYCLE_RESULT = 11, // UNUSED
+    FLIGHT_LOG_EVENT_AUTOTUNE_TARGETS = 12,      // UNUSED
+    FLIGHT_LOG_EVENT_INFLIGHT_ADJUSTMENT = 13,
+    FLIGHT_LOG_EVENT_LOGGING_RESUME = 14,
+    FLIGHT_LOG_EVENT_DISARM = 15,
+    FLIGHT_LOG_EVENT_FLIGHTMODE = 30, // Add new event type for flight mode status.
+    FLIGHT_LOG_EVENT_LOG_END = 255
+};
+
 class BlackboxEncoder
 {
 public:
     std::string FullBlackboxHeader;
     inline BlackboxEncoder(BlackboxHeaderInfo);
     inline std::vector<uint8_t> BlackboxPIPush(std::vector<int> data);
+    inline std::vector<uint8_t> BlackboxEPush(BlackboxEvent event, int time, int LoopIteration, int ext);
 
 private:
     int PINTNUM = 1;
@@ -308,6 +322,66 @@ std::vector<uint8_t> BlackboxEncoder::BlackboxPIPush(std::vector<int> data)
     }
 
     return FrameBuffer;
+}
+
+std::vector<uint8_t> BlackboxEncoder::BlackboxEPush(BlackboxEvent event, int time, int LoopIteration, int ext)
+{
+    std::vector<uint8_t> wdata;
+    wdata.push_back(((uint8_t)'E'));
+    wdata.push_back(((uint8_t)event));
+
+    //Now serialize the data for this specific frame type
+    switch (event)
+    {
+    case FLIGHT_LOG_EVENT_SYNC_BEEP:
+        for (size_t i = 0; i < unsignedBtyeEncode(time).size(); i++)
+        {
+            wdata.push_back(unsignedBtyeEncode(time)[i]);
+        }
+        break;
+    case FLIGHT_LOG_EVENT_FLIGHTMODE: // New flightmode flags write
+        // TODO: Not support Yet
+        // blackboxWriteUnsignedVB(data->flightMode.flags);
+        // blackboxWriteUnsignedVB(data->flightMode.lastFlags);
+        break;
+    case FLIGHT_LOG_EVENT_DISARM:
+        for (size_t i = 0; i < unsignedBtyeEncode(ext).size(); i++)
+        {
+            wdata.push_back(unsignedBtyeEncode(ext)[i]);
+        }
+        break;
+    case FLIGHT_LOG_EVENT_INFLIGHT_ADJUSTMENT:
+        // TODO: Not support Yet
+        // if (data->inflightAdjustment.floatFlag) {
+        // blackboxWrite(data->inflightAdjustment.adjustmentFunction + FLIGHT_LOG_EVENT_INFLIGHT_ADJUSTMENT_FUNCTION_FLOAT_VALUE_FLAG);
+        // blackboxWriteFloat(data->inflightAdjustment.newFloatValue);
+        // } else {
+        // blackboxWrite(data->inflightAdjustment.adjustmentFunction);
+        // blackboxWriteSignedVB(data->inflightAdjustment.newValue);
+        // }
+        break;
+    case FLIGHT_LOG_EVENT_LOGGING_RESUME:
+        for (size_t i = 0; i < unsignedBtyeEncode(LoopIteration).size(); i++)
+        {
+            wdata.push_back(unsignedBtyeEncode(LoopIteration)[i]);
+        }
+        for (size_t i = 0; i < unsignedBtyeEncode(time).size(); i++)
+        {
+            wdata.push_back(unsignedBtyeEncode(time)[i]);
+        }
+        break;
+    case FLIGHT_LOG_EVENT_LOG_END:
+        for (size_t i = 0; i < sizeof("End of log"); i++)
+        {
+            wdata.push_back(std::string("End of log", sizeof("End of log"))[i]);
+        }
+        wdata.push_back(0x00);
+        break;
+    default:
+        break;
+    }
+
+    return wdata;
 }
 
 inline void FileInjectSTR(std::ofstream &file, const char *header)
