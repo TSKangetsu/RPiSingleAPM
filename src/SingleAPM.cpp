@@ -163,104 +163,116 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	//--------------------------------------------------------------------//
 	{
-		char outTime[16];
-		std::time_t t = std::time(NULL);
-		std::strftime(outTime, sizeof(outTime), "%Y%m%d%H%M%S", std::localtime(&t));
-		std::string file = (std::string(BlackBoxLogDir, sizeof(BlackBoxLogDir) - 1) +
-							std::string("Singleflight", sizeof("Singleflight") - 1) +
-							std::string("-", sizeof("-") - 1) +
-							std::string(outTime, sizeof(outTime) - 2) +
-							std::string(".log", sizeof(".log") - 1));
-		DF.BlackBoxFile.open(file.c_str(), std::ios::out | std::ios::binary);
+		if (DF._IsBlackBoxEnable)
+		{
+			char outTime[16];
+			std::time_t t = std::time(NULL);
+			std::strftime(outTime, sizeof(outTime), "%Y%m%d%H%M%S", std::localtime(&t));
+			std::string file = (std::string(BlackBoxLogDir, sizeof(BlackBoxLogDir) - 1) +
+								std::string("Singleflight", sizeof("Singleflight") - 1) +
+								std::string("-", sizeof("-") - 1) +
+								std::string(outTime, sizeof(outTime) - 2) +
+								std::string(".log", sizeof(".log") - 1));
+			DF.BlackBoxFile.open(file.c_str(), std::ios::out | std::ios::binary);
 
-		std::vector<BlackboxList> BlackBoxIInfo = {
-			{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-			{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-			{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[3]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "motor[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-			{.FrameName = "motor[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-			{.FrameName = "motor[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-			{.FrameName = "motor[3]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-			{.FrameName = "BaroAlt", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navAcc[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navAcc[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navAcc[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navSpeed[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navSpeed[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navSpeed[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "IMUDT", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-		};
+			std::vector<BlackboxList> BlackBoxIInfo = {
+				{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[3]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "motor[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "motor[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "motor[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "motor[3]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "BaroAlt", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navAcc[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navAcc[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navAcc[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navSpeed[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navSpeed[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navSpeed[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "IMUDT", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+			};
 
-		std::vector<BlackboxList> BlackBoxPInfo = {
-			{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 6, .FrameEncoder = 9},
-			{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 2, .FrameEncoder = 0},
-			{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "rcCommand[3]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-			{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "motor[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "motor[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "motor[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "motor[3]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "BaroAlt", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navAcc[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navAcc[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navAcc[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navSpeed[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navSpeed[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navSpeed[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-			{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-		};
+			std::vector<BlackboxList> BlackBoxPInfo = {
+				{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 6, .FrameEncoder = 9},
+				{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 2, .FrameEncoder = 0},
+				{.FrameName = "axisRate[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "axisRate[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "axisRate[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "rcCommand[3]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "attitude[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "attitude[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "attitude[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "motor[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "motor[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "motor[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "motor[3]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "BaroAlt", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navAcc[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navAcc[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navAcc[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navSpeed[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navSpeed[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navSpeed[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+			};
 
-		DF.BlackBoxDevice.reset(new BlackboxEncoder({
-			.IInterval = BlackBoxIInterval,
-			.PInterval = TF._flag_BBQThreadINT.c_str(),
-			.FirmwareType = BlackBoxFirmware,
-			.BlackBoxDataIInfo = BlackBoxIInfo,
-			.BlackBoxDataPInfo = BlackBoxPInfo,
-			.BlackBoxCustom = {
-				"H Firmware revision:Singleflight 0.9.5 BETA Raspberrypi4B\n",
-				"H acc_1G:" + std::to_string((int)MPU9250_ACCEL_LSB) + "\n",
-				"H gyro_scale:0x3f800000\n",
-				"H motorOutput:1000,2000\n",
-				"H minthrottle:1000\n",
-				"H maxthrottle:2000\n",
-				("H looptime:" + std::to_string(TF._flag_IMUThreadTimeMax + LINUX_SYSTEM_SLEEP_DELAY) + "\n"),
-			},
-		}));
+			std::string PINTER = TF._flag_BBQThreadINT.c_str();
+			std::string PINTERNUM = PINTER.substr(0, PINTER.find('/'));
+			std::string PINTERDEM = PINTER.substr(PINTERNUM.size() + 1, PINTER.find('\0'));
+			TF._flag_P_Interval = std::atoi(PINTERDEM.c_str());
+
+			// Only support 1/4,1/2,1/1
+			if (!(TF._flag_P_Interval == 4 || TF._flag_P_Interval == 2 || TF._flag_P_Interval == 1))
+				return -1;
+
+			DF.BlackBoxDevice.reset(new BlackboxEncoder({
+				.IInterval = BlackBoxIInterval,
+				.PInterval = TF._flag_BBQThreadINT.c_str(),
+				.FirmwareType = BlackBoxFirmware,
+				.BlackBoxDataIInfo = BlackBoxIInfo,
+				.BlackBoxDataPInfo = BlackBoxPInfo,
+				.BlackBoxCustom = {
+					"H Firmware revision:Singleflight 0.9.5 BETA Raspberrypi4B\n",
+					"H acc_1G:" + std::to_string((int)MPU9250_ACCEL_LSB) + "\n",
+					"H gyro_scale:0x3f800000\n",
+					"H motorOutput:1000,2000\n",
+					"H minthrottle:1000\n",
+					"H maxthrottle:2000\n",
+					("H looptime:" + std::to_string(TF._flag_IMUThreadTimeMax + LINUX_SYSTEM_SLEEP_DELAY) + "\n"),
+				},
+			}));
+		}
 	}
 	sleep(2);
 #ifdef RPiDEBUGStart
@@ -1195,7 +1207,7 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 						(int)SF._uORB_True_Movement_Z,
 						(int)TF._Tmp_IMUAttThreadDT,
 					}));
-					TF._Tmp_BBQThreadloopIteration++;
+					TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
 				}
 				//
 				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
@@ -1497,8 +1509,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 {
 	TF._Tmp_IMUAttThreadDT = GetTimestamp() - TF._Tmp_IMUAttThreadLast;
-	 // FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
-	if(TF._Tmp_IMUAttThreadDT <= 0)
+	// FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
+	if (TF._Tmp_IMUAttThreadDT <= 0)
 		TF._Tmp_IMUAttThreadDT = TF._flag_IMUThreadTimeMax;
 	//PID Checking
 	{

@@ -807,6 +807,7 @@ namespace SingleAPMAPI
 			int _Tmp_BBQThreadTimeLoop = 0;
 			int _flag_BBQThreadFreq;
 			std::string _flag_BBQThreadINT;
+			int _flag_P_Interval = 1;
 			int _flag_BBQThreadTimeMax = 0;
 			bool _flag_BBQ_Task_Running = false;
 			std::thread BlackBoxQTask;
