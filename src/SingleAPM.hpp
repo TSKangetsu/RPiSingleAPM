@@ -49,6 +49,10 @@
 #define ACCEL_UPDATE_HZ 1000
 #define PID_DT_DEFAULT 250.f
 
+#define I2CCOMPASS_ADDR 0x0d
+#define I2CBARO_ADDR 0x77
+#define I2CPCA_ADDR 0x40
+
 #define BlackBoxIInterval 32
 #define BlackBoxPInterval "1/1"
 #define BlackBoxFirmware "Cleanflight"
@@ -74,6 +78,7 @@ namespace SingleAPMAPI
 			std::string __GPSDevice;
 			std::string __FlowDevice;
 			std::string __MPUDeviceSPI;
+			std::string __I2CDevice;
 
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;
@@ -150,11 +155,12 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_A_Y_Scal;
 			double _flag_MPU9250_A_Z_Scal;
 			double _flag_MPU9250_Head_Asix;
-			double _flag_COMPASS_Y_Scaler;
-			double _flag_COMPASS_Z_Scaler;
 			double _flag_COMPASS_X_Offset;
+			double _flag_COMPASS_X_Scaler;
 			double _flag_COMPASS_Y_Offset;
+			double _flag_COMPASS_Y_Scaler;
 			double _flag_COMPASS_Z_Offset;
+			double _flag_COMPASS_Z_Scaler;
 		} SC;
 
 		struct OutputConfig
@@ -368,6 +374,7 @@ namespace SingleAPMAPI
 			std::string GPSDevice;
 			std::string FlowDevice;
 			std::string MPUDeviceSPI;
+			std::string I2CDevice;
 
 			bool _IsGPSEnable;
 			bool _IsFlowEnable;
@@ -441,7 +448,7 @@ namespace SingleAPMAPI
 			int _uORB_MAG_RawX = 0;
 			int _uORB_MAG_RawY = 0;
 			int _uORB_MAG_RawZ = 0;
-			double _flag_MPU_MAG_Cali[10];
+			double _flag_COMPASS_Cali[10];
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
 			int _uORB_Flow_XOutput = 0;

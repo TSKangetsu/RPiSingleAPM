@@ -24,7 +24,7 @@ class ESCGenerator
 {
 public:
     // Frequency is not update frequency
-    inline ESCGenerator(GeneratorType generator, const char *device, int Frequency);
+    inline ESCGenerator(GeneratorType generator, const char *device, uint8_t addr, int Frequency);
     // Range 1000us - 2000us, Will Caculate auto
     inline void ESCUpdate(int ID, int Range);
 
@@ -48,7 +48,7 @@ private:
     int Hardware_OffState = 0;
 };
 
-ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, int Frequency)
+ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, uint8_t addr, int Frequency)
 {
     Generator = generator;
     PlFrequency = Frequency;
@@ -57,7 +57,7 @@ ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, int Freq
     case GeneratorType::Hardware_PWM:
     {
         GeneratorFD = pca9685Setup(device,
-                                   PCA9685_DEFAULT_ADDRESS,
+                                   addr,
                                    PlFrequency);
         pca9685PWMReset(GeneratorFD);
         pca9685PWMResetON(GeneratorFD, PCA9685_ALL_PIN);
@@ -95,7 +95,7 @@ ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, int Freq
     }
 
     if (GeneratorFD < 0)
-        throw -1;
+        throw - 1;
 }
 
 void ESCGenerator::ESCUpdate(int ID, int Range)

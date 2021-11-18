@@ -42,7 +42,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
-		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, "/dev/i2c-1", EF.ESCPLFrequency));
+		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, DF.I2CDevice.c_str(), I2CPCA_ADDR, EF.ESCPLFrequency));
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -69,7 +69,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Baro initializating ......";
 #endif
 			std::cout.flush();
-			DF.BaroDeviceD.reset(new BaroDevice(BaroType::MS5611, "/dev/i2c-1", 0x77));
+			DF.BaroDeviceD.reset(new BaroDevice(BaroType::MS5611, DF.I2CDevice.c_str(), I2CBARO_ADDR));
 #ifdef RPiDEBUGStart
 			std::cout << "Done!\n";
 #endif
@@ -84,8 +84,10 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
-			DF.CompassDevice.reset(new GPSI2CCompass("/dev/i2c-1", 0x0d, COMPASS_QMC5883L));
-			DF.CompassDevice->CompassApply(4269, 1896, 3975, 1015, 1840, -470);
+			DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_QMC5883L));
+			DF.CompassDevice->CompassApply(SF._flag_COMPASS_Cali[CompassXOffset], SF._flag_COMPASS_Cali[CompassXScaler],
+										   SF._flag_COMPASS_Cali[CompassYOffset], SF._flag_COMPASS_Cali[CompassYScaler],
+										   SF._flag_COMPASS_Cali[CompassZOffset], SF._flag_COMPASS_Cali[CompassZScaler]);
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
 #endif
@@ -1416,6 +1418,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	DF.GPSDevice = APMInit.DC.__GPSDevice;
 	DF.FlowDevice = APMInit.DC.__FlowDevice;
 	DF.MPUDeviceSPI = APMInit.DC.__MPUDeviceSPI;
+	DF.I2CDevice = APMInit.DC.__I2CDevice;
 
 	DF._IsGPSEnable = APMInit.DC._IsGPSEnable;
 	DF._IsFlowEnable = APMInit.DC._IsFlowEnable;
@@ -1535,11 +1538,12 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_MPU_Accel_Cali[MPUAccelTRIMPitch] = APMInit.SC._flag_Accel_Pitch_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelTRIM_Roll] = APMInit.SC._flag_Accel__Roll_Cali;
 
-	SF._flag_MPU_MAG_Cali[CompassYScaler] = APMInit.SC._flag_COMPASS_Y_Scaler;
-	SF._flag_MPU_MAG_Cali[CompassZScaler] = APMInit.SC._flag_COMPASS_Z_Scaler;
-	SF._flag_MPU_MAG_Cali[CompassXOffset] = APMInit.SC._flag_COMPASS_X_Offset;
-	SF._flag_MPU_MAG_Cali[CompassYOffset] = APMInit.SC._flag_COMPASS_Y_Offset;
-	SF._flag_MPU_MAG_Cali[CompassZOffset] = APMInit.SC._flag_COMPASS_Z_Offset;
+	SF._flag_COMPASS_Cali[CompassXOffset] = APMInit.SC._flag_COMPASS_X_Offset;
+	SF._flag_COMPASS_Cali[CompassXScaler] = APMInit.SC._flag_COMPASS_X_Scaler;
+	SF._flag_COMPASS_Cali[CompassYOffset] = APMInit.SC._flag_COMPASS_Y_Offset;
+	SF._flag_COMPASS_Cali[CompassYScaler] = APMInit.SC._flag_COMPASS_Y_Scaler;
+	SF._flag_COMPASS_Cali[CompassZOffset] = APMInit.SC._flag_COMPASS_Z_Offset;
+	SF._flag_COMPASS_Cali[CompassZScaler] = APMInit.SC._flag_COMPASS_Z_Scaler;
 	//==============================================================Filter config==/
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
 	SF._flag_Filter_GryoST2_Type = APMInit.FC._flag_Filter_GryoST2_Type;

@@ -138,10 +138,11 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.DC.RC_Type = Configdata["RC_Type"].get<int>();
 	APMInit.DC.MPU9250_Type = Configdata["MPU9250_Type"].get<int>();
 
-	APMInit.DC.__RCDevice = Configdata["__RCDevice"].get<std::string>(),
-	APMInit.DC.__GPSDevice = Configdata["__GPSDevice"].get<std::string>(),
-	APMInit.DC.__FlowDevice = Configdata["__FlowDevice"].get<std::string>(),
-	APMInit.DC.__MPUDeviceSPI = Configdata["__MPUDeviceSPI"].get<std::string>(),
+	APMInit.DC.__RCDevice = Configdata["__RCDevice"].get<std::string>();
+	APMInit.DC.__GPSDevice = Configdata["__GPSDevice"].get<std::string>();
+	APMInit.DC.__FlowDevice = Configdata["__FlowDevice"].get<std::string>();
+	APMInit.DC.__MPUDeviceSPI = Configdata["__MPUDeviceSPI"].get<std::string>();
+	APMInit.DC.__I2CDevice = Configdata["__I2CDevice"].get<std::string>();
 
 	APMInit.DC._IsGPSEnable = Configdata["_IsGPSEnable"].get<bool>();
 	APMInit.DC._IsFlowEnable = Configdata["_IsFlowEnable"].get<bool>();
@@ -258,11 +259,12 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.SC._flag_Accel__Roll_Cali = Configdata["_flag_Accel__Roll_Cali"].get<double>();
 	APMInit.SC._flag_Accel_Pitch_Cali = Configdata["_flag_Accel_Pitch_Cali"].get<double>();
 
-	APMInit.SC._flag_COMPASS_Y_Scaler = Configdata["_flag_COMPASS_Y_Scaler"].get<double>();
-	APMInit.SC._flag_COMPASS_Z_Scaler = Configdata["_flag_COMPASS_Z_Scaler"].get<double>();
 	APMInit.SC._flag_COMPASS_X_Offset = Configdata["_flag_COMPASS_X_Offset"].get<double>();
+	APMInit.SC._flag_COMPASS_X_Scaler = Configdata["_flag_COMPASS_X_Scaler"].get<double>();
 	APMInit.SC._flag_COMPASS_Y_Offset = Configdata["_flag_COMPASS_Y_Offset"].get<double>();
+	APMInit.SC._flag_COMPASS_Y_Scaler = Configdata["_flag_COMPASS_Y_Scaler"].get<double>();
 	APMInit.SC._flag_COMPASS_Z_Offset = Configdata["_flag_COMPASS_Z_Offset"].get<double>();
+	APMInit.SC._flag_COMPASS_Z_Scaler = Configdata["_flag_COMPASS_Z_Scaler"].get<double>();
 	//==============================================================Filter config==/
 	APMInit.FC._flag_Filter_Gryo_Type = Configdata["_flag_Filter_Gryo_Type"].get<double>();
 	APMInit.FC._flag_Filter_GryoST2_Type = Configdata["_flag_Filter_GryoST2_Type"].get<double>();
