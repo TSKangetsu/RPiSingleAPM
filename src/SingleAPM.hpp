@@ -380,7 +380,7 @@ namespace SingleAPMAPI
 			std::unique_ptr<BaroDevice> BaroDeviceD;
 			std::unique_ptr<GPSUart> GPSInit;
 			std::unique_ptr<ESCGenerator> ESCDevice;
-			// std::unique_ptr<GPSI2CCompass> CompassDevice;
+			std::unique_ptr<GPSI2CCompass> CompassDevice;
 			std::unique_ptr<RPiMPU9250> MPUDevice;
 			std::unique_ptr<MSPUartFlow> FlowInit;
 			std::unique_ptr<BlackboxEncoder> BlackBoxDevice;
@@ -438,9 +438,9 @@ namespace SingleAPMAPI
 			//=========================MAG=========//
 			double _uORB_MAG_Yaw = 0;
 			double _uORB_MAG_StaticYaw = 0;
-			long _uORB_MAG_RawX = 0;
-			long _uORB_MAG_RawY = 0;
-			long _uORB_MAG_RawZ = 0;
+			int _uORB_MAG_RawX = 0;
+			int _uORB_MAG_RawY = 0;
+			int _uORB_MAG_RawZ = 0;
 			double _flag_MPU_MAG_Cali[10];
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;

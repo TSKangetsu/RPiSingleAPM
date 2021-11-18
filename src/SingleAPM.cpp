@@ -84,8 +84,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
-			// DF.CompassDevice.reset(new GPSI2CCompass(COMPASS_QMC5883L));
-			// DF.CompassDevice->CompassCalibration(false, SF._flag_MPU_MAG_Cali);
+			DF.CompassDevice.reset(new GPSI2CCompass("/dev/i2c-1", 0x0d, COMPASS_QMC5883L));
+			DF.CompassDevice->CompassApply(4269, 1896, 3975, 1015, 1840, -470);
 #ifdef RPiDEBUGStart
 			std::cout << "Done \n";
 #endif
@@ -194,6 +194,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "magADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "magADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "magADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "motor[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "motor[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "motor[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
@@ -208,6 +211,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "IMUDT", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			};
 
@@ -230,6 +236,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "magADC[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "magADC[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "magADC[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "motor[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "motor[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "motor[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
@@ -244,6 +253,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			};
 
@@ -935,10 +947,9 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					TF._Tmp_MAGThreadTimeStart = GetTimestamp();
 					TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 					{
-						// DF.CompassDevice->CompassUpdate();
-						// DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_Yaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
-						// DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
-						// DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
+						DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
+						DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_StaticYaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
+						DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
 					}
 					TF._Tmp_MAGThreadTimeEnd = GetTimestamp();
 					TF._Tmp_MAGThreadTimeLoop = TF._Tmp_MAGThreadTimeEnd - TF._Tmp_MAGThreadTimeStart;
@@ -1177,41 +1188,48 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 						TF.BlackBoxQeueue.push(header);
 					}
 
-					TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxPIPush({
-						TF._Tmp_BBQThreadloopIteration,
-						GetTimestamp() - TF._Tmp_BBQThreadTimeup,
-						(int)PF._uORB_Leveling__Roll,
-						(int)PF._uORB_Leveling_Pitch,
-						(int)PF._uORB_Leveling___Yaw,
-						(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[0])), // Convert to Cleanflight output
-						(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1]),
-						(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
-						(RF._uORB_RC_Channel_PWM[2]),
-						(int)SF._uORB_MPU_Data._uORB_Real__Roll,
-						(int)SF._uORB_MPU_Data._uORB_Real_Pitch * -1, // Convert to Cleanflight output
-						(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
-						(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
-						(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch * -1, // Convert to Cleanflight output
-						(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
-						(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y * MPU9250_ACCEL_LSB),
-						(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_X * MPU9250_ACCEL_LSB),
-						(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Z * MPU9250_ACCEL_LSB),
-						EF._uORB_B2_Speed,
-						EF._uORB_A2_Speed,
-						EF._uORB_B1_Speed,
-						EF._uORB_A1_Speed,
-						(int)SF._uORB_BARO_Altitude,
-						(int)SF._uORB_MPU_Data._uORB_Acceleration_X,
-						(int)SF._uORB_MPU_Data._uORB_Acceleration_Y,
-						(int)SF._uORB_MPU_Data._uORB_Acceleration_Z,
-						(int)SF._uORB_True_Speed_X,
-						(int)SF._uORB_True_Speed_Y,
-						(int)SF._uORB_True_Speed_Z,
-						(int)SF._uORB_True_Movement_X,
-						(int)SF._uORB_True_Movement_Y,
-						(int)SF._uORB_True_Movement_Z,
-						(int)TF._Tmp_IMUAttThreadDT,
-					}));
+					TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxPIPush(
+						{
+							TF._Tmp_BBQThreadloopIteration,
+							GetTimestamp() - TF._Tmp_BBQThreadTimeup,
+							(int)PF._uORB_Leveling__Roll,
+							(int)PF._uORB_Leveling_Pitch,
+							(int)PF._uORB_Leveling___Yaw,
+							(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[0])), // Convert to Cleanflight output
+							(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1]),
+							(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
+							(RF._uORB_RC_Channel_PWM[2]),
+							(int)SF._uORB_MPU_Data._uORB_Real__Roll,
+							(int)SF._uORB_MPU_Data._uORB_Real_Pitch * -1, // Convert to Cleanflight output
+							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+							(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
+							(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch * -1, // Convert to Cleanflight output
+							(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
+							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y * MPU9250_ACCEL_LSB),
+							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_X * MPU9250_ACCEL_LSB),
+							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Z * MPU9250_ACCEL_LSB),
+							SF._uORB_MAG_RawX,
+							SF._uORB_MAG_RawY,
+							SF._uORB_MAG_RawZ,
+							EF._uORB_B2_Speed,
+							EF._uORB_A2_Speed,
+							EF._uORB_B1_Speed,
+							EF._uORB_A1_Speed,
+							(int)SF._uORB_BARO_Altitude,
+							(int)SF._uORB_MPU_Data._uORB_Acceleration_X,
+							(int)SF._uORB_MPU_Data._uORB_Acceleration_Y,
+							(int)SF._uORB_MPU_Data._uORB_Acceleration_Z,
+							(int)SF._uORB_True_Speed_X,
+							(int)SF._uORB_True_Speed_Y,
+							(int)SF._uORB_True_Speed_Z,
+							(int)SF._uORB_True_Movement_X,
+							(int)SF._uORB_True_Movement_Y,
+							(int)SF._uORB_True_Movement_Z,
+							(int)TF._Tmp_IMUAttThreadDT,
+							(int)SF._uORB_MAG_Yaw,
+							(int)SF._uORB_MAG_StaticYaw,
+							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+						}));
 					TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
 
 					if (IsFirstStart)
@@ -1872,6 +1890,9 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 {
 	TF._Tmp_IMUNavThreadDT = GetTimestamp() - TF._Tmp_IMUNavThreadLast;
+	// FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
+	if (TF._Tmp_IMUNavThreadDT <= 0)
+		TF._Tmp_IMUNavThreadDT = 1.f / (float)ACCEL_UPDATE_HZ * 1000000.f;
 
 	// If accelerometer measurement is clipped - drop the acc weight to zero
 	// and gradually restore weight back to 1.0 over time
