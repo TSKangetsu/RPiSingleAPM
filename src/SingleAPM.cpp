@@ -3,6 +3,12 @@
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
 	{
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		TF._flag_SystemStartUp_Time = (tv.tv_sec * (uint64_t)1000000 + tv.tv_usec);
+	}
+	//--------------------------------------------------------------------//
+	{
 		DF.APMStatus = -1;
 		AF.RC_Lose_Clocking = 0;
 		AF.GPS_Lose_Clocking = 0;
@@ -171,11 +177,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::time_t t = std::time(NULL);
 			std::strftime(outTime, sizeof(outTime), "%Y%m%d%H%M%S", std::localtime(&t));
 			std::string file = (std::string(BlackBoxLogDir, sizeof(BlackBoxLogDir) - 1) +
-								std::string("Singleflight", sizeof("Singleflight") - 1) +
-								std::string("-", sizeof("-") - 1) +
-								std::string(outTime, sizeof(outTime) - 2) +
-								std::string(".log", sizeof(".log") - 1));
-			DF.BlackBoxFile.open(file.c_str(), std::ios::out | std::ios::binary);
+								std::string("SingleflightBlackBox", sizeof("SingleflightBlackBox") - 1) +
+								std::string(".LOG", sizeof(".LOG") - 1));
+			DF.BlackBoxFile.open(file.c_str(), std::ios::out | std::ios::binary | std::ios::app);
 
 			std::vector<BlackboxList> BlackBoxIInfo = {
 				{.FrameName = "loopIteration", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
@@ -403,7 +407,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeStart = GetTimestamp();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
-				DF.MPUDevice->MPUSensorApplyAHRS(SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, SF._uORB_MAG_RawZ, true, 90.f);
+				DF.MPUDevice->MPUSensorApplyAHRS(SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, SF._uORB_MAG_RawZ, true, SF._flag_COMPASS_YAW_Offset);
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 				//============Online Catlibration======================================//
 				{
@@ -1227,10 +1231,10 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(int)SF._uORB_True_Movement_X,
 							(int)SF._uORB_True_Movement_Y,
 							(int)SF._uORB_True_Movement_Z,
-							(int)TF._Tmp_IMUAttThreadDT,
 							(int)SF._uORB_MAG_Yaw,
 							(int)SF._uORB_MAG_StaticYaw,
 							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+							(int)TF._Tmp_IMUAttThreadDT,
 						}));
 					TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
 
@@ -1544,6 +1548,7 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_COMPASS_Cali[CompassYScaler] = APMInit.SC._flag_COMPASS_Y_Scaler;
 	SF._flag_COMPASS_Cali[CompassZOffset] = APMInit.SC._flag_COMPASS_Z_Offset;
 	SF._flag_COMPASS_Cali[CompassZScaler] = APMInit.SC._flag_COMPASS_Z_Scaler;
+	SF._flag_COMPASS_YAW_Offset = APMInit.SC._flag_COMPASS_YAW_Offset;
 	//==============================================================Filter config==/
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
 	SF._flag_Filter_GryoST2_Type = APMInit.FC._flag_Filter_GryoST2_Type;
@@ -1585,8 +1590,8 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 {
 	TF._Tmp_IMUAttThreadDT = GetTimestamp() - TF._Tmp_IMUAttThreadLast;
 	// FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
-	if (TF._Tmp_IMUAttThreadDT <= 0)
-		TF._Tmp_IMUAttThreadDT = TF._flag_IMUThreadTimeMax;
+	// if (TF._Tmp_IMUAttThreadDT <= 0)
+	// 	TF._Tmp_IMUAttThreadDT = TF._flag_IMUThreadTimeMax;
 	//PID Checking
 	{
 		if (AF._flag_ESC_ARMED == true)
@@ -1895,8 +1900,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 {
 	TF._Tmp_IMUNavThreadDT = GetTimestamp() - TF._Tmp_IMUNavThreadLast;
 	// FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
-	if (TF._Tmp_IMUNavThreadDT <= 0)
-		TF._Tmp_IMUNavThreadDT = 1.f / (float)ACCEL_UPDATE_HZ * 1000000.f;
+	// if (TF._Tmp_IMUNavThreadDT <= 0)
+	// 	TF._Tmp_IMUNavThreadDT = 1.f / (float)ACCEL_UPDATE_HZ * 1000000.f;
 
 	// If accelerometer measurement is clipped - drop the acc weight to zero
 	// and gradually restore weight back to 1.0 over time
@@ -2674,7 +2679,7 @@ int SingleAPMAPI::RPiSingleAPM::GetTimestamp()
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	return tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+	return ((tv.tv_sec * (uint64_t)1000000 + tv.tv_usec) - TF._flag_SystemStartUp_Time);
 }
 
 //=-----------------------------------------------------------------------------------------==//

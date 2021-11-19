@@ -153,13 +153,13 @@ namespace SingleAPMAPI
 			double _flag_MPU9250_A_X_Scal;
 			double _flag_MPU9250_A_Y_Scal;
 			double _flag_MPU9250_A_Z_Scal;
-			double _flag_MPU9250_Head_Asix;
 			double _flag_COMPASS_X_Offset;
 			double _flag_COMPASS_X_Scaler;
 			double _flag_COMPASS_Y_Offset;
 			double _flag_COMPASS_Y_Scaler;
 			double _flag_COMPASS_Z_Offset;
 			double _flag_COMPASS_Z_Scaler;
+			double _flag_COMPASS_YAW_Offset;
 		} SC;
 
 		struct OutputConfig
@@ -447,6 +447,7 @@ namespace SingleAPMAPI
 			int _uORB_MAG_RawX = 0;
 			int _uORB_MAG_RawY = 0;
 			int _uORB_MAG_RawZ = 0;
+			double _flag_COMPASS_YAW_Offset;
 			double _flag_COMPASS_Cali[10];
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
@@ -730,6 +731,8 @@ namespace SingleAPMAPI
 
 		struct TaskThread
 		{
+			int _flag_SystemStartUp_Time = 0;
+
 			float _Tmp_IMUNavThreadDT = 0;
 			float _Tmp_IMUNavThreadLast = 0;
 			float _Tmp_IMUAttThreadDT = 0;
