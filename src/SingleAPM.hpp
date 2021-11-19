@@ -54,7 +54,6 @@
 #define I2CPCA_ADDR 0x40
 
 #define BlackBoxIInterval 32
-#define BlackBoxPInterval "1/1"
 #define BlackBoxFirmware "Cleanflight"
 #define BlackBoxLogDir "/var/log/Singleflight/"
 

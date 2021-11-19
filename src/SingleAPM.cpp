@@ -403,8 +403,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeStart = GetTimestamp();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
+				DF.MPUDevice->MPUSensorApplyAHRS(SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, SF._uORB_MAG_RawZ, true, 90.f);
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
-
 				//============Online Catlibration======================================//
 				{
 					if (AF._flag_MPUCalibrating == 1)
