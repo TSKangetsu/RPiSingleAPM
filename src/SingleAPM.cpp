@@ -220,6 +220,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "DynamicNotch[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "DynamicNotch[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "DynamicNotch[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "IMUDT", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			};
 
@@ -262,6 +265,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "DynamicNotch[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "DynamicNotch[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "DynamicNotch[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			};
 
@@ -1234,6 +1240,9 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(int)SF._uORB_MAG_Yaw,
 							(int)SF._uORB_MAG_StaticYaw,
 							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0],
+							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
+							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
 							(int)TF._Tmp_IMUAttThreadDT,
 						}));
 					TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
