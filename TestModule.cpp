@@ -250,6 +250,10 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.PC._flag_PID_TPA_Trust = Configdata["_flag_PID_TPA_Trust"].get<float>();
 	APMInit.PC._flag_PID_TPA_BreakPoint = Configdata["_flag_PID_TPA_BreakPoint"].get<float>();
 	//==============================================================Sensors cofig==/
+	APMInit.SC._flag_MPU_Flip__Roll = Configdata["_flag_MPU_Flip__Roll"].get<int>();
+	APMInit.SC._flag_MPU_Flip_Pitch = Configdata["_flag_MPU_Flip_Pitch"].get<int>();
+	APMInit.SC._flag_MPU_Flip___Yaw = Configdata["_flag_MPU_Flip___Yaw"].get<int>();
+	
 	APMInit.SC._flag_MPU9250_A_X_Cali = Configdata["_flag_MPU9250_A_X_Cali"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Y_Cali = Configdata["_flag_MPU9250_A_Y_Cali"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Z_Cali = Configdata["_flag_MPU9250_A_Z_Cali"].get<double>();

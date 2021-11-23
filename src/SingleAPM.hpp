@@ -145,6 +145,9 @@ namespace SingleAPMAPI
 
 		struct SensorConfig
 		{
+			int _flag_MPU_Flip__Roll;
+			int _flag_MPU_Flip_Pitch;
+			int _flag_MPU_Flip___Yaw;
 			double _flag_Accel__Roll_Cali;
 			double _flag_Accel_Pitch_Cali;
 			double _flag_MPU9250_A_X_Cali;
@@ -411,6 +414,9 @@ namespace SingleAPMAPI
 			//=========================MPU=======//
 			int MPU9250_Type;
 			MPUData _uORB_MPU_Data;
+			int _flag_MPU_Flip__Roll;
+			int _flag_MPU_Flip_Pitch;
+			int _flag_MPU_Flip___Yaw;
 			int _flag_Filter_Gryo_Type;
 			int _flag_Filter_GryoST2_Type;
 			int _flag_Filter_GYaw_CutOff;

@@ -119,6 +119,10 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		config.MPUI2CAddress = DF.MPU9250_ADDR;
 		config.MPU9250_SPI_Freq = 1000 * 1000;
 		//
+		config.MPU_Flip__Roll = SF._flag_MPU_Flip__Roll;
+		config.MPU_Flip_Pitch = SF._flag_MPU_Flip_Pitch;
+		config.MPU_Flip___Yaw = SF._flag_MPU_Flip___Yaw;
+		//
 		config.TargetFreqency = TF._flag_IMUThreadFreq;
 		config.GyroToAccelBeta = SF._flag_Filter_AngleMix_Alpha;
 		config.GyroDynamicAnalyse = true;
@@ -1041,6 +1045,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 							else
 								AF._flag_IsFlowAvalible = true;
 
+							// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 							SF._uORB_Flow_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X * 10.f;
 							SF._uORB_Flow_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y * 10.f;
 							SF._uORB_Flow_Filter_XOutput = ((float)SF._uORB_Flow_XOutput + SF._uORB_Flow_Body_Asix_X) * SF._uORB_Flow_Altitude / 100.f;
@@ -1212,10 +1217,10 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
 							(RF._uORB_RC_Channel_PWM[2]),
 							(int)SF._uORB_MPU_Data._uORB_Real__Roll,
-							(int)SF._uORB_MPU_Data._uORB_Real_Pitch * -1, // Convert to Cleanflight output
+							(int)SF._uORB_MPU_Data._uORB_Real_Pitch,
 							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
 							(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
-							(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch * -1, // Convert to Cleanflight output
+							(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
 							(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
 							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y * MPU9250_ACCEL_LSB),
 							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_X * MPU9250_ACCEL_LSB),
@@ -1542,6 +1547,10 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_TPA_Trust = APMInit.PC._flag_PID_TPA_Trust;
 	PF._flag_PID_TPA_BreakPoint = APMInit.PC._flag_PID_TPA_BreakPoint;
 	//==============================================================Sensors config==/
+	SF._flag_MPU_Flip__Roll = APMInit.SC._flag_MPU_Flip__Roll;
+	SF._flag_MPU_Flip_Pitch = APMInit.SC._flag_MPU_Flip_Pitch;
+	SF._flag_MPU_Flip___Yaw = APMInit.SC._flag_MPU_Flip___Yaw;
+
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliX] = APMInit.SC._flag_MPU9250_A_X_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliY] = APMInit.SC._flag_MPU9250_A_Y_Cali;
 	SF._flag_MPU_Accel_Cali[MPUAccelCaliZ] = APMInit.SC._flag_MPU9250_A_Z_Cali;
@@ -1687,11 +1696,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			//--------------------------------------------------------------------------//
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
+				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 				PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
 				PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
 			}
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowAvalible)
 			{
+				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 				if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
 					PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle__Roll_Gain;
 				else
@@ -1829,10 +1840,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 		if (EF._uORB_Total_Throttle > RF._flag_RC_Max_PWM_Value - 200.f)
 			EF._uORB_Total_Throttle = RF._flag_RC_Max_PWM_Value - 200.f;
 
-		EF._Tmp_B1_Speed = -PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_A1_Speed = -PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
-		EF._Tmp_A2_Speed = +PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
-		EF._Tmp_B2_Speed = +PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		EF._Tmp_B1_Speed = -PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+		EF._Tmp_A1_Speed = -PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
+		EF._Tmp_A2_Speed = +PF._uORB_Leveling__Roll + PF._uORB_Leveling_Pitch + PF._uORB_Leveling___Yaw;
+		EF._Tmp_B2_Speed = +PF._uORB_Leveling__Roll - PF._uORB_Leveling_Pitch - PF._uORB_Leveling___Yaw;
 
 		EF._uORB_ESC_RPY_Max = EF._Tmp_B1_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_B1_Speed : EF._uORB_ESC_RPY_Max;
 		EF._uORB_ESC_RPY_Max = EF._Tmp_A1_Speed > EF._uORB_ESC_RPY_Max ? EF._Tmp_A1_Speed : EF._uORB_ESC_RPY_Max;
@@ -1940,7 +1951,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 	SF._uORB_True_Movement_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * pow((TF._Tmp_IMUNavThreadDT / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
 	SF._uORB_True_Speed_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * (TF._Tmp_IMUNavThreadDT / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
 	//---------------------------------------------------------//
-	SF._uORB_Gryo_Body_Asix_X += ((float)SF._uORB_MPU_Data._uORB_Gryo_Pitch) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
+	// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
+	SF._uORB_Gryo_Body_Asix_X -= ((float)SF._uORB_MPU_Data._uORB_Gryo_Pitch) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
 	SF._uORB_Gryo_Body_Asix_Y += ((float)SF._uORB_MPU_Data._uORB_Gryo__Roll) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
 	//POS Controller Reseter
 	{
@@ -2358,6 +2370,10 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PID_CaculateExtend(PF._uORB_PID_PosYTarget, PF._uORB_PID_PosYTarget, PF._uORB_PID_PosYTarget,
 							   PF._uORB_PID_PosY_Output, PF._uORB_PID_I_Last_Value_SpeedY, PF._uORB_PID_D_Last_Value_SpeedY,
 							   PF._flag_PID_P_SpeedY_Gain, PF._flag_PID_I_SpeedY_Gain / 100.f, PF._flag_PID_D_SpeedY_Gain, PF._flag_PID_Pos_Level_Max);
+
+			// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
+			PF._uORB_PID_PosY_Output *= -1;
+
 			PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
 			PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
 			PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
