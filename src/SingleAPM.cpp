@@ -281,10 +281,12 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{
 				BlackBoxGInfo = {
 					{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-					{.FrameName = "GPS_altitude", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+					{.FrameName = "GPS_fixType", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_numSat", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_HDOP", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 					{.FrameName = "GPS_coord[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 					{.FrameName = "GPS_coord[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-					{.FrameName = "GPS_numSat", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_altitude", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				};
 
 				BlackBoxHInfo = {
@@ -1275,17 +1277,22 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 
 					if (AF._flag_GPSData_AsyncB)
 					{
-						TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxGPush({
-							GetTimestamp() - TF._Tmp_BBQThreadTimeup,
-							2000,
-							(int)(SF._uORB_GPS_COR_Lat * 10),
-							(int)(SF._uORB_GPS_COR_Lng * 10),
-							SF._uORB_GPS_Data.satillitesCount,
-						}));
-						TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxHPush({
-							(int)(SF._uORB_GPS_COR_Lat * 10),
-							(int)(SF._uORB_GPS_COR_Lng * 10),
-						}));
+						if (!SF._uORB_GPS_Data.DataUnCorrect)
+						{
+							TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxGPush({
+								GetTimestamp() - TF._Tmp_BBQThreadTimeup,
+								SF._uORB_GPS_Data.GPSQuality,
+								SF._uORB_GPS_Data.satillitesCount,
+								(int)(SF._uORB_GPS_Data.HDOP * 100),
+								(int)(SF._uORB_GPS_COR_Lat * 10),
+								(int)(SF._uORB_GPS_COR_Lng * 10),
+								(int)(SF._uORB_GPS_Data.GPSAlititude),
+							}));
+							TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxHPush({
+								(int)(SF._uORB_GPS_COR_Lat * 10),
+								(int)(SF._uORB_GPS_COR_Lng * 10),
+							}));
+						}
 						AF._flag_GPSData_AsyncB = false;
 					}
 
