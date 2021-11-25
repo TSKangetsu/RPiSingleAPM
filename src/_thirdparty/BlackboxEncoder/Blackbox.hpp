@@ -21,6 +21,18 @@
 #define BlackboxPSigned "H Field P signed:"
 #define BlackboxPPredictor "H Field P predictor:"
 #define BlackboxPEncoding "H Field P encoding:"
+#define BlackboxGName "H Field G name:"
+#define BlackboxGSigned "H Field G signed:"
+#define BlackboxGPredictor "H Field G predictor:"
+#define BlackboxGEncoding "H Field G encoding:"
+#define BlackboxHName "H Field H name:"
+#define BlackboxHSigned "H Field H signed:"
+#define BlackboxHPredictor "H Field H predictor:"
+#define BlackboxHEncoding "H Field H encoding:"
+#define BlackboxSName "H Field S name:"
+#define BlackboxSSigned "H Field S signed:"
+#define BlackboxSPredictor "H Field S predictor:"
+#define BlackboxSEncoding "H Field S encoding:"
 //
 #define BlackboxFirmwareType "H Firmware type:"
 //
@@ -40,6 +52,9 @@ struct BlackboxHeaderInfo
     std::string FirmwareType;
     std::vector<BlackboxList> BlackBoxDataIInfo;
     std::vector<BlackboxList> BlackBoxDataPInfo;
+    std::vector<BlackboxList> BlackBoxDataGInfo;
+    std::vector<BlackboxList> BlackBoxDataHInfo;
+    std::vector<BlackboxList> BlackBoxDataSInfo;
     std::vector<std::string> BlackBoxCustom;
 };
 
@@ -63,6 +78,9 @@ public:
     inline BlackboxEncoder(BlackboxHeaderInfo);
     inline std::vector<uint8_t> BlackboxPIPush(std::vector<int> data);
     inline std::vector<uint8_t> BlackboxEPush(BlackboxEvent event, int time, int LoopIteration, int ext);
+    inline std::vector<uint8_t> BlaclboxGPush(std::vector<int> data);
+    inline std::vector<uint8_t> BlaclboxHPush(std::vector<int> data);
+    inline std::vector<uint8_t> BlaclboxSPush(std::vector<int> data);
 
 private:
     int PINTNUM = 1;
@@ -264,6 +282,138 @@ BlackboxEncoder::BlackboxEncoder(BlackboxHeaderInfo Info)
         FullBlackboxHeader += "\n";
     }
 
+    //=======================G FRAME INFO=============================//
+    if (Info.BlackBoxDataGInfo.size() > 0)
+    {
+        FullBlackboxHeader += BlackboxGName;
+        for (auto sts : Info.BlackBoxDataGInfo)
+        {
+            FullBlackboxHeader += sts.FrameName;
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxGSigned;
+        for (auto sts : Info.BlackBoxDataGInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FrameSigned);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxGPredictor;
+        for (auto sts : Info.BlackBoxDataGInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FramePredictor);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxGEncoding;
+        for (auto sts : Info.BlackBoxDataGInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FrameEncoder);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+    }
+
+    //=======================H FRAME INFO=============================//
+    if (Info.BlackBoxDataHInfo.size() > 0)
+    {
+        FullBlackboxHeader += BlackboxHName;
+        for (auto sts : Info.BlackBoxDataHInfo)
+        {
+            FullBlackboxHeader += sts.FrameName;
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxHSigned;
+        for (auto sts : Info.BlackBoxDataHInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FrameSigned);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxHPredictor;
+        for (auto sts : Info.BlackBoxDataHInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FramePredictor);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxHEncoding;
+        for (auto sts : Info.BlackBoxDataHInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FrameEncoder);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+    }
+
+    //=======================S FRAME INFO=============================//
+    if (Info.BlackBoxDataSInfo.size() > 0)
+    {
+        FullBlackboxHeader += BlackboxSName;
+        for (auto sts : Info.BlackBoxDataSInfo)
+        {
+            FullBlackboxHeader += sts.FrameName;
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxSSigned;
+        for (auto sts : Info.BlackBoxDataSInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FrameSigned);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxSPredictor;
+        for (auto sts : Info.BlackBoxDataSInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FramePredictor);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+
+        FullBlackboxHeader += BlackboxSEncoding;
+        for (auto sts : Info.BlackBoxDataSInfo)
+        {
+            FullBlackboxHeader += std::to_string(sts.FrameEncoder);
+            FullBlackboxHeader += ",";
+        }
+        // Remove Final one , expectly notice for the JS site, But blackbox-tools is work, blackboxviewer will dead with a nan, Because they fuck up the parser
+        FullBlackboxHeader = FullBlackboxHeader.substr(0, FullBlackboxHeader.size() - 1);
+        FullBlackboxHeader += "\n";
+    }
+
     FullBlackboxHeader += BlackboxFirmwareType;
     FullBlackboxHeader += Info.FirmwareType;
     FullBlackboxHeader += "\n";
@@ -382,6 +532,32 @@ std::vector<uint8_t> BlackboxEncoder::BlackboxEPush(BlackboxEvent event, int tim
     }
 
     return wdata;
+}
+
+std::vector<uint8_t> BlackboxEncoder::BlaclboxGPush(std::vector<int> data)
+{
+    std::vector<uint8_t> FrameBuffer;
+    FrameBuffer.push_back((uint8_t)'G');
+    for (size_t i = 0; i < data.size(); i++)
+    {
+        std::vector<uint8_t> tmpBuffer = dataEncode(data[i], HeaderInfo.BlackBoxDataGInfo[i].FrameEncoder);
+        FrameBuffer.insert(FrameBuffer.end(), tmpBuffer.begin(), tmpBuffer.end());
+    }
+
+    return FrameBuffer;
+}
+
+std::vector<uint8_t> BlackboxEncoder::BlaclboxHPush(std::vector<int> data)
+{
+    std::vector<uint8_t> FrameBuffer;
+    FrameBuffer.push_back((uint8_t)'H');
+    for (size_t i = 0; i < data.size(); i++)
+    {
+        std::vector<uint8_t> tmpBuffer = dataEncode(data[i], HeaderInfo.BlackBoxDataGInfo[i].FrameEncoder);
+        FrameBuffer.insert(FrameBuffer.end(), tmpBuffer.begin(), tmpBuffer.end());
+    }
+
+    return FrameBuffer;
 }
 
 inline void FileInjectSTR(std::ofstream &file, const char *header)

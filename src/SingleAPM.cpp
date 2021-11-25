@@ -275,6 +275,24 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			};
 
+			std::vector<BlackboxList> BlackBoxGInfo = {};
+			std::vector<BlackboxList> BlackBoxHInfo = {};
+			if (DF._IsGPSEnable)
+			{
+				BlackBoxGInfo = {
+					{.FrameName = "time", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_altitude", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+					{.FrameName = "GPS_coord[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_coord[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_numSat", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				};
+
+				BlackBoxHInfo = {
+					{.FrameName = "GPS_home[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_home[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				};
+			}
+
 			std::string PINTER = TF._flag_BBQThreadINT.c_str();
 			std::string PINTERNUM = PINTER.substr(0, PINTER.find('/'));
 			std::string PINTERDEM = PINTER.substr(PINTERNUM.size() + 1, PINTER.find('\0'));
@@ -290,6 +308,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				.FirmwareType = BlackBoxFirmware,
 				.BlackBoxDataIInfo = BlackBoxIInfo,
 				.BlackBoxDataPInfo = BlackBoxPInfo,
+				.BlackBoxDataGInfo = BlackBoxGInfo,
+				.BlackBoxDataHInfo = BlackBoxHInfo,
+				.BlackBoxDataSInfo = {},
 				.BlackBoxCustom = {
 					"H Firmware revision:Singleflight 0.9.5 BETA Raspberrypi4B\n",
 					"H acc_1G:" + std::to_string((int)MPU9250_ACCEL_LSB) + "\n",
@@ -929,6 +950,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						}
 						//
 						AF._flag_GPSData_Async = true;
+						AF._flag_GPSData_AsyncB = true;
 					}
 					TF._Tmp_GPSThreadTimeEnd = GetTimestamp();
 					TF._Tmp_GPSThreadTimeLoop = TF._Tmp_GPSThreadTimeEnd - TF._Tmp_GPSThreadTimeStart;
@@ -1250,6 +1272,23 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
 							(int)TF._Tmp_IMUAttThreadDT,
 						}));
+
+					if (AF._flag_GPSData_AsyncB)
+					{
+						TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxGPush({
+							GetTimestamp() - TF._Tmp_BBQThreadTimeup,
+							2000,
+							(int)(SF._uORB_GPS_COR_Lat * 10),
+							(int)(SF._uORB_GPS_COR_Lng * 10),
+							SF._uORB_GPS_Data.satillitesCount,
+						}));
+						TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxHPush({
+							(int)(SF._uORB_GPS_COR_Lat * 10),
+							(int)(SF._uORB_GPS_COR_Lng * 10),
+						}));
+						AF._flag_GPSData_AsyncB = false;
+					}
+
 					TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
 
 					if (IsFirstStart)

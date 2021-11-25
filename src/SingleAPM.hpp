@@ -346,6 +346,7 @@ namespace SingleAPMAPI
 
 			bool _flag_BARO_Async = false;
 			bool _flag_GPSData_Async = false;
+			bool _flag_GPSData_AsyncB = false;
 			bool _flag_FlowData_Async = false;
 			bool _flag_SonarData_Async = false;
 			bool _flag_IsSonarAvalible = false;
