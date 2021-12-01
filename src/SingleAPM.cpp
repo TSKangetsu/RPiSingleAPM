@@ -172,6 +172,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		pt1FilterInit(&DF.RCLPF[1], RF._flag_Filter_RC_CutOff, 0.f);
 		pt1FilterInit(&DF.RCLPF[2], RF._flag_Filter_RC_CutOff, 0.f);
 		pt1FilterInit(&DF.BAROLPF, FILTERBAROLPFCUTOFF, 0.0f);
+		biquadFilterInitLPF(&DF.MAGFilter[0], FILTERMAGCUTOFF, TF._flag_MAGThreadTimeMax);
+		biquadFilterInitLPF(&DF.MAGFilter[1], FILTERMAGCUTOFF, TF._flag_MAGThreadTimeMax);
+		biquadFilterInitLPF(&DF.MAGFilter[2], FILTERMAGCUTOFF, TF._flag_MAGThreadTimeMax);
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -201,6 +204,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroRaw[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroRaw[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroRaw[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
@@ -246,6 +252,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "gyroADC[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "gyroADC[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "gyroADC[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroRaw[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroRaw[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "gyroRaw[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "accSmooth[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
@@ -440,8 +449,9 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeStart = GetTimestamp();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
-				DF.MPUDevice->MPUSensorApplyAHRS(SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, SF._uORB_MAG_RawZ, true, SF._flag_COMPASS_YAW_Offset);
+				DF.MPUDevice->MPUSensorApplyAHRS(-1 * SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, -1 * SF._uORB_MAG_RawZ, true);
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
+				SF._uORB_MPU_Data._uORB_Real___Yaw = SF._uORB_MPU_Data._uORB_Real___Yaw < 0 ? (360 + SF._uORB_MPU_Data._uORB_Real___Yaw) : SF._uORB_MPU_Data._uORB_Real___Yaw;
 				//============Online Catlibration======================================//
 				{
 					if (AF._flag_MPUCalibrating == 1)
@@ -918,6 +928,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					TF._Tmp_GPSThreadTimeStart = GetTimestamp();
 					TF._Tmp_GPSThreadTimeNext = TF._Tmp_GPSThreadTimeStart - TF._Tmp_GPSThreadTimeEnd;
 					{
+						//===============================================================================================//
 						SF._uORB_GPS_Data = DF.GPSInit->GPSParse();
 						if (SF._uORB_GPS_Data.lat != 0 && SF._uORB_GPS_Data.lng != 0 && !SF._uORB_GPS_Data.DataUnCorrect)
 						{
@@ -950,7 +961,20 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						{
 							AF.GPS_Lose_Clocking = 0;
 						}
-						//
+						//===============================================================================================//
+						int _Tmp_GPS_Static_Lat = SF._uORB_GPS_COR_Lat - SF._uORB_GPS_Hold_Lat;
+						int _Tmp_GPS_Static_Lng = SF._uORB_GPS_COR_Lng - SF._uORB_GPS_Hold_Lng;
+						int _Tmp_Static_Head = (SF._uORB_MPU_Data._uORB_Real___Yaw > 180 || SF._uORB_MPU_Data._uORB_Real___Yaw < 360) ? SF._uORB_MPU_Data._uORB_Real___Yaw - 360 : SF._uORB_MPU_Data._uORB_Real___Yaw;
+
+						SF._uORB_GPS_Real_X = (_Tmp_GPS_Static_Lat * cos((_Tmp_Static_Head * PI / 180.f)) + _Tmp_GPS_Static_Lng * sin((_Tmp_Static_Head * PI / 180.f))) * 11.f;
+						SF._uORB_GPS_Real_Y = (_Tmp_GPS_Static_Lat * sin((_Tmp_Static_Head * PI / 180.f)) + _Tmp_GPS_Static_Lng * cos((_Tmp_Static_Head * PI / 180.f))) * 11.f;
+
+						SF._uORB_GPS_Speed_X = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * cos((_Tmp_Static_Head * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * sin((_Tmp_Static_Head * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+						SF._uORB_GPS_Speed_Y = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * sin((_Tmp_Static_Head * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * cos((_Tmp_Static_Head * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+
+						SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
+						SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
+						//===============================================================================================//
 						AF._flag_GPSData_Async = true;
 						AF._flag_GPSData_AsyncB = true;
 					}
@@ -988,6 +1012,9 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 					{
 						DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
+						SF._uORB_MAG_RawX = biquadFilterApply(&DF.MAGFilter[0], SF._uORB_MAG_RawX);
+						SF._uORB_MAG_RawY = biquadFilterApply(&DF.MAGFilter[1], SF._uORB_MAG_RawY);
+						SF._uORB_MAG_RawZ = biquadFilterApply(&DF.MAGFilter[2], SF._uORB_MAG_RawZ);
 						DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_StaticYaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
 						DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
 					}
@@ -1246,6 +1273,9 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
 							(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
 							(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
+							(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_X / MPU9250_GYRO_LSB),
+							(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_Y / MPU9250_GYRO_LSB),
+							(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_Z / MPU9250_GYRO_LSB),
 							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y * MPU9250_ACCEL_LSB),
 							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_X * MPU9250_ACCEL_LSB),
 							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Z * MPU9250_ACCEL_LSB),
@@ -1739,7 +1769,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			//--------------------------------------------------------------------------//
 			PF._uORB_PID__Roll_Input = 0;
 			PF._uORB_PID_Pitch_Input = 0;
-			//--------------------------------------------------------------------------//
+			//---MODE SWITCHER----------------------------------------------------------//
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
 			{
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
@@ -2017,6 +2047,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		{
 			SF._uORB_Flow_XOutput_Total = 0;
 			SF._uORB_Flow_YOutput_Total = 0;
+			SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
+			SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 			PF._uORB_PID_PosX_Output = 0;
 			PF._uORB_PID_PosY_Output = 0;
 			PF._uORB_PID_PosXUserTarget = 0;
@@ -2177,149 +2209,201 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 	}
 	//PositionHold Caculate
 	{
-		if (AF.AutoPilotMode == APModeINFO::SpeedHold)
+		// Speed Brake Flag Manager
 		{
-			PF._uORB_PID_PosXUserSpeed = 0;
-			PF._uORB_PID_PosYUserSpeed = 0;
-			PF._uORB_PID_PosXUserTarget = 0;
-			PF._uORB_PID_PosYUserTarget = 0;
-			if (RF._uORB_RC_Out_PosHoldSpeedX != 0)
+			if (AF.AutoPilotMode == APModeINFO::SpeedHold)
 			{
-				AF._flag_IsPositionXChange = true;
-				AF._flag_IsBrakingXBlock = true;
-			}
-			else
-			{
-				if (AF._flag_IsBrakingXBlock)
+				// Disable UserAuto Mode input
+				PF._uORB_PID_PosXUserSpeed = 0;
+				PF._uORB_PID_PosYUserSpeed = 0;
+				PF._uORB_PID_PosXUserTarget = 0;
+				PF._uORB_PID_PosYUserTarget = 0;
+				//
+				if (RF._uORB_RC_Out_PosHoldSpeedX != 0)
 				{
-					AF._flag_IsBrakingXSet = true;
-					AF._flag_IsBrakingXBlock = false;
+					AF._flag_IsPositionXChange = true;
+					AF._flag_IsBrakingXBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingXBlock)
+					{
+						AF._flag_IsBrakingXSet = true;
+						AF._flag_IsBrakingXBlock = false;
+					}
+				}
+				if (RF._uORB_RC_Out_PosHoldSpeedY != 0)
+				{
+					AF._flag_IsPositionYChange = true;
+					AF._flag_IsBrakingYBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingYBlock)
+					{
+						AF._flag_IsBrakingYSet = true;
+						AF._flag_IsBrakingYBlock = false;
+					}
 				}
 			}
-			if (RF._uORB_RC_Out_PosHoldSpeedY != 0)
+			else if (AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
-				AF._flag_IsPositionYChange = true;
-				AF._flag_IsBrakingYBlock = true;
-			}
-			else
-			{
-				if (AF._flag_IsBrakingYBlock)
+				// Disable UserAuto Mode input and speedhold input
+				PF._uORB_PID_PosXUserSpeed = 0;
+				PF._uORB_PID_PosYUserSpeed = 0;
+				PF._uORB_PID_PosXUserTarget = 0;
+				PF._uORB_PID_PosYUserTarget = 0;
+				RF._uORB_RC_Out_PosHoldSpeedX = 0;
+				RF._uORB_RC_Out_PosHoldSpeedY = 0;
+				//
+				if (RF._uORB_RC_Out__Roll != 0)
 				{
-					AF._flag_IsBrakingYSet = true;
-					AF._flag_IsBrakingYBlock = false;
+					AF._flag_IsPositionXChange = true;
+					AF._flag_IsBrakingXBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingXBlock)
+					{
+						AF._flag_IsBrakingXSet = true;
+						AF._flag_IsBrakingXBlock = false;
+					}
+				}
+				if (RF._uORB_RC_Out_Pitch != 0)
+				{
+					AF._flag_IsPositionYChange = true;
+					AF._flag_IsBrakingYBlock = true;
+				}
+				else
+				{
+					if (AF._flag_IsBrakingYBlock)
+					{
+						AF._flag_IsBrakingYSet = true;
+						AF._flag_IsBrakingYBlock = false;
+					}
 				}
 			}
-		}
-		else if (AF.AutoPilotMode == APModeINFO::PositionHold)
-		{
-			PF._uORB_PID_PosXUserSpeed = 0;
-			PF._uORB_PID_PosYUserSpeed = 0;
-			PF._uORB_PID_PosXUserTarget = 0;
-			PF._uORB_PID_PosYUserTarget = 0;
-			RF._uORB_RC_Out_PosHoldSpeedX = 0;
-			RF._uORB_RC_Out_PosHoldSpeedY = 0;
-			if (RF._uORB_RC_Out__Roll != 0)
+			else if (AF.AutoPilotMode == APModeINFO::UserAuto)
 			{
-				AF._flag_IsPositionXChange = true;
-				AF._flag_IsBrakingXBlock = true;
+				AF._flag_IsBrakingXSet = false;
+				AF._flag_IsBrakingYSet = false;
+				RF._uORB_RC_Out_PosHoldSpeedX = 0;
+				RF._uORB_RC_Out_PosHoldSpeedY = 0;
+				if (PF._uORB_PID_PosXUserSpeed != 0)
+					AF._flag_IsPositionXChange = true;
+				else
+					AF._flag_IsPositionXChange = false;
+				if (PF._uORB_PID_PosYUserSpeed != 0)
+					AF._flag_IsPositionYChange = true;
+				else
+					AF._flag_IsPositionYChange = false;
 			}
 			else
 			{
-				if (AF._flag_IsBrakingXBlock)
-				{
-					AF._flag_IsBrakingXSet = true;
-					AF._flag_IsBrakingXBlock = false;
-				}
+				PF._uORB_PID_PosXUserSpeed = 0;
+				PF._uORB_PID_PosYUserSpeed = 0;
+				PF._uORB_PID_PosXUserTarget = 0;
+				PF._uORB_PID_PosYUserTarget = 0;
+				RF._uORB_RC_Out_PosHoldSpeedX = 0;
+				RF._uORB_RC_Out_PosHoldSpeedY = 0;
 			}
-			if (RF._uORB_RC_Out_Pitch != 0)
+			// Apply movement change
+			if (AF._flag_IsPositionXChange || AF._flag_IsBrakingXSet)
 			{
-				AF._flag_IsPositionYChange = true;
-				AF._flag_IsBrakingYBlock = true;
-			}
-			else
-			{
-				if (AF._flag_IsBrakingYBlock)
-				{
-					AF._flag_IsBrakingYSet = true;
-					AF._flag_IsBrakingYBlock = false;
-				}
-			}
-		}
-		else if (AF.AutoPilotMode == APModeINFO::UserAuto)
-		{
-			AF._flag_IsBrakingXSet = false;
-			AF._flag_IsBrakingYSet = false;
-			RF._uORB_RC_Out_PosHoldSpeedX = 0;
-			RF._uORB_RC_Out_PosHoldSpeedY = 0;
-			if (PF._uORB_PID_PosXUserSpeed != 0)
-				AF._flag_IsPositionXChange = true;
-			else
+				SF._uORB_True_Movement_X = 0;
+				SF._uORB_Flow_YOutput_Total = 0;
+				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
+				// TODO: apply adding Y when X is move, because global position has angle
+				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 				AF._flag_IsPositionXChange = false;
-			if (PF._uORB_PID_PosYUserSpeed != 0)
-				AF._flag_IsPositionYChange = true;
-			else
+				if (-10.f < SF._uORB_True_Speed_X && SF._uORB_True_Speed_X < 10.f)
+					AF._flag_IsBrakingXSet = false;
+			}
+			if (AF._flag_IsPositionYChange || AF._flag_IsBrakingYSet)
+			{
+				SF._uORB_True_Movement_Y = 0;
+				SF._uORB_Flow_XOutput_Total = 0;
+				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
+				// TODO: apply adding Y when X is move, because global position has angle
+				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
 				AF._flag_IsPositionYChange = false;
-		}
-		else
-		{
-			PF._uORB_PID_PosXUserSpeed = 0;
-			PF._uORB_PID_PosYUserSpeed = 0;
-			PF._uORB_PID_PosXUserTarget = 0;
-			PF._uORB_PID_PosYUserTarget = 0;
-			RF._uORB_RC_Out_PosHoldSpeedX = 0;
-			RF._uORB_RC_Out_PosHoldSpeedY = 0;
+				if (-10.f < SF._uORB_True_Speed_Y && SF._uORB_True_Speed_Y < 10.f)
+					AF._flag_IsBrakingYSet = false;
+			}
 		}
 
+		// Static position input
 		if (AF._flag_FlowData_Async)
 		{
 			PF._uORB_PID_Flow_PosInput_X = SF._uORB_Flow_YOutput_Total;
 			PF._uORB_PID_Flow_PosInput_Y = SF._uORB_Flow_XOutput_Total;
 			AF._flag_FlowData_Async = false;
 		}
-
-		if (AF._flag_IsPositionXChange || AF._flag_IsBrakingXSet)
+		if (AF._flag_GPSData_Async)
 		{
-			SF._uORB_True_Movement_X = 0;
-			SF._uORB_Flow_YOutput_Total = 0;
-			AF._flag_IsPositionXChange = false;
-			if (-10.f < SF._uORB_True_Speed_X && SF._uORB_True_Speed_X < 10.f)
-				AF._flag_IsBrakingXSet = false;
+			PF._uORB_PID_GPS_PosInput_X = SF._uORB_GPS_Real_X;
+			PF._uORB_PID_GPS_PosInput_Y = SF._uORB_GPS_Real_Y;
+			if (!AF._flag_GPS_Disconnected)
+			{
+				PF._uORB_PID_Flow_PosInput_X = 0;
+				PF._uORB_PID_Flow_PosInput_Y = 0;
+			}
+			AF._flag_GPSData_Async = false;
 		}
-		if (AF._flag_IsPositionYChange || AF._flag_IsBrakingYSet)
-		{
-			SF._uORB_True_Movement_Y = 0;
-			SF._uORB_Flow_XOutput_Total = 0;
-			AF._flag_IsPositionYChange = false;
-			if (-10.f < SF._uORB_True_Speed_Y && SF._uORB_True_Speed_Y < 10.f)
-				AF._flag_IsBrakingYSet = false;
-		}
-
+		//
 		PF._uORB_PID_MoveXCorrection = 0;
 		PF._uORB_PID_SpeedXCorrection = 0;
 		PF._uORB_PID_MoveYCorrection = 0;
 		PF._uORB_PID_SpeedYCorrection = 0;
 
-		if (AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible)
+		if ((AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible) ||
+			!AF._flag_GPS_Disconnected)
 		{
-			PF._uORB_PID_MoveXCorrection += (PF._uORB_PID_Flow_PosInput_X - SF._uORB_True_Movement_X) *
-											PF._flag_Flow_Dynamic_Beta *
+			if (!AF._flag_GPS_Disconnected)
+			{
+				PF._uORB_PID_MoveXCorrection += (PF._uORB_PID_GPS_PosInput_X - SF._uORB_True_Movement_X) *
+												PF._flag_GPS_Dynamic_Beta *
+												(TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_SpeedXCorrection += (SF._uORB_GPS_Speed_X - SF._uORB_True_Speed_X) *
+												 (PF._flag_GPS_Dynamic_Beta / 1.15f) *
+												 (TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_AccelX_Bias -= (SF._uORB_GPS_Speed_X - SF._uORB_True_Speed_X) *
+											(PF._flag_GPS_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
 											(TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_SpeedXCorrection += (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
-											 (PF._flag_Flow_Dynamic_Beta / 1.15f) *
-											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_AccelX_Bias -= (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
-										(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
-										(TF._Tmp_IMUNavThreadDT / 1000000.f);
 
-			PF._uORB_PID_MoveYCorrection += (PF._uORB_PID_Flow_PosInput_Y - SF._uORB_True_Movement_Y) *
-											PF._flag_Flow_Dynamic_Beta *
+				PF._uORB_PID_MoveYCorrection += (PF._uORB_PID_GPS_PosInput_Y - SF._uORB_True_Movement_Y) *
+												PF._flag_GPS_Dynamic_Beta *
+												(TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_SpeedYCorrection += (SF._uORB_GPS_Speed_Y - SF._uORB_True_Speed_Y) *
+												 (PF._flag_GPS_Dynamic_Beta / 1.15f) *
+												 (TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_AccelY_Bias -= (SF._uORB_GPS_Speed_Y - SF._uORB_True_Speed_Y) *
+											(PF._flag_GPS_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
 											(TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_SpeedYCorrection += (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
-											 (PF._flag_Flow_Dynamic_Beta / 1.15f) *
-											 (TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_AccelY_Bias -= (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
-										(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
-										(TF._Tmp_IMUNavThreadDT / 1000000.f);
+			}
+
+			if (AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible)
+			{
+				PF._uORB_PID_MoveXCorrection += (PF._uORB_PID_Flow_PosInput_X - SF._uORB_True_Movement_X) *
+												PF._flag_Flow_Dynamic_Beta *
+												(TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_SpeedXCorrection += (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
+												 (PF._flag_Flow_Dynamic_Beta / 1.15f) *
+												 (TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_AccelX_Bias -= (SF._uORB_Flow_Speed_Y - SF._uORB_True_Speed_X) *
+											(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
+
+				PF._uORB_PID_MoveYCorrection += (PF._uORB_PID_Flow_PosInput_Y - SF._uORB_True_Movement_Y) *
+												PF._flag_Flow_Dynamic_Beta *
+												(TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_SpeedYCorrection += (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
+												 (PF._flag_Flow_Dynamic_Beta / 1.15f) *
+												 (TF._Tmp_IMUNavThreadDT / 1000000.f);
+				PF._uORB_PID_AccelY_Bias -= (SF._uORB_Flow_Speed_X - SF._uORB_True_Speed_Y) *
+											(PF._flag_Flow_Dynamic_Beta / 1.15f) * PF._uORB_AccelBias_Beta *
+											(TF._Tmp_IMUNavThreadDT / 1000000.f);
+			}
 		}
 		else
 		{
@@ -2657,10 +2741,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " GPSLAT:       " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_COR_Lat
 			  << " ||GPSNE:          " << SF._uORB_GPS_Data.lat_North_Mode << " -> " << SF._uORB_GPS_Data.lat_East_Mode
 			  << " ||PosXOutput: " << std::setw(10) << std::setfill(' ') << PF._uORB_PID_PosX_Output
+			  << " ||GPSSpeedX:  " << std::setw(10) << std::setfill(' ') << SF._uORB_GPS_Speed_X
 			  << "            \n";
 	std::cout << " GPSLNG:       " << std::setw(10) << std::setfill(' ') << (int)SF._uORB_GPS_COR_Lng
 			  << " ||GPSSATCount:" << std::setw(10) << std::setfill(' ') << SF._uORB_GPS_Data.satillitesCount
 			  << " ||PosYOutput: " << std::setw(10) << std::setfill(' ') << PF._uORB_PID_PosY_Output
+			  << " ||GPSSpeedY:  " << std::setw(10) << std::setfill(' ') << SF._uORB_GPS_Speed_Y
 			  << "            \n";
 
 	std::cout << "RCOutPUTINFO:   "

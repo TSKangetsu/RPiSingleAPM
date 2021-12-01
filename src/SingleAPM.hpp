@@ -39,6 +39,7 @@
 #define FILTERBAROLPFCUTOFF 1.f
 #define FILTERTHROTTLELPFCUTOFF 4.f
 #define FILTERPOSOUTLPFCUTOFF 4.f
+#define FILTERMAGCUTOFF 5.f
 
 #define ESCRANGE 800.f
 #define LINUX_SYSTEM_SLEEP_DELAY 50
@@ -408,6 +409,7 @@ namespace SingleAPMAPI
 			pt1Filter_t DtermFilterPitchST2;
 			pt1Filter_t DtermFilterRollST2;
 			pt1Filter_t RCLPF[3];
+			biquadFilter_t MAGFilter[3];
 		} DF;
 
 		struct SensorsINFO
@@ -447,6 +449,16 @@ namespace SingleAPMAPI
 			GPSUartData _uORB_GPS_Data;
 			int _uORB_GPS_COR_Lat = 0;
 			int _uORB_GPS_COR_Lng = 0;
+			int _uORB_GPS_Hold_Lat = 0;
+			int _uORB_GPS_Hold_Lng = 0;
+			int _uORB_GPS_Home_Lat = 0;
+			int _uORB_GPS_Home_Lng = 0;
+			int _Tmp_GPS_Last_Lat = 0;
+			int _Tmp_GPS_Last_Lng = 0;
+			int _uORB_GPS_Real_X = 0;
+			int _uORB_GPS_Real_Y = 0;
+			int _uORB_GPS_Speed_X = 0;
+			int _uORB_GPS_Speed_Y = 0;
 			int _uORB_GPS_COR_NES = 0;
 			//=========================MAG=========//
 			double _uORB_MAG_Yaw = 0;
@@ -590,8 +602,8 @@ namespace SingleAPMAPI
 			//==========PositionHoldPID=========//
 			float _uORB_PID_Flow_PosInput_X = 0;
 			float _uORB_PID_Flow_PosInput_Y = 0;
-			float _uORB_PID_Smooth_PosXTarget = 0;
-			float _uORB_PID_Smooth_PosYTarget = 0;
+			float _uORB_PID_GPS_PosInput_X = 0;
+			float _uORB_PID_GPS_PosInput_Y = 0;
 
 			float _uORB_PID_PosXTarget = 0;
 			float _uORB_PID_PosYTarget = 0;
@@ -803,7 +815,7 @@ namespace SingleAPMAPI
 			int _Tmp_MAGThreadTimeNext = 0;
 			int _Tmp_MAGThreadTimeLoop = 0;
 			int _Tmp_MAGThreadError = 0;
-			int _flag_MAGThreadTimeMax = (float)1 / 50 * 1000000;
+			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
 			int _flag_MAGErrorTimes = 0;
 			bool _flag_MAG_Task_Running = false;
 			std::thread MAGTask;
