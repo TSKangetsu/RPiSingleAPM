@@ -36,6 +36,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_FailedSafe_Level = 0;
 		AF._flag_PreARM_Check_Level = 0;
 		PF._uORB_Accel_Dynamic_Beta = PF._flag_Accel_Config_Beta;
+		AF._flag_MAG_Cali_Failed = !DF._IsGPSEnable ? true : false;
 
 		TF._Tmp_IMUNavThreadDT = GetTimestamp();
 		TF._Tmp_IMUNavThreadLast = GetTimestamp();
@@ -449,7 +450,8 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeStart = GetTimestamp();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
-				DF.MPUDevice->MPUSensorApplyAHRS(-1 * SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, -1 * SF._uORB_MAG_RawZ, true);
+				AF._flag_MAG_Cali_Failed = !DF._IsGPSEnable ? true : AF._flag_MAG_Cali_Failed;
+				DF.MPUDevice->MPUSensorApplyAHRS(-1 * SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, -1 * SF._uORB_MAG_RawZ, !AF._flag_MAG_Cali_Failed);
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 				SF._uORB_MPU_Data._uORB_Real___Yaw = SF._uORB_MPU_Data._uORB_Real___Yaw < 0 ? (360 + SF._uORB_MPU_Data._uORB_Real___Yaw) : SF._uORB_MPU_Data._uORB_Real___Yaw;
 				//============Online Catlibration======================================//
@@ -1015,6 +1017,12 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						SF._uORB_MAG_RawX = biquadFilterApply(&DF.MAGFilter[0], SF._uORB_MAG_RawX);
 						SF._uORB_MAG_RawY = biquadFilterApply(&DF.MAGFilter[1], SF._uORB_MAG_RawY);
 						SF._uORB_MAG_RawZ = biquadFilterApply(&DF.MAGFilter[2], SF._uORB_MAG_RawZ);
+						SF._uORB_MAG_Vector = sqrtf((SF._uORB_MAG_RawX * SF._uORB_MAG_RawX) +
+													(SF._uORB_MAG_RawY * SF._uORB_MAG_RawY) +
+													(SF._uORB_MAG_RawZ * SF._uORB_MAG_RawZ));
+
+						AF._flag_MAG_Cali_Failed = SF._uORB_MAG_Vector > SF._flag_COMPASS_Cali[CompassVOffset] ? true : false;
+						AF._flag_MAG_Cali_Failed = SF._uORB_MAG_Vector < SF._flag_COMPASS_Cali[CompassVScaler] ? true : false;
 						DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_StaticYaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
 						DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
 					}
@@ -1642,6 +1650,8 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_COMPASS_Cali[CompassYScaler] = APMInit.SC._flag_COMPASS_Y_Scaler;
 	SF._flag_COMPASS_Cali[CompassZOffset] = APMInit.SC._flag_COMPASS_Z_Offset;
 	SF._flag_COMPASS_Cali[CompassZScaler] = APMInit.SC._flag_COMPASS_Z_Scaler;
+	SF._flag_COMPASS_Cali[CompassVOffset] = APMInit.SC._flag_COMPASS_V_Offset;
+	SF._flag_COMPASS_Cali[CompassVScaler] = APMInit.SC._flag_COMPASS_V_Scaler;
 	SF._flag_COMPASS_YAW_Offset = APMInit.SC._flag_COMPASS_YAW_Offset;
 	//==============================================================Filter config==/
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;
@@ -2696,6 +2706,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << " MAGRawX:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawX << "    "
 			  << " MAGRawY:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawY << "    "
 			  << " MAGRawZ:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawZ << "    "
+			  << " MAGRawV:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Vector << "    "
 			  << std::endl;
 	std::cout << " AccelrationX:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Acceleration_X << "cms2"
 			  << " AccelrationY:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_Acceleration_Y << "cms2"
@@ -2790,7 +2801,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_GPS_Disconnected:  " << std::setw(3) << std::setfill(' ') << AF._flag_GPS_Disconnected << "         \n";
 	std::cout << " Flag_FakeRC_Error:      " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Error << " |";
 	std::cout << " Flag_FakeRC_Disconnect: " << std::setw(3) << std::setfill(' ') << AF.FakeRC_Lose_Clocking << " |";
-	std::cout << " Flag_FakeRC_Deprive:    " << std::setw(3) << std::setfill(' ') << AF._flag_FakeRC_Deprive << " |";
+	std::cout << " Flag_MAG_Cali_Failed:   " << std::setw(3) << std::setfill(' ') << AF._flag_MAG_Cali_Failed << " |";
 	std::cout << " Flag_MPUCalibrating:    " << std::setw(3) << std::setfill(' ') << AF._flag_MPUCalibratingSet << " |";
 	std::cout << " Flag_IsNotTakeOff:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsNotTakeOff << "           \n";
 	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";

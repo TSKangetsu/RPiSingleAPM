@@ -163,6 +163,8 @@ namespace SingleAPMAPI
 			double _flag_COMPASS_Y_Scaler;
 			double _flag_COMPASS_Z_Offset;
 			double _flag_COMPASS_Z_Scaler;
+			double _flag_COMPASS_V_Offset;
+			double _flag_COMPASS_V_Scaler;
 			double _flag_COMPASS_YAW_Offset;
 		} SC;
 
@@ -364,6 +366,8 @@ namespace SingleAPMAPI
 			bool _flag_IsBrakingYSet = false;
 			bool _flag_IsBrakingXBlock = false;
 			bool _flag_IsBrakingYBlock = false;
+
+			bool _flag_MAG_Cali_Failed = false;
 		} AF;
 
 		struct DeviceINFO
@@ -466,6 +470,7 @@ namespace SingleAPMAPI
 			int _uORB_MAG_RawX = 0;
 			int _uORB_MAG_RawY = 0;
 			int _uORB_MAG_RawZ = 0;
+			double _uORB_MAG_Vector = 0;
 			double _flag_COMPASS_YAW_Offset;
 			double _flag_COMPASS_Cali[10];
 			//========================Flow=========//

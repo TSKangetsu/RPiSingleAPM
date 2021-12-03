@@ -269,6 +269,8 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.SC._flag_COMPASS_Y_Scaler = Configdata["_flag_COMPASS_Y_Scaler"].get<double>();
 	APMInit.SC._flag_COMPASS_Z_Offset = Configdata["_flag_COMPASS_Z_Offset"].get<double>();
 	APMInit.SC._flag_COMPASS_Z_Scaler = Configdata["_flag_COMPASS_Z_Scaler"].get<double>();
+	APMInit.SC._flag_COMPASS_V_Offset = Configdata["_flag_COMPASS_V_Offset"].get<double>();
+	APMInit.SC._flag_COMPASS_V_Scaler = Configdata["_flag_COMPASS_V_Scaler"].get<double>();
 	APMInit.SC._flag_COMPASS_YAW_Offset = Configdata["_flag_COMPASS_YAW_Offset"].get<double>();
 	//==============================================================Filter config==/
 	APMInit.FC._flag_Filter_Gryo_Type = Configdata["_flag_Filter_Gryo_Type"].get<double>();
