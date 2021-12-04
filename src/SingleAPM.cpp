@@ -452,9 +452,10 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 			{
 				TF._Tmp_IMUThreadTimeStart = GetTimestamp();
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
-
+				//
 				AF._flag_MAG_Cali_Failed = !DF._IsGPSEnable ? true : AF._flag_MAG_Cali_Failed;
 				DF.MPUDevice->MPUSensorApplyAHRS(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ, !AF._flag_MAG_Cali_Failed);
+				//
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 				SF._uORB_MPU_Data._uORB_Real___Yaw = SF._uORB_MPU_Data._uORB_Real___Yaw < 0 ? (360 + SF._uORB_MPU_Data._uORB_Real___Yaw) : SF._uORB_MPU_Data._uORB_Real___Yaw;
 				//============Online Catlibration======================================//
@@ -1451,7 +1452,13 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 	}
 	else if (controller == COMPASSCalibration)
 	{
-		// DF.CompassDevice->CompassCalibration(true, data);
+		DF.CompassDevice->CompassCaliInit();
+		while (true)
+		{
+			DF.CompassDevice->CompassCalibration(true, (int *)data);
+			if (SingleAPMAPI::SystemSignal == SIGINT)
+				break;
+		}
 	}
 	return -1;
 }

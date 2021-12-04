@@ -61,15 +61,21 @@ int main(int argc, char *argv[])
 		break;
 		case 'C':
 		{
+			std::signal(SIGINT, SignalCatch);
+			//
 			RPiSingleAPM APM_Settle;
 			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
 			APM_Settle.APMCalibrator(COMPASSCalibration, -1, -1, data);
-			configWrite(CONFIGDIR, "_flag_COMPASS_Y_Scaler", data[CompassYScaler]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_Z_Scaler", data[CompassZScaler]);
+			//
 			configWrite(CONFIGDIR, "_flag_COMPASS_X_Offset", data[CompassXOffset]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_X_Scaler", data[CompassXScaler]);
 			configWrite(CONFIGDIR, "_flag_COMPASS_Y_Offset", data[CompassYOffset]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_Y_Scaler", data[CompassYScaler]);
 			configWrite(CONFIGDIR, "_flag_COMPASS_Z_Offset", data[CompassZOffset]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_Z_Scaler", data[CompassZScaler]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_V_Offset", data[CompassVOffset]);
+			configWrite(CONFIGDIR, "_flag_COMPASS_V_Scaler", data[CompassVScaler]);
 		}
 		break;
 		case 'a':
@@ -104,10 +110,6 @@ int main(int argc, char *argv[])
 			std::cin >> a;
 			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseRev, a, tmp);
 			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelCaliGet, a, tmp);
-			for (size_t i = 0; i < 15; i++)
-			{
-				std::cout << tmp[i] << " \n";
-			}
 
 			configWrite(CONFIGDIR, "_flag_MPU9250_A_X_Cali", tmp[MPUAccelCaliX]);
 			configWrite(CONFIGDIR, "_flag_MPU9250_A_Y_Cali", tmp[MPUAccelCaliY]);
