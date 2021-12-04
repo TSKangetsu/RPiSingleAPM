@@ -253,7 +253,7 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.SC._flag_MPU_Flip__Roll = Configdata["_flag_MPU_Flip__Roll"].get<int>();
 	APMInit.SC._flag_MPU_Flip_Pitch = Configdata["_flag_MPU_Flip_Pitch"].get<int>();
 	APMInit.SC._flag_MPU_Flip___Yaw = Configdata["_flag_MPU_Flip___Yaw"].get<int>();
-	
+
 	APMInit.SC._flag_MPU9250_A_X_Cali = Configdata["_flag_MPU9250_A_X_Cali"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Y_Cali = Configdata["_flag_MPU9250_A_Y_Cali"].get<double>();
 	APMInit.SC._flag_MPU9250_A_Z_Cali = Configdata["_flag_MPU9250_A_Z_Cali"].get<double>();
@@ -271,6 +271,9 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.SC._flag_COMPASS_Z_Scaler = Configdata["_flag_COMPASS_Z_Scaler"].get<double>();
 	APMInit.SC._flag_COMPASS_V_Offset = Configdata["_flag_COMPASS_V_Offset"].get<double>();
 	APMInit.SC._flag_COMPASS_V_Scaler = Configdata["_flag_COMPASS_V_Scaler"].get<double>();
+	APMInit.SC._flag_COMPASS_Flip__Roll = Configdata["_flag_COMPASS_Flip__Roll"].get<double>();
+	APMInit.SC._flag_COMPASS_Flip_Pitch = Configdata["_flag_COMPASS_Flip_Pitch"].get<double>();
+	APMInit.SC._flag_COMPASS_Flip___Yaw = Configdata["_flag_COMPASS_Flip___Yaw"].get<double>();
 	APMInit.SC._flag_COMPASS_YAW_Offset = Configdata["_flag_COMPASS_YAW_Offset"].get<double>();
 	//==============================================================Filter config==/
 	APMInit.FC._flag_Filter_Gryo_Type = Configdata["_flag_Filter_Gryo_Type"].get<double>();

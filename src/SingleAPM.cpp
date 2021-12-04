@@ -91,7 +91,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
-			DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_QMC5883L));
+			int _Tmp_MAG_Flip[3] = {(int)SF._flag_COMPASS_Flip__Roll, (int)SF._flag_COMPASS_Flip_Pitch, (int)SF._flag_COMPASS_Flip___Yaw};
+			DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_QMC5883L, _Tmp_MAG_Flip));
 			DF.CompassDevice->CompassApply(SF._flag_COMPASS_Cali[CompassXOffset], SF._flag_COMPASS_Cali[CompassXScaler],
 										   SF._flag_COMPASS_Cali[CompassYOffset], SF._flag_COMPASS_Cali[CompassYScaler],
 										   SF._flag_COMPASS_Cali[CompassZOffset], SF._flag_COMPASS_Cali[CompassZScaler]);
@@ -231,6 +232,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "AltThrottle", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "DynamicNotch[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
@@ -279,6 +281,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "AltThrottle", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
@@ -451,7 +454,7 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				TF._Tmp_IMUThreadTimeNext = TF._Tmp_IMUThreadTimeStart - TF._Tmp_IMUThreadTimeEnd;
 
 				AF._flag_MAG_Cali_Failed = !DF._IsGPSEnable ? true : AF._flag_MAG_Cali_Failed;
-				DF.MPUDevice->MPUSensorApplyAHRS(-1 * SF._uORB_MAG_RawY, SF._uORB_MAG_RawX, -1 * SF._uORB_MAG_RawZ, !AF._flag_MAG_Cali_Failed);
+				DF.MPUDevice->MPUSensorApplyAHRS(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ, !AF._flag_MAG_Cali_Failed);
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
 				SF._uORB_MPU_Data._uORB_Real___Yaw = SF._uORB_MPU_Data._uORB_Real___Yaw < 0 ? (360 + SF._uORB_MPU_Data._uORB_Real___Yaw) : SF._uORB_MPU_Data._uORB_Real___Yaw;
 				//============Online Catlibration======================================//
@@ -1294,7 +1297,7 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							EF._uORB_A2_Speed,
 							EF._uORB_B1_Speed,
 							EF._uORB_A1_Speed,
-							(int)SF._uORB_BARO_Altitude,
+							(int)PF._uORB_PID_BARO_AltInput,
 							(int)SF._uORB_MPU_Data._uORB_Acceleration_X,
 							(int)SF._uORB_MPU_Data._uORB_Acceleration_Y,
 							(int)SF._uORB_MPU_Data._uORB_Acceleration_Z,
@@ -1307,6 +1310,7 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(int)SF._uORB_MAG_Yaw,
 							(int)SF._uORB_MAG_StaticYaw,
 							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+							(int)PF._uORB_PID_Alt_Throttle,
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0],
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
@@ -1652,6 +1656,9 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	SF._flag_COMPASS_Cali[CompassZScaler] = APMInit.SC._flag_COMPASS_Z_Scaler;
 	SF._flag_COMPASS_Cali[CompassVOffset] = APMInit.SC._flag_COMPASS_V_Offset;
 	SF._flag_COMPASS_Cali[CompassVScaler] = APMInit.SC._flag_COMPASS_V_Scaler;
+	SF._flag_COMPASS_Flip__Roll = APMInit.SC._flag_COMPASS_Flip__Roll;
+	SF._flag_COMPASS_Flip_Pitch = APMInit.SC._flag_COMPASS_Flip_Pitch;
+	SF._flag_COMPASS_Flip___Yaw = APMInit.SC._flag_COMPASS_Flip___Yaw;
 	SF._flag_COMPASS_YAW_Offset = APMInit.SC._flag_COMPASS_YAW_Offset;
 	//==============================================================Filter config==/
 	SF._flag_Filter_Gryo_Type = APMInit.FC._flag_Filter_Gryo_Type;

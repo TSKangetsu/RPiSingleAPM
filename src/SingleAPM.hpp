@@ -165,6 +165,9 @@ namespace SingleAPMAPI
 			double _flag_COMPASS_Z_Scaler;
 			double _flag_COMPASS_V_Offset;
 			double _flag_COMPASS_V_Scaler;
+			double _flag_COMPASS_Flip__Roll;
+			double _flag_COMPASS_Flip_Pitch;
+			double _flag_COMPASS_Flip___Yaw;
 			double _flag_COMPASS_YAW_Offset;
 		} SC;
 
@@ -473,6 +476,9 @@ namespace SingleAPMAPI
 			double _uORB_MAG_Vector = 0;
 			double _flag_COMPASS_YAW_Offset;
 			double _flag_COMPASS_Cali[10];
+			double _flag_COMPASS_Flip__Roll;
+			double _flag_COMPASS_Flip_Pitch;
+			double _flag_COMPASS_Flip___Yaw;
 			//========================Flow=========//
 			int _Tmp_Flow___Status = 0;
 			int _uORB_Flow_XOutput = 0;
