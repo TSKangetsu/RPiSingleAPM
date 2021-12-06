@@ -1452,12 +1452,32 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 	}
 	else if (controller == COMPASSCalibration)
 	{
+		int datas[10] = {0};
+		datas[0] = -5000;
+		datas[2] = -5000;
+		datas[4] = -5000;
+		datas[1] = 5000;
+		datas[3] = 5000;
+		datas[5] = 5000;
+		int rawx = 0;
+		int rawy = 0;
+		int rawz = 0;
 		DF.CompassDevice->CompassCaliInit();
 		while (true)
 		{
-			DF.CompassDevice->CompassCalibration(true, (int *)data);
+			DF.CompassDevice->CompassGetRaw(rawx, rawy, rawz);
+			DF.CompassDevice->CompassCalibration(true, datas);
+			usleep(50 * 1000);
 			if (SingleAPMAPI::SystemSignal == SIGINT)
+			{
+				data[0] = (int)datas[0];
+				data[1] = (int)datas[1];
+				data[2] = (int)datas[2];
+				data[3] = (int)datas[3];
+				data[4] = (int)datas[4];
+				data[5] = (int)datas[5];
 				break;
+			}
 		}
 	}
 	return -1;

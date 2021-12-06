@@ -5,7 +5,7 @@ using namespace SingleAPMAPI;
 
 #define CONFIGDIR "/boot/APMConfig.json"
 
-void configWrite(const char *configDir, const char *Target, double obj);
+void configWrite(const char *configDir, const char *substr, const char *Target, double obj);
 void configSettle(const char *configDir, const char *substr, APMSettinngs &APMInit);
 void SignalCatch(int Signal);
 
@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 {
 	system("clear");
 	int argvs;
-	double data[10];
+	double data[20] = {0};
 	APMSettinngs setting;
 	while ((argvs = getopt(argc, argv, "e:E:C:r:a:hv")) != -1)
 	{
@@ -61,21 +61,23 @@ int main(int argc, char *argv[])
 		break;
 		case 'C':
 		{
-			std::signal(SIGINT, SignalCatch);
-			//
 			RPiSingleAPM APM_Settle;
 			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
+			std::signal(SIGINT, SignalCatch);
+			std::cout << "start Calibrating COMPASS , Input Any to stop ...";
+			std::cout.flush();
 			APM_Settle.APMCalibrator(COMPASSCalibration, -1, -1, data);
+			std::cout << " Done\n";
 			//
-			configWrite(CONFIGDIR, "_flag_COMPASS_X_Offset", data[CompassXOffset]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_X_Scaler", data[CompassXScaler]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_Y_Offset", data[CompassYOffset]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_Y_Scaler", data[CompassYScaler]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_Z_Offset", data[CompassZOffset]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_Z_Scaler", data[CompassZScaler]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_V_Offset", data[CompassVOffset]);
-			configWrite(CONFIGDIR, "_flag_COMPASS_V_Scaler", data[CompassVScaler]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_X_Offset", (int)data[CompassXOffset]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_X_Scaler", (int)data[CompassXScaler]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_Y_Offset", (int)data[CompassYOffset]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_Y_Scaler", (int)data[CompassYScaler]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_Z_Offset", (int)data[CompassZOffset]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_Z_Scaler", (int)data[CompassZScaler]);
+			// configWrite(CONFIGDIR, optarg, "_flag_COMPASS_V_Offset", data[CompassVOffset]);
+			// configWrite(CONFIGDIR, optarg, "_flag_COMPASS_V_Scaler", data[CompassVScaler]);
 		}
 		break;
 		case 'a':
@@ -111,12 +113,12 @@ int main(int argc, char *argv[])
 			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelNoseRev, a, tmp);
 			APM_Settle.APMCalibrator(ACCELCalibration, MPUAccelCaliGet, a, tmp);
 
-			configWrite(CONFIGDIR, "_flag_MPU9250_A_X_Cali", tmp[MPUAccelCaliX]);
-			configWrite(CONFIGDIR, "_flag_MPU9250_A_Y_Cali", tmp[MPUAccelCaliY]);
-			configWrite(CONFIGDIR, "_flag_MPU9250_A_Z_Cali", tmp[MPUAccelCaliZ]);
-			configWrite(CONFIGDIR, "_flag_MPU9250_A_X_Scal", tmp[MPUAccelScalX]);
-			configWrite(CONFIGDIR, "_flag_MPU9250_A_Y_Scal", tmp[MPUAccelScalY]);
-			configWrite(CONFIGDIR, "_flag_MPU9250_A_Z_Scal", tmp[MPUAccelScalZ]);
+			configWrite(CONFIGDIR, optarg, "_flag_MPU9250_A_X_Cali", tmp[MPUAccelCaliX]);
+			configWrite(CONFIGDIR, optarg, "_flag_MPU9250_A_Y_Cali", tmp[MPUAccelCaliY]);
+			configWrite(CONFIGDIR, optarg, "_flag_MPU9250_A_Z_Cali", tmp[MPUAccelCaliZ]);
+			configWrite(CONFIGDIR, optarg, "_flag_MPU9250_A_X_Scal", tmp[MPUAccelScalX]);
+			configWrite(CONFIGDIR, optarg, "_flag_MPU9250_A_Y_Scal", tmp[MPUAccelScalY]);
+			configWrite(CONFIGDIR, optarg, "_flag_MPU9250_A_Z_Scal", tmp[MPUAccelScalZ]);
 		}
 		break;
 		//--------------------------------------------------------------------------------//
@@ -311,13 +313,15 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.FC._flag_Braking_AccelMax_Gain = Configdata["_flag_Braking_AccelMax_Gain"].get<double>();
 }
 
-void configWrite(const char *configDir, const char *Target, double obj)
+void configWrite(const char *configDir, const char *substr, const char *Target, double obj)
 {
 	std::ifstream config(configDir);
 	std::string content((std::istreambuf_iterator<char>(config)),
 						(std::istreambuf_iterator<char>()));
 	nlohmann::json Configdata = nlohmann::json::parse(content);
-	Configdata[Target] = obj;
+	nlohmann::json subdata = Configdata[substr];
+	subdata[Target] = obj;
+	Configdata[substr] = subdata;
 	std::ofstream configs;
 	configs.open(configDir);
 	configs << std::setw(4) << Configdata << std::endl;
