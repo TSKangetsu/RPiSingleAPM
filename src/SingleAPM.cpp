@@ -457,7 +457,6 @@ void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 				DF.MPUDevice->MPUSensorApplyAHRS(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ, !AF._flag_MAG_Cali_Failed);
 				//
 				SF._uORB_MPU_Data = DF.MPUDevice->MPUSensorsDataGet();
-				SF._uORB_MPU_Data._uORB_Real___Yaw = SF._uORB_MPU_Data._uORB_Real___Yaw < 0 ? (360 + SF._uORB_MPU_Data._uORB_Real___Yaw) : SF._uORB_MPU_Data._uORB_Real___Yaw;
 				//============Online Catlibration======================================//
 				{
 					if (AF._flag_MPUCalibrating == 1)
