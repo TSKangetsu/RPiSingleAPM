@@ -299,6 +299,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 					{.FrameName = "GPS_HDOP", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 					{.FrameName = "GPS_coord[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 					{.FrameName = "GPS_coord[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+					{.FrameName = "GPS_speed[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+					{.FrameName = "GPS_speed[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+					{.FrameName = "MAG_head", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 					{.FrameName = "GPS_altitude", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				};
 
@@ -939,6 +942,20 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						{
 							SF._uORB_GPS_COR_Lat = SF._uORB_GPS_Data.lat;
 							SF._uORB_GPS_COR_Lng = SF._uORB_GPS_Data.lng;
+							//===============================================================================================//
+							int _Tmp_GPS_Static_Lat = SF._uORB_GPS_COR_Lat - SF._uORB_GPS_Hold_Lat;
+							int _Tmp_GPS_Static_Lng = SF._uORB_GPS_COR_Lng - SF._uORB_GPS_Hold_Lng;
+							SF._uORB_NAV_Yaw = (SF._uORB_MPU_Data._uORB_Real___Yaw > 180 && SF._uORB_MPU_Data._uORB_Real___Yaw < 360) ? SF._uORB_MPU_Data._uORB_Real___Yaw - 360 : SF._uORB_MPU_Data._uORB_Real___Yaw;
+
+							SF._uORB_GPS_Real_Y = -1 * (_Tmp_GPS_Static_Lat * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
+							SF._uORB_GPS_Real_X = (_Tmp_GPS_Static_Lat * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
+
+							SF._uORB_GPS_Speed_Y = -1 * ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+							SF._uORB_GPS_Speed_X = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+
+							SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
+							SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
+							//===============================================================================================//
 						}
 						//
 						if (SF._uORB_GPS_Data.satillitesCount < 4 || SF._uORB_GPS_Data.DataUnCorrect)
@@ -966,20 +983,6 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						{
 							AF.GPS_Lose_Clocking = 0;
 						}
-						//===============================================================================================//
-						int _Tmp_GPS_Static_Lat = SF._uORB_GPS_COR_Lat - SF._uORB_GPS_Hold_Lat;
-						int _Tmp_GPS_Static_Lng = SF._uORB_GPS_COR_Lng - SF._uORB_GPS_Hold_Lng;
-						int _Tmp_Static_Head = (SF._uORB_MPU_Data._uORB_Real___Yaw > 180 || SF._uORB_MPU_Data._uORB_Real___Yaw < 360) ? SF._uORB_MPU_Data._uORB_Real___Yaw - 360 : SF._uORB_MPU_Data._uORB_Real___Yaw;
-
-						SF._uORB_GPS_Real_X = (_Tmp_GPS_Static_Lat * cos((_Tmp_Static_Head * PI / 180.f)) + _Tmp_GPS_Static_Lng * sin((_Tmp_Static_Head * PI / 180.f))) * 11.f;
-						SF._uORB_GPS_Real_Y = (_Tmp_GPS_Static_Lat * sin((_Tmp_Static_Head * PI / 180.f)) + _Tmp_GPS_Static_Lng * cos((_Tmp_Static_Head * PI / 180.f))) * 11.f;
-
-						SF._uORB_GPS_Speed_X = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * cos((_Tmp_Static_Head * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * sin((_Tmp_Static_Head * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
-						SF._uORB_GPS_Speed_Y = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * sin((_Tmp_Static_Head * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * cos((_Tmp_Static_Head * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
-
-						SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
-						SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
-						//===============================================================================================//
 						AF._flag_GPSData_Async = true;
 						AF._flag_GPSData_AsyncB = true;
 					}
@@ -1328,6 +1331,9 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 								(int)(SF._uORB_GPS_Data.HDOP * 100),
 								(int)(SF._uORB_GPS_COR_Lat * 10),
 								(int)(SF._uORB_GPS_COR_Lng * 10),
+								(int)(SF._uORB_GPS_Speed_X),
+								(int)(SF._uORB_GPS_Speed_Y),
+								(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
 								(int)(SF._uORB_GPS_Data.GPSAlititude),
 							}));
 							TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxHPush({
@@ -2735,6 +2741,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 			  << std::endl;
 	std::cout << " MAGYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_Yaw << "    "
 			  << " MAGSYAW:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_StaticYaw << "    "
+			  << " NAVYAW:      " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_NAV_Yaw << "    "
 			  << " IMUTIME:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MPU_Data._uORB_MPU9250_IMUUpdateTime << "         \n"
 			  << " MAGRawX:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawX << "    "
 			  << " MAGRawY:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_MAG_RawY << "    "

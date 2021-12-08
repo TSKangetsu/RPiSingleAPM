@@ -470,6 +470,7 @@ namespace SingleAPMAPI
 			//=========================MAG=========//
 			double _uORB_MAG_Yaw = 0;
 			double _uORB_MAG_StaticYaw = 0;
+			double _uORB_NAV_Yaw = 0;
 			int _uORB_MAG_RawX = 0;
 			int _uORB_MAG_RawY = 0;
 			int _uORB_MAG_RawZ = 0;
