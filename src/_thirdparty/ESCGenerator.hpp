@@ -70,7 +70,7 @@ ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, uint8_t 
     case GeneratorType::Hardware_ONESHOT125:
     {
         GeneratorFD = pca9685Setup(device,
-                                   PCA9685_DEFAULT_ADDRESS,
+                                   addr,
                                    PlFrequency);
         pca9685PWMReset(GeneratorFD);
         pca9685PWMResetON(GeneratorFD, PCA9685_ALL_PIN);
