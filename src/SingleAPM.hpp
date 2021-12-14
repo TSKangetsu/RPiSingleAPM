@@ -20,6 +20,7 @@
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/Dense"
+#include "_thirdparty/PowerMonitor/PowerADC.hpp"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/BlackboxEncoder/Blackbox.hpp"
 
@@ -52,7 +53,11 @@
 
 #define I2CCOMPASS_ADDR 0x0d
 #define I2CBARO_ADDR 0x77
-#define I2CPCA_ADDR 0x40
+#define I2CPCA_ADDR 0x70
+#define I2CINA_ADDR 0x40
+
+#define INA226_MaxCurrent 5.f
+#define INA226_ShuntOfR 0.01
 
 #define BlackBoxIInterval 32
 #define BlackBoxFirmware "Cleanflight"
@@ -358,6 +363,7 @@ namespace SingleAPMAPI
 			bool _flag_IsSonarAvalible = false;
 			bool _flag_IsFlowAvalible = false;
 			bool _flag_IsFakeRCUpdated = false;
+			bool _flag_IsNAVAvalible = false;
 
 			bool _flag_IsNotTakeOff = false;
 			bool _flag_IsNotTakeOff_Lock = false;
@@ -402,6 +408,7 @@ namespace SingleAPMAPI
 			std::unique_ptr<RPiMPU9250> MPUDevice;
 			std::unique_ptr<MSPUartFlow> FlowInit;
 			std::unique_ptr<BlackboxEncoder> BlackBoxDevice;
+			std::unique_ptr<PowerADC> ADCDevice;
 			std::ofstream BlackBoxFile;
 			TotalEKF EKFDevice;
 
@@ -501,6 +508,8 @@ namespace SingleAPMAPI
 			double _uORB_Flow_Altitude_Final = 0;
 			double _uORB_Flow_Altitude_Last_Final = 0;
 			double _uORB_Flow_ClimbeRate = 0;
+			//========================Extend=======//
+			ADCData _uORB_ADC_Data;
 		} SF;
 
 		struct PIDINFO
@@ -841,6 +850,16 @@ namespace SingleAPMAPI
 			int _flag_FlowErrorTimes = 0;
 			bool _flag_Flow_Task_Running = false;
 			std::thread FlowTask;
+			int _Tmp_ExtThreadTimeStart = 0;
+			int _Tmp_ExtThreadTimeEnd = 0;
+			int _Tmp_ExtThreadTimeNext = 0;
+			int _Tmp_ExtThreadTimeLoop = 0;
+			int _Tmp_ExtThreadError = 0;
+			int _flag_ExtThreadTimeMax = (float)1 / 100 * 1000000;
+			int _flag_ExtErrorTimes = 0;
+			bool _flag_Ext_Task_Running = false;
+			std::thread ExtendTask;
+			//Blackbox
 			int _Tmp_BBQThreadTimeStart = 0;
 			int _Tmp_BBQThreadTimeEnd = 0;
 			int _Tmp_BBQThreadTimeNext = 0;
@@ -877,6 +896,8 @@ namespace SingleAPMAPI
 		void ControllerTaskReg();
 
 		void PositionTaskReg();
+
+		void ExtendMonitorTaskReg();
 
 		void ESCUpdateTaskReg();
 

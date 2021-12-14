@@ -32,6 +32,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_FakeRC_Disconnected = false;
 		AF._flag_PreARM_Check = false;
 		AF._flag_PreARM_Check_Lock = false;
+		AF._flag_IsNAVAvalible = false;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 		AF._flag_FailedSafe_Level = 0;
 		AF._flag_PreARM_Check_Level = 0;
@@ -158,6 +159,32 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	}
 	//--------------------------------------------------------------------//
 	{
+#ifdef RPiDEBUGStart
+		std::cout << "[RPiSingleAPM]Init Extenal Monitor: \n";
+		std::cout << "[RPiSingleAPM]ADC ....";
+		std::cout.flush();
+#endif
+		DF.ADCDevice.reset(new PowerADC(DF.I2CDevice.c_str(), I2CINA_ADDR,
+										{
+											.MAXCurrent = INA226_MaxCurrent,
+											.ROfShunt = INA226_ShuntOfR,
+											.ADCBus = INA226_TIME_8MS,
+											.Shunttime = INA226_TIME_8MS,
+											.Averages = INA226_AVERAGES_1,
+											.Mode = INA226_MODE_SHUNT_BUS_CONTINUOUS,
+										}));
+		//
+		for (size_t i = 0; i < 20; i++)
+		{
+			SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
+			usleep(15 * 1000);
+		}
+#ifdef RPiDEBUGStart
+		std::cout << "Check! \n";
+#endif
+	}
+	//--------------------------------------------------------------------//
+	{
 		pt1FilterInit(&DF.ThrottleLPF, FILTERTHROTTLELPFCUTOFF, 0.f);
 		pt1FilterInit(&DF.POSOutLPF[0], FILTERPOSOUTLPFCUTOFF, 0.f);
 		pt1FilterInit(&DF.POSOutLPF[1], FILTERPOSOUTLPFCUTOFF, 0.f);
@@ -236,6 +263,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "DynamicNotch[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "DynamicNotch[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "vbatLatest", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
+				{.FrameName = "devicepower", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "IMUDT", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			};
 
@@ -285,6 +314,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "DynamicNotch[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "vbatLatest", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "devicepower", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			};
 
@@ -336,6 +367,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 					"H motorOutput:1000,2000\n",
 					"H minthrottle:1000\n",
 					"H maxthrottle:2000\n",
+					"H vbatscale:110\n",
+					("H vbatref:" + std::to_string(SF._uORB_ADC_Data.voltage * 112.8) + "\n"),
+					"H vbatcellvoltage:33,35,43\n",
 					("H looptime:" + std::to_string(TF._flag_IMUThreadTimeMax + LINUX_SYSTEM_SLEEP_DELAY) + "\n"),
 				},
 			}));
@@ -365,6 +399,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMStartUp()
 
 		BlackBoxTaskReg();
 
+		ExtendMonitorTaskReg();
+
 		DF.APMStatus += 1;
 	}
 }
@@ -382,6 +418,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	TF._flag_Block_Task_Running = false;
 	TF._flag_BBQ_Task_Running = false;
 	TF._flag_BBW_Task_Running = false;
+	TF._flag_Ext_Task_Running = false;
 	if (TF.IMUTask.joinable())
 		TF.IMUTask.join();
 	if (TF.RXTask.joinable())
@@ -400,6 +437,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		TF.BlackBoxQTask.join();
 	if (TF.BlackBoxWTask.joinable())
 		TF.BlackBoxWTask.join();
+	if (TF.ExtendTask.joinable())
+		TF.ExtendTask.join();
 	//--------------------------------------------------------------------//
 	usleep(5000);
 	if (DF.ESCDevice.get() != nullptr)
@@ -413,6 +452,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 	DF.FlowInit.reset();
 	DF.MPUDevice.reset();
 	DF.BlackBoxDevice.reset();
+	DF.ADCDevice.reset();
 	//
 	FileInjectQueue(DF.BlackBoxFile, DF.BlackBoxDevice->BlackboxEPush(BlackboxEvent::FLIGHT_LOG_EVENT_LOG_END, 0, 0, 0));
 	DF.BlackBoxFile.close();
@@ -942,21 +982,21 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						{
 							SF._uORB_GPS_COR_Lat = SF._uORB_GPS_Data.lat;
 							SF._uORB_GPS_COR_Lng = SF._uORB_GPS_Data.lng;
-							//===============================================================================================//
-							int _Tmp_GPS_Static_Lat = SF._uORB_GPS_COR_Lat - SF._uORB_GPS_Hold_Lat;
-							int _Tmp_GPS_Static_Lng = SF._uORB_GPS_COR_Lng - SF._uORB_GPS_Hold_Lng;
-							SF._uORB_NAV_Yaw = (SF._uORB_MPU_Data._uORB_Real___Yaw > 180 && SF._uORB_MPU_Data._uORB_Real___Yaw < 360) ? SF._uORB_MPU_Data._uORB_Real___Yaw - 360 : SF._uORB_MPU_Data._uORB_Real___Yaw;
-
-							SF._uORB_GPS_Real_Y = -1 * (_Tmp_GPS_Static_Lat * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
-							SF._uORB_GPS_Real_X = (_Tmp_GPS_Static_Lat * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
-
-							SF._uORB_GPS_Speed_Y = -1 * ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
-							SF._uORB_GPS_Speed_X = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
-
-							SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
-							SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
-							//===============================================================================================//
 						}
+						//===============================================================================================//
+						int _Tmp_GPS_Static_Lat = SF._uORB_GPS_COR_Lat - SF._uORB_GPS_Hold_Lat;
+						int _Tmp_GPS_Static_Lng = SF._uORB_GPS_COR_Lng - SF._uORB_GPS_Hold_Lng;
+						SF._uORB_NAV_Yaw = (SF._uORB_MPU_Data._uORB_Real___Yaw > 180 && SF._uORB_MPU_Data._uORB_Real___Yaw < 360) ? SF._uORB_MPU_Data._uORB_Real___Yaw - 360 : SF._uORB_MPU_Data._uORB_Real___Yaw;
+
+						SF._uORB_GPS_Real_Y = -1 * (_Tmp_GPS_Static_Lat * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
+						SF._uORB_GPS_Real_X = (_Tmp_GPS_Static_Lat * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
+
+						SF._uORB_GPS_Speed_Y = -1 * ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+						SF._uORB_GPS_Speed_X = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+
+						SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
+						SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
+						//===============================================================================================//
 						//
 						if (SF._uORB_GPS_Data.satillitesCount < 4 || SF._uORB_GPS_Data.DataUnCorrect)
 						{
@@ -1027,8 +1067,9 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 													(SF._uORB_MAG_RawY * SF._uORB_MAG_RawY) +
 													(SF._uORB_MAG_RawZ * SF._uORB_MAG_RawZ));
 
-						AF._flag_MAG_Cali_Failed = SF._uORB_MAG_Vector > SF._flag_COMPASS_Cali[CompassVOffset] ? true : false;
-						AF._flag_MAG_Cali_Failed = SF._uORB_MAG_Vector < SF._flag_COMPASS_Cali[CompassVScaler] ? true : false;
+						AF._flag_MAG_Cali_Failed = false;
+						AF._flag_MAG_Cali_Failed = SF._uORB_MAG_Vector > SF._flag_COMPASS_Cali[CompassVOffset] ? true : AF._flag_MAG_Cali_Failed;
+						AF._flag_MAG_Cali_Failed = SF._uORB_MAG_Vector < SF._flag_COMPASS_Cali[CompassVScaler] ? true : AF._flag_MAG_Cali_Failed;
 						DF.CompassDevice->CompassGetFixAngle(SF._uORB_MAG_StaticYaw, SF._uORB_MPU_Data._uORB_Real__Roll, SF._uORB_MPU_Data._uORB_Real_Pitch);
 						DF.CompassDevice->CompassGetUnfixAngle(SF._uORB_MAG_Yaw);
 					}
@@ -1164,6 +1205,39 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		CPU_SET(3, &cpuset3);
 		int rc3 = pthread_setaffinity_np(TF.FlowTask.native_handle(), sizeof(cpu_set_t), &cpuset3);
 	}
+}
+
+void SingleAPMAPI::RPiSingleAPM::ExtendMonitorTaskReg()
+{
+	TF.ExtendTask = std::thread(
+		[&] {
+			TF._flag_Ext_Task_Running = true;
+			while (TF._flag_Ext_Task_Running)
+			{
+				TF._Tmp_ExtThreadTimeStart = GetTimestamp();
+				TF._Tmp_ExtThreadTimeNext = TF._Tmp_ExtThreadTimeStart - TF._Tmp_ExtThreadTimeEnd;
+				//
+				SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
+				//
+				TF._Tmp_ExtThreadTimeEnd = GetTimestamp();
+				TF._Tmp_ExtThreadTimeLoop = TF._Tmp_ExtThreadTimeEnd - TF._Tmp_ExtThreadTimeStart;
+				if (TF._Tmp_ExtThreadTimeLoop + TF._Tmp_ExtThreadTimeNext > TF._flag_ExtThreadTimeMax | TF._Tmp_ExtThreadTimeNext < 0)
+				{
+					usleep(50);
+					TF._flag_ExtErrorTimes++;
+					AF._flag_ClockingTime_Error = true;
+				}
+				else
+				{
+					usleep(TF._flag_ExtThreadTimeMax - TF._Tmp_ExtThreadTimeLoop - TF._Tmp_ExtThreadTimeNext);
+				}
+				if (TF._Tmp_ExtThreadTimeLoop + TF._Tmp_ExtThreadTimeNext > TF._Tmp_ExtThreadError)
+				{
+					TF._Tmp_ExtThreadError = TF._Tmp_ExtThreadTimeLoop;
+				}
+				TF._Tmp_ExtThreadTimeEnd = GetTimestamp();
+			}
+		});
 }
 
 void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
@@ -1317,6 +1391,8 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0],
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
+							(int)(SF._uORB_ADC_Data.voltage * 112.8),
+							(int)(SF._uORB_ADC_Data.power),
 							(int)TF._Tmp_IMUAttThreadDT,
 						}));
 
@@ -1819,13 +1895,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_PID__Roll_Input = 0;
 			PF._uORB_PID_Pitch_Input = 0;
 			//---MODE SWITCHER----------------------------------------------------------//
-			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsFlowAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
+			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsNAVAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsNAVAvalible))
 			{
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 				PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
 				PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
 			}
-			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsFlowAvalible)
+			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsNAVAvalible)
 			{
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 				if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
@@ -2060,6 +2136,11 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		const float relAlpha = (TF._Tmp_IMUNavThreadDT / 1000000.f) / ((TF._Tmp_IMUNavThreadDT / 1000000.f) + ACC_CLIPPING_RC_CONSTANT);
 		PF._uORB_Accel_Dynamic_Beta = PF._uORB_Accel_Dynamic_Beta * (1.0f - relAlpha) + 1.0f * relAlpha;
 	}
+
+	if ((AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible) || !AF._flag_GPS_Disconnected)
+		AF._flag_IsNAVAvalible = true;
+	else
+		AF._flag_IsNAVAvalible = false;
 
 	SF._uORB_MPU_Data._uORB_Acceleration_X -= PF._uORB_PID_AccelX_Bias;
 	SF._uORB_True_Movement_X += (int)SF._uORB_True_Speed_X * (TF._Tmp_IMUNavThreadDT / 1000000.f);
@@ -2365,8 +2446,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 				AF._flag_IsPositionXChange = false;
-				if (-10.f < SF._uORB_True_Speed_X && SF._uORB_True_Speed_X < 10.f)
-					AF._flag_IsBrakingXSet = false;
+				// if (-10.f < SF._uORB_True_Speed_X && SF._uORB_True_Speed_X < 10.f)
+				AF._flag_IsBrakingXSet = false;
 			}
 			if (AF._flag_IsPositionYChange || AF._flag_IsBrakingYSet)
 			{
@@ -2376,8 +2457,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
 				AF._flag_IsPositionYChange = false;
-				if (-10.f < SF._uORB_True_Speed_Y && SF._uORB_True_Speed_Y < 10.f)
-					AF._flag_IsBrakingYSet = false;
+				// if (-10.f < SF._uORB_True_Speed_Y && SF._uORB_True_Speed_Y < 10.f)
+				AF._flag_IsBrakingYSet = false;
 			}
 		}
 
@@ -2484,19 +2565,19 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 
 		//Pos and Braking Dynamic caculate
 		{
-			if (abs(SF._uORB_True_Speed_X) < 10.f)
-				PF._uORB_PID_I_PosX_Dynamic_Gain = 5.f;
-			else if (10.f < abs(SF._uORB_True_Speed_X) && abs(SF._uORB_True_Speed_X) < 20.f)
-				PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * ((abs(SF._uORB_True_Speed_X) - 10.f) / 20.f) + 5.f;
-			else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-				PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain;
+			// if (abs(SF._uORB_True_Speed_X) < 10.f)
+			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = 5.f;
+			// else if (10.f < abs(SF._uORB_True_Speed_X) && abs(SF._uORB_True_Speed_X) < 20.f)
+			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * ((abs(SF._uORB_True_Speed_X) - 10.f) / 20.f) + 5.f;
+			// else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
+			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain;
 
-			if (abs(SF._uORB_True_Speed_Y) <= 10.f)
-				PF._uORB_PID_I_PosY_Dynamic_Gain = 5.f;
-			else if (10.f < abs(SF._uORB_True_Speed_Y) && abs(SF._uORB_True_Speed_Y) < 20.f)
-				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * ((abs(SF._uORB_True_Speed_Y) - 10.f) / 20.f) + 5.f;
-			else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
+			// if (abs(SF._uORB_True_Speed_Y) <= 10.f)
+			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = 5.f;
+			// else if (10.f < abs(SF._uORB_True_Speed_Y) && abs(SF._uORB_True_Speed_Y) < 20.f)
+			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * ((abs(SF._uORB_True_Speed_Y) - 10.f) / 20.f) + 5.f;
+			// else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
+			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
 
 			if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 45.f)
 			{
@@ -2538,8 +2619,9 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		TargetAccelY = TargetAccelY < -1 * PF._uORB_PID_Pos_AccelY_Max ? -1 * PF._uORB_PID_Pos_AccelY_Max : TargetAccelY;
 		PF._uORB_PID_PosYTarget = TargetAccelY + SF._uORB_MPU_Data._uORB_Acceleration_Y;
 		//
-		if (AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
-			(AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsFlowAvalible))
+		if ((AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
+			 AF.AutoPilotMode == APModeINFO::UserAuto) &&
+			AF._flag_IsNAVAvalible)
 		{
 			PID_CaculateExtend(PF._uORB_PID_PosXTarget, PF._uORB_PID_PosXTarget, PF._uORB_PID_PosXTarget,
 							   PF._uORB_PID_PosX_Output, PF._uORB_PID_I_Last_Value_SpeedX, PF._uORB_PID_D_Last_Value_SpeedX,
@@ -2818,10 +2900,10 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
 	}
 	std::cout << "                            \n";
-	std::cout << " DynamicCencterFreqX:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0] << "            \n";
-	std::cout << " DynamicCencterFreqY:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1] << "            \n";
-	std::cout << " DynamicCencterFreqZ:" << SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2] << "            \n";
-	std::cout << " TPATrust           :" << PF._uORB_PID_TPA_Beta << "            \n";
+	std::cout << " voltage:" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.voltage << " V             \n";
+	std::cout << " current:" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.current << " mA            \n";
+	std::cout << " power  :" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.power << " mW            \n";
+	std::cout << " svoltag:" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.shunt_voltage << " V            \n";
 	std::cout << " \n";
 
 	std::bitset<16> x(AF._flag_PreARM_Check_Level);
@@ -2879,7 +2961,11 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " FloLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadTimeLoop;
 	std::cout << " FloNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadTimeNext;
 	std::cout << " FloErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_FlowErrorTimes;
-	std::cout << " FloMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadError << "    \n"
+	std::cout << " FloMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_FlowThreadError << "    \n";
+	std::cout << " ExtLoopTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ExtThreadTimeLoop;
+	std::cout << " ExtNextTime: " << std::setw(7) << std::setfill(' ') << TF._Tmp_ExtThreadTimeNext;
+	std::cout << " ExtErrorTime:" << std::setw(7) << std::setfill(' ') << TF._flag_ExtErrorTimes;
+	std::cout << " ExtMaxTime:  " << std::setw(7) << std::setfill(' ') << TF._Tmp_ExtThreadError << "    \n"
 			  << std::endl;
 }
 
