@@ -3,9 +3,9 @@
 int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 {
 	{
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		TF._flag_SystemStartUp_Time = (tv.tv_sec * (uint64_t)1000000 + tv.tv_usec);
+		struct timespec tv;
+		clock_gettime(CLOCK_MONOTONIC, &tv);
+		TF._flag_SystemStartUp_Time = ((tv.tv_sec * (uint64_t)1000000 + (tv.tv_nsec / 1000)));
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -581,7 +581,8 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 					TF._Tmp_ALTThreadTimeStart = GetTimestamp();
 					TF._Tmp_ALTThreadTimeNext = TF._Tmp_ALTThreadTimeStart - TF._Tmp_ALTThreadTimeEnd;
 
-					SF._uORB_BARO_Data = DF.BaroDeviceD->BaroRead();
+					SF._uORB_BARO_Data = DF.BaroDeviceD->BaroRead(&DF.I2CLock);
+
 					float DT = (TF._flag_ALTThreadTimeMax / 1000000.f);
 					SF._uORB_BARO_Altitude = pt1FilterApply3(&DF.BAROLPF, (SF._uORB_BARO_Data.AltitudeM * 100.f), DT);
 					//
@@ -1059,7 +1060,10 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					TF._Tmp_MAGThreadTimeStart = GetTimestamp();
 					TF._Tmp_MAGThreadTimeNext = TF._Tmp_MAGThreadTimeStart - TF._Tmp_MAGThreadTimeEnd;
 					{
+						DF.I2CLock.lock();
 						DF.CompassDevice->CompassGetRaw(SF._uORB_MAG_RawX, SF._uORB_MAG_RawY, SF._uORB_MAG_RawZ);
+						DF.I2CLock.unlock();
+
 						SF._uORB_MAG_RawX = biquadFilterApply(&DF.MAGFilter[0], SF._uORB_MAG_RawX);
 						SF._uORB_MAG_RawY = biquadFilterApply(&DF.MAGFilter[1], SF._uORB_MAG_RawY);
 						SF._uORB_MAG_RawZ = biquadFilterApply(&DF.MAGFilter[2], SF._uORB_MAG_RawZ);
@@ -1217,7 +1221,9 @@ void SingleAPMAPI::RPiSingleAPM::ExtendMonitorTaskReg()
 				TF._Tmp_ExtThreadTimeStart = GetTimestamp();
 				TF._Tmp_ExtThreadTimeNext = TF._Tmp_ExtThreadTimeStart - TF._Tmp_ExtThreadTimeEnd;
 				//
+				DF.I2CLock.lock();
 				SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
+				DF.I2CLock.unlock();
 				//
 				TF._Tmp_ExtThreadTimeEnd = GetTimestamp();
 				TF._Tmp_ExtThreadTimeLoop = TF._Tmp_ExtThreadTimeEnd - TF._Tmp_ExtThreadTimeStart;
@@ -1250,6 +1256,7 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 				TF._Tmp_ESCThreadTimeStart = GetTimestamp();
 				TF._Tmp_ESCThreadTimeNext = TF._Tmp_ESCThreadTimeStart - TF._Tmp_ESCThreadTimeEnd;
 
+				DF.I2CLock.lock();
 				if (AF._flag_ESC_ARMED)
 				{
 					DF.ESCDevice->ESCUpdate(EF._flag_A1_Pin, EF._Flag_Lock_Throttle);
@@ -1264,6 +1271,8 @@ void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 					DF.ESCDevice->ESCUpdate(EF._flag_B1_Pin, EF._uORB_B1_Speed);
 					DF.ESCDevice->ESCUpdate(EF._flag_B2_Pin, EF._uORB_B2_Speed);
 				}
+				DF.I2CLock.unlock();
+
 				//
 				TF._Tmp_ServoThreadClock++;
 				if (TF._Tmp_ServoThreadClock > TF._flag_ServoThreadTimes)
@@ -2971,9 +2980,9 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 int SingleAPMAPI::RPiSingleAPM::GetTimestamp()
 {
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return ((tv.tv_sec * (uint64_t)1000000 + tv.tv_usec) - TF._flag_SystemStartUp_Time);
+	struct timespec tv;
+	clock_gettime(CLOCK_MONOTONIC, &tv);
+	return (((tv.tv_sec * (uint64_t)1000000 + (tv.tv_nsec / 1000))) - TF._flag_SystemStartUp_Time);
 }
 
 //=-----------------------------------------------------------------------------------------==//

@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include <math.h>
 #include <thread>
 #include <string>
@@ -399,6 +400,7 @@ namespace SingleAPMAPI
 			bool _IsBAROEnable;
 			bool _IsBlackBoxEnable;
 
+			std::mutex I2CLock;
 			std::unique_ptr<Sbus> SbusInit;
 			std::unique_ptr<Ibus> IbusInit;
 			std::unique_ptr<BaroDevice> BaroDeviceD;

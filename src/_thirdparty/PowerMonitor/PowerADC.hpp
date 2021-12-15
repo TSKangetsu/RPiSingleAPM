@@ -116,6 +116,8 @@ PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
         throw - 1;
     if (ioctl(ADCFD, I2C_SLAVE, I2CAddress) < 0)
         throw - 1;
+    if (ioctl(ADCFD, I2C_TIMEOUT, 0x01) < 0) // set to 10ms?
+        throw - 1;
     // Check INA226's ID
     {
         uint8_t WHOAMI = 0xFE;
