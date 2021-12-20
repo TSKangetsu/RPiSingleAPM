@@ -54,7 +54,7 @@
 
 #define I2CCOMPASS_ADDR 0x0d
 #define I2CBARO_ADDR 0x77
-#define I2CPCA_ADDR 0x70
+#define I2CPCA_ADDR 0x41
 #define I2CINA_ADDR 0x40
 
 #define INA226_MaxCurrent 5.f
@@ -349,6 +349,7 @@ namespace SingleAPMAPI
 			bool _flag_RC_Disconnected = false;
 			bool _flag_FakeRC_Disconnected = false;
 			bool _flag_GPS_Disconnected = false;
+			bool _flag_GPS_Recovered = false;
 			long int RC_Lose_Clocking = 0;
 			long int FakeRC_Lose_Clocking = 0;
 			long int GPS_Lose_Clocking = 0;

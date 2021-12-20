@@ -33,6 +33,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_PreARM_Check = false;
 		AF._flag_PreARM_Check_Lock = false;
 		AF._flag_IsNAVAvalible = false;
+		AF._flag_GPS_Recovered = true;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 		AF._flag_FailedSafe_Level = 0;
 		AF._flag_PreARM_Check_Level = 0;
@@ -259,6 +260,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "POSOut[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "POSOut[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "AltThrottle", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[0]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
@@ -307,9 +310,11 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "navPosr[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "navPosr[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "navPosr[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
-				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 0, .FrameEncoder = 0},
+				{.FrameName = "navhead[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navhead[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "navhead[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "POSOut[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
+				{.FrameName = "POSOut[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "AltThrottle", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[0]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
@@ -979,31 +984,14 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					{
 						//===============================================================================================//
 						SF._uORB_GPS_Data = DF.GPSInit->GPSParse();
-						if (SF._uORB_GPS_Data.lat != 0 && SF._uORB_GPS_Data.lng != 0 && !SF._uORB_GPS_Data.DataUnCorrect)
-						{
-							SF._uORB_GPS_COR_Lat = SF._uORB_GPS_Data.lat;
-							SF._uORB_GPS_COR_Lng = SF._uORB_GPS_Data.lng;
-						}
 						//===============================================================================================//
-						int _Tmp_GPS_Static_Lat = SF._uORB_GPS_COR_Lat - SF._uORB_GPS_Hold_Lat;
-						int _Tmp_GPS_Static_Lng = SF._uORB_GPS_COR_Lng - SF._uORB_GPS_Hold_Lng;
-						SF._uORB_NAV_Yaw = (SF._uORB_MPU_Data._uORB_Real___Yaw > 180 && SF._uORB_MPU_Data._uORB_Real___Yaw < 360) ? SF._uORB_MPU_Data._uORB_Real___Yaw - 360 : SF._uORB_MPU_Data._uORB_Real___Yaw;
-
-						SF._uORB_GPS_Real_Y = -1 * (_Tmp_GPS_Static_Lat * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
-						SF._uORB_GPS_Real_X = (_Tmp_GPS_Static_Lat * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
-
-						SF._uORB_GPS_Speed_Y = -1 * ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
-						SF._uORB_GPS_Speed_X = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
-
-						SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
-						SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
-						//===============================================================================================//
-						//
-						if (SF._uORB_GPS_Data.satillitesCount < 4 || SF._uORB_GPS_Data.DataUnCorrect)
+						if (SF._uORB_GPS_Data.satillitesCount < 4 || SF._uORB_GPS_Data.DataUnCorrect ||
+							SF._uORB_GPS_Data.lat != 0 || SF._uORB_GPS_Data.lng != 0)
 						{
 							AF._flag_GPS_Disconnected = true;
 						}
-						else if (SF._uORB_GPS_Data.satillitesCount > 4 || !SF._uORB_GPS_Data.DataUnCorrect)
+						else if (SF._uORB_GPS_Data.satillitesCount > 4 || !SF._uORB_GPS_Data.DataUnCorrect ||
+								 SF._uORB_GPS_Data.lat != 0 || SF._uORB_GPS_Data.lng != 0)
 						{
 							AF._flag_GPS_Disconnected = false;
 						}
@@ -1011,11 +999,52 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						{
 							AF._flag_GPS_Disconnected = true;
 						}
+						//===============================================================================================//
+						if (SF._uORB_GPS_Data.lat != 0 && SF._uORB_GPS_Data.lng != 0 &&
+							!AF._flag_GPS_Error && !AF._flag_GPS_Disconnected)
+						{
+							SF._uORB_GPS_COR_Lat = SF._uORB_GPS_Data.lat;
+							SF._uORB_GPS_COR_Lng = SF._uORB_GPS_Data.lng;
+						}
+						//
+						if (AF._flag_GPS_Recovered && !AF._flag_GPS_Error)
+						{
+							SF._uORB_GPS_Real_Y = 0;
+							SF._uORB_GPS_Real_X = 0;
+							SF._uORB_GPS_Speed_Y = 0;
+							SF._uORB_GPS_Speed_X = 0;
+							SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
+							SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
+							SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
+							SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
+							AF._flag_GPS_Recovered = false;
+						}
+						//===============================================================================================//
+						if (!AF._flag_GPS_Error)
+						{
+							int _Tmp_GPS_Static_Lat = SF._uORB_GPS_COR_Lat - SF._uORB_GPS_Hold_Lat;
+							int _Tmp_GPS_Static_Lng = SF._uORB_GPS_COR_Lng - SF._uORB_GPS_Hold_Lng;
+							SF._uORB_NAV_Yaw = (SF._uORB_MPU_Data._uORB_Real___Yaw > 180 && SF._uORB_MPU_Data._uORB_Real___Yaw < 360) ? SF._uORB_MPU_Data._uORB_Real___Yaw - 360 : SF._uORB_MPU_Data._uORB_Real___Yaw;
+
+							SF._uORB_GPS_Real_Y = -1 * (_Tmp_GPS_Static_Lat * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
+							SF._uORB_GPS_Real_X = (_Tmp_GPS_Static_Lat * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + _Tmp_GPS_Static_Lng * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f;
+
+							SF._uORB_GPS_Speed_Y = -1 * ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * cos((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * sin((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+							SF._uORB_GPS_Speed_X = ((float)((SF._uORB_GPS_COR_Lat - SF._Tmp_GPS_Last_Lat) * sin((SF._uORB_NAV_Yaw * PI / 180.f)) + (SF._uORB_GPS_COR_Lng - SF._Tmp_GPS_Last_Lng) * cos((SF._uORB_NAV_Yaw * PI / 180.f))) * 11.f) / ((float)TF._flag_GPSThreadTimeMax / 1000000.f);
+
+							SF._Tmp_GPS_Last_Lat = SF._uORB_GPS_COR_Lat;
+							SF._Tmp_GPS_Last_Lng = SF._uORB_GPS_COR_Lng;
+						}
+						//===============================================================================================//
 						if (AF._flag_GPS_Disconnected == true)
 						{
 							AF.GPS_Lose_Clocking += 1;
 							if (AF.GPS_Lose_Clocking == 50)
 							{
+								SF._uORB_GPS_Real_Y = 0;
+								SF._uORB_GPS_Real_X = 0;
+								SF._uORB_GPS_Speed_Y = 0;
+								SF._uORB_GPS_Speed_X = 0;
 								AF._flag_GPS_Error = true;
 								AF.GPS_Lose_Clocking = 0;
 							}
@@ -1023,7 +1052,14 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						else if (AF._flag_GPS_Disconnected == false)
 						{
 							AF.GPS_Lose_Clocking = 0;
+							AF._flag_GPS_Error = false;
 						}
+						//
+						if (AF._flag_GPS_Error)
+						{
+							AF._flag_GPS_Recovered = true;
+						}
+						//===============================================================================================//
 						AF._flag_GPSData_Async = true;
 						AF._flag_GPSData_AsyncB = true;
 					}
@@ -1396,6 +1432,8 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(int)SF._uORB_MAG_Yaw,
 							(int)SF._uORB_MAG_StaticYaw,
 							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+							(int)PF._uORB_PID_PosX_Output,
+							(int)PF._uORB_PID_PosY_Output,
 							(int)PF._uORB_PID_Alt_Throttle,
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0],
 							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
@@ -1913,11 +1951,13 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsNAVAvalible)
 			{
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-				if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
+				// if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
+				if (RF._uORB_RC_Out__Roll != 0)
 					PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle__Roll_Gain;
 				else
 					PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
-				if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
+				// if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
+				if (RF._uORB_RC_Out_Pitch != 0)
 					PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Pitch_Gain;
 				else
 					PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
@@ -2146,7 +2186,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		PF._uORB_Accel_Dynamic_Beta = PF._uORB_Accel_Dynamic_Beta * (1.0f - relAlpha) + 1.0f * relAlpha;
 	}
 
-	if ((AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible) || !AF._flag_GPS_Disconnected)
+	if ((AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible) || !AF._flag_GPS_Error)
 		AF._flag_IsNAVAvalible = true;
 	else
 		AF._flag_IsNAVAvalible = false;
@@ -2482,7 +2522,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		{
 			PF._uORB_PID_GPS_PosInput_X = SF._uORB_GPS_Real_X;
 			PF._uORB_PID_GPS_PosInput_Y = SF._uORB_GPS_Real_Y;
-			if (!AF._flag_GPS_Disconnected)
+			if (!AF._flag_GPS_Error)
 			{
 				PF._uORB_PID_Flow_PosInput_X = 0;
 				PF._uORB_PID_Flow_PosInput_Y = 0;
@@ -2496,9 +2536,9 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		PF._uORB_PID_SpeedYCorrection = 0;
 
 		if ((AF._flag_IsFlowAvalible && AF._flag_IsSonarAvalible) ||
-			!AF._flag_GPS_Disconnected)
+			!AF._flag_GPS_Error)
 		{
-			if (!AF._flag_GPS_Disconnected)
+			if (!AF._flag_GPS_Error)
 			{
 				PF._uORB_PID_MoveXCorrection += (PF._uORB_PID_GPS_PosInput_X - SF._uORB_True_Movement_X) *
 												PF._flag_GPS_Dynamic_Beta *
@@ -2579,33 +2619,33 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			// else if (10.f < abs(SF._uORB_True_Speed_X) && abs(SF._uORB_True_Speed_X) < 20.f)
 			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * ((abs(SF._uORB_True_Speed_X) - 10.f) / 20.f) + 5.f;
 			// else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain;
+			PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain;
 
 			// if (abs(SF._uORB_True_Speed_Y) <= 10.f)
 			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = 5.f;
 			// else if (10.f < abs(SF._uORB_True_Speed_Y) && abs(SF._uORB_True_Speed_Y) < 20.f)
 			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * ((abs(SF._uORB_True_Speed_Y) - 10.f) / 20.f) + 5.f;
 			// else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
+			PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
 
-			if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 45.f)
-			{
-				PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
-				PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * PF._flag_Braking_Speed_Gain;
-			}
-			else
-			{
-				PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max;
-			}
-			if (AF._flag_IsBrakingYSet && abs(SF._uORB_True_Speed_Y) > 45.f)
-			{
-				PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
-				PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * PF._flag_Braking_Speed_Gain;
-			}
-			else
-			{
-				PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max;
-			}
+			// if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 45.f)
+			// {
+			// 	PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
+			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * PF._flag_Braking_Speed_Gain;
+			// }
+			// else
+			// {
+			PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max;
+			// }
+			// if (AF._flag_IsBrakingYSet && abs(SF._uORB_True_Speed_Y) > 45.f)
+			// {
+			// 	PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
+			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * PF._flag_Braking_Speed_Gain;
+			// }
+			// else
+			// {
+			PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max;
+			//
 		}
 		//
 		double TargetSpeedX = (SF._uORB_True_Movement_X - PF._uORB_PID_PosXUserTarget) * PF._flag_PID_P_PosX_Gain -
@@ -2646,6 +2686,10 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 
 			PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
 			PF._uORB_PID_PosY_Output = PF._uORB_PID_PosY_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosY_Output;
+
+			PF._uORB_PID_PosX_Output = PF._uORB_PID_PosX_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosX_Output;
+			PF._uORB_PID_PosX_Output = PF._uORB_PID_PosX_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosX_Output;
+
 			PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
 			PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
 		}
@@ -2909,10 +2953,13 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 		std::cout << " " << RF._uORB_RC_Channel_PWM[i] << " ";
 	}
 	std::cout << "                            \n";
-	std::cout << " voltage:" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.voltage << " V             \n";
-	std::cout << " current:" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.current << " mA            \n";
-	std::cout << " power  :" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.power << " mW            \n";
-	std::cout << " svoltag:" << std::setw(5) << std::setfill(' ') << SF._uORB_ADC_Data.shunt_voltage << " V            \n";
+
+	std::cout << "ADCINFO:     "
+			  << " \n";
+	std::cout << " voltage:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.voltage << " V";
+	std::cout << " ||current:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.current << " mA";
+	std::cout << " ||power  :" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.power << " mW";
+	std::cout << " ||svoltag:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.shunt_voltage << " V            \n";
 	std::cout << " \n";
 
 	std::bitset<16> x(AF._flag_PreARM_Check_Level);
@@ -2934,7 +2981,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_FakeRC_Disconnect: " << std::setw(3) << std::setfill(' ') << AF.FakeRC_Lose_Clocking << " |";
 	std::cout << " Flag_MAG_Cali_Failed:   " << std::setw(3) << std::setfill(' ') << AF._flag_MAG_Cali_Failed << " |";
 	std::cout << " Flag_MPUCalibrating:    " << std::setw(3) << std::setfill(' ') << AF._flag_MPUCalibratingSet << " |";
-	std::cout << " Flag_IsNotTakeOff:      " << std::setw(3) << std::setfill(' ') << AF._flag_IsNotTakeOff << "           \n";
+	std::cout << " Flag_IsNAVAvaliable:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsNAVAvalible << "           \n";
 	std::cout << " Flag_IsFlowAvalible:    " << std::setw(3) << std::setfill(' ') << AF._flag_IsFlowAvalible << " |";
 	std::cout << " Flag_IsSonarAvalible:   " << std::setw(3) << std::setfill(' ') << AF._flag_IsSonarAvalible << " |";
 	std::cout << " GPS_Lose_Clocking:      " << std::setw(3) << std::setfill(' ') << AF.GPS_Lose_Clocking << " |";
