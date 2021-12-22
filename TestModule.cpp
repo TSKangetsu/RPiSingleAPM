@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
 			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_Y_Scaler", (int)data[CompassYScaler]);
 			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_Z_Offset", (int)data[CompassZOffset]);
 			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_Z_Scaler", (int)data[CompassZScaler]);
-			// configWrite(CONFIGDIR, optarg, "_flag_COMPASS_V_Offset", data[CompassVOffset]);
-			// configWrite(CONFIGDIR, optarg, "_flag_COMPASS_V_Scaler", data[CompassVScaler]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_V_Offset", (int)data[CompassVOffset]);
+			configWrite(CONFIGDIR, optarg, "_flag_COMPASS_V_Scaler", (int)data[CompassVScaler]);
 		}
 		break;
 		case 'a':

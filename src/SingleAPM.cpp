@@ -93,7 +93,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout.flush();
 #endif
 			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
-			int _Tmp_MAG_Flip[3] = {(int)SF._flag_COMPASS_Flip__Roll, (int)SF._flag_COMPASS_Flip_Pitch, (int)SF._flag_COMPASS_Flip___Yaw};
+			int _Tmp_MAG_Flip[3] = {(int)SF._flag_COMPASS_Flip_Pitch, (int)SF._flag_COMPASS_Flip__Roll, (int)SF._flag_COMPASS_Flip___Yaw};
 			DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_QMC5883L, _Tmp_MAG_Flip));
 			DF.CompassDevice->CompassApply(SF._flag_COMPASS_Cali[CompassXOffset], SF._flag_COMPASS_Cali[CompassXScaler],
 										   SF._flag_COMPASS_Cali[CompassYOffset], SF._flag_COMPASS_Cali[CompassYScaler],
@@ -1584,9 +1584,11 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 		datas[0] = -5000;
 		datas[2] = -5000;
 		datas[4] = -5000;
+		datas[6] = -5000;
 		datas[1] = 5000;
 		datas[3] = 5000;
 		datas[5] = 5000;
+		datas[7] = 5000;
 		int rawx = 0;
 		int rawy = 0;
 		int rawz = 0;
@@ -1598,12 +1600,33 @@ int SingleAPMAPI::RPiSingleAPM::APMCalibrator(int controller, int action, int in
 			usleep(50 * 1000);
 			if (SingleAPMAPI::SystemSignal == SIGINT)
 			{
+				DF.CompassDevice->CompassApply(datas[0], datas[1], datas[2], datas[3], datas[4], datas[5]);
+				DF.CompassDevice->CompassGetRaw(rawx, rawy, rawz);
+				SF._uORB_MAG_Vector = sqrtf((rawx * rawx) +
+											(rawy * rawy) +
+											(rawz * rawz));
+				datas[6] = SF._uORB_MAG_Vector;
+				datas[7] = SF._uORB_MAG_Vector;
+
+				for (size_t i = 0; i < 200; i++)
+				{
+					DF.CompassDevice->CompassGetRaw(rawx, rawy, rawz);
+					SF._uORB_MAG_Vector = sqrtf((rawx * rawx) +
+												(rawy * rawy) +
+												(rawz * rawz));
+					datas[6] = SF._uORB_MAG_Vector > datas[6] ? SF._uORB_MAG_Vector : datas[6];
+					datas[7] = SF._uORB_MAG_Vector < datas[7] ? SF._uORB_MAG_Vector : datas[7];
+					usleep(20000);
+				}
+
 				data[0] = (int)datas[0];
 				data[1] = (int)datas[1];
 				data[2] = (int)datas[2];
 				data[3] = (int)datas[3];
 				data[4] = (int)datas[4];
 				data[5] = (int)datas[5];
+				data[6] = (int)(datas[6] + datas[6] * 0.2);
+				data[7] = (int)(datas[7] - datas[7] * 0.2);
 				break;
 			}
 		}
