@@ -94,7 +94,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #endif
 			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
 			int _Tmp_MAG_Flip[3] = {(int)SF._flag_COMPASS_Flip_Pitch, (int)SF._flag_COMPASS_Flip__Roll, (int)SF._flag_COMPASS_Flip___Yaw};
-			DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_QMC5883L, _Tmp_MAG_Flip));
+			DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_HMC5883L, _Tmp_MAG_Flip));
 			DF.CompassDevice->CompassApply(SF._flag_COMPASS_Cali[CompassXOffset], SF._flag_COMPASS_Cali[CompassXScaler],
 										   SF._flag_COMPASS_Cali[CompassYOffset], SF._flag_COMPASS_Cali[CompassYScaler],
 										   SF._flag_COMPASS_Cali[CompassZOffset], SF._flag_COMPASS_Cali[CompassZScaler]);
