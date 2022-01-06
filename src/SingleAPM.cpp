@@ -88,31 +88,52 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 		if (DF._IsGPSEnable)
 		{
+			try
+			{
 #ifdef RPiDEBUGStart
-			std::cout << "[RPiSingleAPM]Waiting for GPS Data ... ";
-			std::cout.flush();
+				std::cout << "[RPiSingleAPM]Waiting for GPS Data ... ";
+				std::cout.flush();
 #endif
-			DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
-			int _Tmp_MAG_Flip[3] = {(int)SF._flag_COMPASS_Flip_Pitch, (int)SF._flag_COMPASS_Flip__Roll, (int)SF._flag_COMPASS_Flip___Yaw};
-			DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_HMC5883L, _Tmp_MAG_Flip));
-			DF.CompassDevice->CompassApply(SF._flag_COMPASS_Cali[CompassXOffset], SF._flag_COMPASS_Cali[CompassXScaler],
-										   SF._flag_COMPASS_Cali[CompassYOffset], SF._flag_COMPASS_Cali[CompassYScaler],
-										   SF._flag_COMPASS_Cali[CompassZOffset], SF._flag_COMPASS_Cali[CompassZScaler]);
+				DF.GPSInit.reset(new GPSUart(DF.GPSDevice.c_str()));
+				int _Tmp_MAG_Flip[3] = {(int)SF._flag_COMPASS_Flip_Pitch, (int)SF._flag_COMPASS_Flip__Roll, (int)SF._flag_COMPASS_Flip___Yaw};
+				DF.CompassDevice.reset(new GPSI2CCompass(DF.I2CDevice.c_str(), I2CCOMPASS_ADDR, COMPASS_HMC5883L, _Tmp_MAG_Flip));
+				DF.CompassDevice->CompassApply(SF._flag_COMPASS_Cali[CompassXOffset], SF._flag_COMPASS_Cali[CompassXScaler],
+											   SF._flag_COMPASS_Cali[CompassYOffset], SF._flag_COMPASS_Cali[CompassYScaler],
+											   SF._flag_COMPASS_Cali[CompassZOffset], SF._flag_COMPASS_Cali[CompassZScaler]);
 #ifdef RPiDEBUGStart
-			std::cout << "Done \n";
+				std::cout << "Done \n";
 #endif
+			}
+			catch (int &e)
+			{
+#ifdef RPiDEBUGStart
+				std::cout << "ERROR \n";
+#endif
+				DF._IsGPSEnable = false;
+				AF._flag_GPS_Error = true;
+			}
 		}
 		//--------------------------------------------------------------------//
 		if (DF._IsFlowEnable)
 		{
+			try
+			{
 #ifdef RPiDEBUGStart
-			std::cout << "[RPiSingleAPM]Setting UP FlowSensor... ";
-			std::cout.flush();
+				std::cout << "[RPiSingleAPM]Setting UP FlowSensor... ";
+				std::cout.flush();
 #endif
-			DF.FlowInit.reset(new MSPUartFlow(DF.FlowDevice.c_str()));
+				DF.FlowInit.reset(new MSPUartFlow(DF.FlowDevice.c_str()));
 #ifdef RPiDEBUGStart
-			std::cout << "Done \n";
+				std::cout << "Done \n";
 #endif
+			}
+			catch (int &e)
+			{
+#ifdef RPiDEBUGStart
+				std::cout << "ERROR \n";
+#endif
+				DF._IsFlowEnable = false;
+			}
 		}
 	}
 	//--------------------------------------------------------------------//
@@ -162,27 +183,36 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Init Extenal Monitor: \n";
-		std::cout << "[RPiSingleAPM]ADC ....";
+		std::cout << "[RPiSingleAPM] ADC ....";
 		std::cout.flush();
 #endif
-		DF.ADCDevice.reset(new PowerADC(DF.I2CDevice.c_str(), I2CINA_ADDR,
-										{
-											.MAXCurrent = INA226_MaxCurrent,
-											.ROfShunt = INA226_ShuntOfR,
-											.ADCBus = INA226_TIME_8MS,
-											.Shunttime = INA226_TIME_8MS,
-											.Averages = INA226_AVERAGES_1,
-											.Mode = INA226_MODE_SHUNT_BUS_CONTINUOUS,
-										}));
+		try
+		{
+			DF.ADCDevice.reset(new PowerADC(DF.I2CDevice.c_str(), I2CINA_ADDR,
+											{
+												.MAXCurrent = INA226_MaxCurrent,
+												.ROfShunt = INA226_ShuntOfR,
+												.ADCBus = INA226_TIME_8MS,
+												.Shunttime = INA226_TIME_8MS,
+												.Averages = INA226_AVERAGES_1,
+												.Mode = INA226_MODE_SHUNT_BUS_CONTINUOUS,
+											}));
+#ifdef RPiDEBUGStart
+			std::cout << "Check! \n";
+#endif
+		}
+		catch (int &e)
+		{
+#ifdef RPiDEBUGStart
+			std::cout << "[RPiSingleAPM] ADC No Detected.\n";
+#endif
+		}
 		//
 		for (size_t i = 0; i < 20; i++)
 		{
 			SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
 			usleep(15 * 1000);
 		}
-#ifdef RPiDEBUGStart
-		std::cout << "Check! \n";
-#endif
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -985,13 +1015,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						//===============================================================================================//
 						SF._uORB_GPS_Data = DF.GPSInit->GPSParse();
 						//===============================================================================================//
-						if (SF._uORB_GPS_Data.satillitesCount < 4 || SF._uORB_GPS_Data.DataUnCorrect ||
-							SF._uORB_GPS_Data.lat != 0 || SF._uORB_GPS_Data.lng != 0)
-						{
-							AF._flag_GPS_Disconnected = true;
-						}
-						else if (SF._uORB_GPS_Data.satillitesCount > 4 || !SF._uORB_GPS_Data.DataUnCorrect ||
-								 SF._uORB_GPS_Data.lat != 0 || SF._uORB_GPS_Data.lng != 0)
+						if (SF._uORB_GPS_Data.satillitesCount > 4 && !SF._uORB_GPS_Data.DataUnCorrect &&
+							SF._uORB_GPS_Data.lat != 0 && SF._uORB_GPS_Data.lng != 0)
 						{
 							AF._flag_GPS_Disconnected = false;
 						}
@@ -1400,9 +1425,9 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1]),
 							(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
 							(RF._uORB_RC_Channel_PWM[2]),
-							(int)SF._uORB_MPU_Data._uORB_Real__Roll,
-							(int)SF._uORB_MPU_Data._uORB_Real_Pitch,
-							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+							(int)(SF._uORB_MPU_Data._uORB_Real__Roll * 100.f),
+							(int)(SF._uORB_MPU_Data._uORB_Real_Pitch * 100.f),
+							(int)(SF._uORB_MPU_Data._uORB_Real___Yaw * 100.f),
 							(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
 							(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
 							(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
