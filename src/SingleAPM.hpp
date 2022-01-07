@@ -418,6 +418,7 @@ namespace SingleAPMAPI
 			pt1Filter_t BAROLPF;
 			pt1Filter_t ThrottleLPF;
 			pt1Filter_t POSOutLPF[2];
+			pt1Filter_t GPSSpeedLPF[2];
 			pt1Filter_t AngleRateLPF[3];
 			pt1Filter_t ItermFilterPitch;
 			pt1Filter_t ItermFilterRoll;
@@ -476,6 +477,8 @@ namespace SingleAPMAPI
 			int _uORB_GPS_Real_Y = 0;
 			int _uORB_GPS_Speed_X = 0;
 			int _uORB_GPS_Speed_Y = 0;
+			float _uORB_GPS_Speed_XF = 0;
+			float _uORB_GPS_Speed_YF = 0;
 			int _uORB_GPS_COR_NES = 0;
 			//=========================MAG=========//
 			double _uORB_MAG_Yaw = 0;
