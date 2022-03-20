@@ -213,6 +213,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
 			usleep(15 * 1000);
 		}
+		SF._uORB_BAT_Scount = (int)(SF._uORB_ADC_Data.voltage / 3.7f);
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -526,7 +527,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 void SingleAPMAPI::RPiSingleAPM::IMUSensorsTaskReg()
 {
 	TF.IMUTask = std::thread(
-		[&] {
+		[&]
+		{
 			TF._flag_IMU_Task_Running = true;
 			while (TF._flag_IMU_Task_Running)
 			{
@@ -611,7 +613,8 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 	if (DF._IsBAROEnable)
 	{
 		TF.ALTTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_ALT_Task_Running = true;
 				while (TF._flag_ALT_Task_Running)
 				{
@@ -654,14 +657,15 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 {
 	TF.RXTask = std::thread(
-		[&] {
+		[&]
+		{
 			TF._flag_RXT_Task_Running = true;
 			while (TF._flag_RXT_Task_Running)
 			{
 				TF._Tmp_RXTThreadTimeStart = GetTimestamp();
 				TF._Tmp_RXTThreadTimeNext = TF._Tmp_RXTThreadTimeStart - TF._Tmp_RXTThreadTimeEnd;
 
-				//RC Read Parse
+				// RC Read Parse
 				{
 					if (RF.RC_Type == RCIsSbus)
 					{
@@ -702,7 +706,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						}
 					}
 				}
-				//RC Out Caculation
+				// RC Out Caculation
 				{
 					if (!AF._flag_RC_Disconnected)
 					{
@@ -771,7 +775,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						RF._Tmp_RC_Out_Throttle = RF._uORB_FakeRC_Channel_PWM[2];
 					}
 				}
-				//RC Safty Checking
+				// RC Safty Checking
 				{
 					if ((RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[0] && RF._uORB_RC_Channel_PWM[0] > RF._flag_RC_Max_PWM_Value) ||
 						(RF._flag_RC_Min_PWM_Value < RF._uORB_RC_Channel_PWM[1] && RF._uORB_RC_Channel_PWM[1] > RF._flag_RC_Max_PWM_Value) ||
@@ -811,14 +815,14 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					}
 					//================================================//
 				}
-				//RC data out
+				// RC data out
 				{
 					RF._uORB_RC_Out__Roll = RF._Tmp_RC_Out__Roll;
 					RF._uORB_RC_Out_Pitch = RF._Tmp_RC_Out_Pitch;
 					RF._uORB_RC_Out___Yaw = RF._Tmp_RC_Out___Yaw;
 					RF._uORB_RC_Out_Throttle = RF._Tmp_RC_Out_Throttle;
 				}
-				//RC UNLOCK Checking
+				// RC UNLOCK Checking
 				{
 					if (AF.AutoPilotMode == APModeINFO::AutoStable || AF.AutoPilotMode == APModeINFO::RateHold)
 					{
@@ -874,7 +878,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						}
 					}
 				}
-				//flyMode Switch
+				// flyMode Switch
 				{
 					if (RF._flag_RC_AP_AutoStable_PWM_Value + 50 > RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_AutoStable_PWM_Channel] &&
 						RF._flag_RC_AP_AutoStable_PWM_Value - 50 < RF._uORB_RC_Channel_PWM[RF._flag_RC_AP_AutoStable_PWM_Channel])
@@ -921,7 +925,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						AF.AutoPilotMode = APModeINFO::AutoStable;
 					}
 				}
-				//stick to speed controller
+				// stick to speed controller
 				{
 					if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
 						AF.AutoPilotMode == APModeINFO::SpeedHold)
@@ -1006,7 +1010,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsGPSEnable)
 	{
 		TF.GPSTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_GPS_Task_Running = true;
 				DF.GPSInit->GPSReOpen();
 				while (TF._flag_GPS_Task_Running)
@@ -1116,7 +1121,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 		int rc = pthread_setaffinity_np(TF.GPSTask.native_handle(), sizeof(cpu_set_t), &cpuset);
 
 		TF.MAGTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_MAG_Task_Running = true;
 				while (TF._flag_MAG_Task_Running)
 				{
@@ -1168,7 +1174,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 	if (DF._IsFlowEnable)
 	{
 		TF.FlowTask = std::thread(
-			[&] {
+			[&]
+			{
 				TF._flag_Flow_Task_Running = true;
 				while (TF._flag_Flow_Task_Running)
 				{
@@ -1277,7 +1284,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ExtendMonitorTaskReg()
 {
 	TF.ExtendTask = std::thread(
-		[&] {
+		[&]
+		{
 			TF._flag_Ext_Task_Running = true;
 			while (TF._flag_Ext_Task_Running)
 			{
@@ -1287,6 +1295,8 @@ void SingleAPMAPI::RPiSingleAPM::ExtendMonitorTaskReg()
 				DF.I2CLock.lock();
 				SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
 				DF.I2CLock.unlock();
+				//
+				SF._uORB_BAT_SingleVol = SF._uORB_ADC_Data.voltage / (float)SF._uORB_BAT_Scount;
 				//
 				TF._Tmp_ExtThreadTimeEnd = GetTimestamp();
 				TF._Tmp_ExtThreadTimeLoop = TF._Tmp_ExtThreadTimeEnd - TF._Tmp_ExtThreadTimeStart;
@@ -1312,7 +1322,8 @@ void SingleAPMAPI::RPiSingleAPM::ExtendMonitorTaskReg()
 void SingleAPMAPI::RPiSingleAPM::ESCUpdateTaskReg()
 {
 	TF.ESCTask = std::thread(
-		[&] {
+		[&]
+		{
 			TF._flag_ESC_Task_Running = true;
 			while (TF._flag_ESC_Task_Running)
 			{
@@ -1397,7 +1408,8 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 	if (DF._IsBlackBoxEnable)
 	{
 		TF._Tmp_BBQThreadTimeup = GetTimestamp();
-		TF.BlackBoxQTask = std::thread([&] {
+		TF.BlackBoxQTask = std::thread([&]
+									   {
 			bool IsFirstStart = true;
 			bool DISARMLOGLock = true;
 			bool ARMLOGLock = true;
@@ -1556,10 +1568,10 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 					usleep(TF._flag_BBQThreadTimeMax - TF._Tmp_BBQThreadTimeLoop - TF._Tmp_BBQThreadTimeNext);
 				}
 				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
-			}
-		});
+			} });
 
-		TF.BlackBoxWTask = std::thread([&] {
+		TF.BlackBoxWTask = std::thread([&]
+									   {
 			TF._flag_BBW_Task_Running = true;
 			while (TF._flag_BBW_Task_Running)
 			{
@@ -1572,8 +1584,7 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 				{
 					usleep(TF._flag_BBQThreadTimeMax * 2);
 				}
-			}
-		});
+			} });
 	}
 }
 
@@ -1667,18 +1678,18 @@ void SingleAPMAPI::RPiSingleAPM::PID_Caculate(float inputData, float &outputData
 											  float &last_I_Data, float &last_D_Data,
 											  float P_Gain, float I_Gain, float D_Gain, float I_Max)
 {
-	//P caculate
+	// P caculate
 	outputData = P_Gain * inputData;
-	//D caculate
+	// D caculate
 	outputData += D_Gain * (inputData - last_D_Data);
 	last_D_Data = inputData;
-	//I caculate
+	// I caculate
 	last_I_Data += inputData * I_Gain;
 	if (last_I_Data > I_Max)
 		last_I_Data = I_Max;
 	if (last_I_Data < I_Max * -1)
 		last_I_Data = I_Max * -1;
-	//P_I_D Mix OUTPUT
+	// P_I_D Mix OUTPUT
 	outputData += last_I_Data;
 }
 
@@ -1686,18 +1697,18 @@ void SingleAPMAPI::RPiSingleAPM::PID_CaculateExtend(float inputDataP, float inpu
 													float &last_I_Data, float &last_D_Data,
 													float P_Gain, float I_Gain, float D_Gain, float I_Max)
 {
-	//P caculate
+	// P caculate
 	outputData = P_Gain * inputDataP;
-	//D caculate
+	// D caculate
 	outputData += D_Gain * (inputDataD - last_D_Data);
 	last_D_Data = inputDataD;
-	//I caculate
+	// I caculate
 	last_I_Data += inputDataI * I_Gain;
 	if (last_I_Data > I_Max)
 		last_I_Data = I_Max;
 	if (last_I_Data < I_Max * -1)
 		last_I_Data = I_Max * -1;
-	//P_I_D Mix OUTPUT
+	// P_I_D Mix OUTPUT
 	outputData += last_I_Data;
 }
 
@@ -1705,17 +1716,17 @@ void SingleAPMAPI::RPiSingleAPM::PID_CaculateHyper(float inputDataP, float input
 												   float &last_I_Data, float &last_D_Data,
 												   float P_Gain, float I_Gain, float D_Gain, float I_Max)
 {
-	//P caculate
+	// P caculate
 	outputData = P_Gain * inputDataP;
-	//D caculate
+	// D caculate
 	outputData += D_Gain * inputDataD;
-	//I caculate
+	// I caculate
 	last_I_Data += inputDataI * I_Gain;
 	if (last_I_Data > I_Max)
 		last_I_Data = I_Max;
 	if (last_I_Data < I_Max * -1)
 		last_I_Data = I_Max * -1;
-	//P_I_D Mix OUTPUT
+	// P_I_D Mix OUTPUT
 	outputData += last_I_Data;
 }
 
@@ -1908,7 +1919,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 	// FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
 	// if (TF._Tmp_IMUAttThreadDT <= 0)
 	// 	TF._Tmp_IMUAttThreadDT = TF._flag_IMUThreadTimeMax;
-	//PID Checking
+	// PID Checking
 	{
 		if (AF._flag_ESC_ARMED == true)
 		{
@@ -1920,7 +1931,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_PID_I_Last_Value_Pitch = 0;
 			PF._uORB_PID_I_Last_Value___Yaw = 0;
 		}
-		//NotTakeoff Detect
+		// NotTakeoff Detect
 		if (AF._flag_IsNotTakeOff_Lock && RF._uORB_RC_Out_Throttle < (RF._flag_RC_Min_PWM_Value + 100.f))
 		{
 			AF._flag_IsNotTakeOff = true;
@@ -1945,9 +1956,9 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 		AF.AutoPilotMode == APModeINFO::UserAuto ||
 		AF.AutoPilotMode == APModeINFO::RateHold)
 	{
-		//Leveling PID MIX
+		// Leveling PID MIX
 		{
-			//IMU SaftyChecking---------------------------------------------------------//
+			// IMU SaftyChecking---------------------------------------------------------//
 			if (SF._uORB_MPU_Data._uORB_Real_Pitch > 70.0 || SF._uORB_MPU_Data._uORB_Real_Pitch < -70.0 ||
 				SF._uORB_MPU_Data._uORB_Real__Roll > 70.0 || SF._uORB_MPU_Data._uORB_Real__Roll < -70.0)
 			{
@@ -2048,7 +2059,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_PID__Roll_Input += SF._uORB_MPU_Data._uORB_Gryo__Roll;
 			PF._uORB_PID_Pitch_Input += SF._uORB_MPU_Data._uORB_Gryo_Pitch;
 			//--------------------------------------------------------------------------//
-			//TPA caculate
+			// TPA caculate
 			if (EF._uORB_Total_Throttle > PF._flag_PID_TPA_BreakPoint)
 			{
 				PF._uORB_PID_TPA_Beta = 1.f - ((1.f - PF._flag_PID_TPA_Trust) *
@@ -2058,7 +2069,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			else
 				PF._uORB_PID_TPA_Beta = 1.f;
 			//--------------------------------------------------------------------------//
-			//Roll PID Mix
+			// Roll PID Mix
 			float ROLLDInput = SF._uORB_MPU_Data._uORB_Gryo__Roll - PF._uORB_PID_D_Last_Value__Roll;
 			PF._uORB_PID_D_Last_Value__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll;
 			float ROLLITERM = PF._uORB_PID__Roll_Input;
@@ -2082,7 +2093,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			if (PF._uORB_Leveling__Roll < PF._flag_PID_Level_Max * -1)
 				PF._uORB_Leveling__Roll = PF._flag_PID_Level_Max * -1;
 
-			//Pitch PID Mix
+			// Pitch PID Mix
 			float PITCHDInput = SF._uORB_MPU_Data._uORB_Gryo_Pitch - PF._uORB_PID_D_Last_Value_Pitch;
 			PF._uORB_PID_D_Last_Value_Pitch = SF._uORB_MPU_Data._uORB_Gryo_Pitch;
 			float PITCHITERM = PF._uORB_PID_Pitch_Input;
@@ -2106,7 +2117,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			if (PF._uORB_Leveling_Pitch < PF._flag_PID_Level_Max * -1)
 				PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
 
-			//Yaw PID Mix
+			// Yaw PID Mix
 			PID_CaculateExtend((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain),
 							   ((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
 							   ((((PF._uORB_PID_GYaw_Output) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
@@ -2120,7 +2131,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_Leveling___Yaw *= EF._flag_YAWOut_Reverse;
 		}
 	};
-	//reset output before caculate
+	// reset output before caculate
 	{
 		EF._Tmp_B1_Speed = 0;
 		EF._Tmp_A1_Speed = 0;
@@ -2128,7 +2139,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 		EF._Tmp_B2_Speed = 0;
 		EF._uORB_ESC_RPY_Max = 0;
 		EF._uORB_ESC_RPY_Min = 0;
-		//ESC Caculate
+		// ESC Caculate
 		if (AF.AutoPilotMode == APModeINFO::AltHold ||
 			AF.AutoPilotMode == APModeINFO::PositionHold ||
 			AF.AutoPilotMode == APModeINFO::SpeedHold ||
@@ -2259,7 +2270,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 	// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 	SF._uORB_Gryo_Body_Asix_X -= ((float)SF._uORB_MPU_Data._uORB_Gryo_Pitch) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
 	SF._uORB_Gryo_Body_Asix_Y += ((float)SF._uORB_MPU_Data._uORB_Gryo__Roll) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
-	//POS Controller Reseter
+	// POS Controller Reseter
 	{
 		if (!(AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
 			  AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto) ||
@@ -2288,7 +2299,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_D_Last_Value_SpeedY = 0;
 		}
 	}
-	//Flag Controller
+	// Flag Controller
 	{
 		if (AF._flag_ESC_ARMED)
 		{
@@ -2323,13 +2334,13 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_Baro_Dynamic_Beta = PF._flag_Baro_Config_Beta;
 		}
 	}
-	//AutoTakeOff Function
+	// AutoTakeOff Function
 	{
 		if (!AF._flag_IsAutoTakeoffRequire)
 		{
 			PF._uORB_PID_Alt_Accel_Max = PF._flag_PID_Alt_Accel_Max;
 			PF._uORB_PID_Alt_Speed_Max = PF._flag_PID_Alt_Speed_Max;
-			//Vertical SpeedControll
+			// Vertical SpeedControll
 			if (RF._uORB_RC_Out_AltHoldSpeed != 0 || PF._uORB_PID_PosZUserSpeed != 0)
 			{
 				PF._uORB_PID_AltHold_Target = SF._uORB_True_Movement_Z;
@@ -2353,7 +2364,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		if (AF.AutoPilotMode != APModeINFO::UserAuto)
 			PF._uORB_PID_PosZUserSpeed = 0;
 	}
-	//AltHold Caculate
+	// AltHold Caculate
 	{
 		PF._uORB_PID_MoveZCorrection = 0;
 		PF._uORB_PID_SpeedZCorrection = 0;
@@ -2369,7 +2380,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			AF._flag_SonarData_Async = false;
 		}
 		//===============================================//
-		//Air cushion effect
+		// Air cushion effect
 		bool isAirCushionEffectDetected = (PF._uORB_PID_Sonar_GroundValid && (PF._uORB_PID_BARO_AltInput < -1.f * PF._uORB_PID_Sonar_GroundOffset));
 		PF._uORB_PID_BARO_AltInput = (isAirCushionEffectDetected ? 0 : PF._uORB_PID_BARO_AltInput);
 		//===============================================//
@@ -2436,7 +2447,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle < -1 * PF._flag_PID_Alt_Level_Max ? -1 * PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
 		}
 	}
-	//PositionHold Caculate
+	// PositionHold Caculate
 	{
 		// Speed Brake Flag Manager
 		{
@@ -2579,7 +2590,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			}
 			AF._flag_GPSData_Async = false;
 		}
-		//Fast Update GPS
+		// Fast Update GPS
 		SF._uORB_GPS_Speed_XF = pt1FilterApply4(&DF.GPSSpeedLPF[0], SF._uORB_GPS_Speed_X, 1.f, (TF._Tmp_IMUNavThreadDT / 1000000.f / 8.f));
 		SF._uORB_GPS_Speed_YF = pt1FilterApply4(&DF.GPSSpeedLPF[1], SF._uORB_GPS_Speed_Y, 1.f, (TF._Tmp_IMUNavThreadDT / 1000000.f / 8.f));
 		//
@@ -2665,7 +2676,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		SF._uORB_True_Movement_Y += PF._uORB_PID_MoveYCorrection;
 		SF._uORB_True_Speed_Y += PF._uORB_PID_SpeedYCorrection;
 
-		//Pos and Braking Dynamic caculate
+		// Pos and Braking Dynamic caculate
 		{
 			// if (abs(SF._uORB_True_Speed_X) < 10.f)
 			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = 5.f;
@@ -2756,12 +2767,12 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 	// SIG System Signal detect
 	if (SystemSignal == SIGTERM || SystemSignal == SIGINT)
 		RPiSingleAPMDeInit();
-	//Error ARMED
+	// Error ARMED
 	if (AF._flag_Error == true)
 	{
 		AF._flag_ESC_ARMED = true;
 	}
-	//PreARM Checking
+	// PreARM Checking
 	{
 		if (!AF._flag_PreARM_Check_Lock)
 		{
@@ -3012,6 +3023,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << "ADCINFO:     "
 			  << " \n";
 	std::cout << " voltage:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.voltage << " V";
+	std::cout << " ||sin_vol:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_BAT_SingleVol << " V";
 	std::cout << " ||current:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.current << " mA";
 	std::cout << " ||power  :" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.power << " mW";
 	std::cout << " ||svoltag:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.shunt_voltage << " V            \n";

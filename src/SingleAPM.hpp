@@ -255,15 +255,15 @@ namespace SingleAPMAPI
 
 	enum APModeINFO
 	{
-		//AutoPilot Bank0
+		// AutoPilot Bank0
 		RateHold,
-		//AutoPilot Bank1
+		// AutoPilot Bank1
 		AutoStable,
 		AltHold,
-		//AutoPilot Bank2
+		// AutoPilot Bank2
 		PositionHold,
 		SpeedHold,
-		//AutoPilot Bank3
+		// AutoPilot Bank3
 		UserAuto
 	};
 
@@ -383,10 +383,10 @@ namespace SingleAPMAPI
 
 		struct DeviceINFO
 		{
-			//if APM Init before started , it will be -1
-			//if APM Device InitComplete , it will be 1
-			//if APM Thread all complete , it will be 2
-			//if APM is stop and DeInit  , it will be -2
+			// if APM Init before started , it will be -1
+			// if APM Device InitComplete , it will be 1
+			// if APM Thread all complete , it will be 2
+			// if APM is stop and DeInit  , it will be -2
 			int APMStatus = -1;
 			const int MPU9250_ADDR = 0x68;
 			std::string RCDevice;
@@ -516,6 +516,8 @@ namespace SingleAPMAPI
 			double _uORB_Flow_ClimbeRate = 0;
 			//========================Extend=======//
 			ADCData _uORB_ADC_Data;
+			int _uORB_BAT_Scount = 0;
+			float _uORB_BAT_SingleVol = 0;
 		} SF;
 
 		struct PIDINFO
@@ -577,7 +579,7 @@ namespace SingleAPMAPI
 			float _flag_PID_TPA_Trust = 1.f;
 			float _flag_PID_TPA_BreakPoint = 2000;
 			//===============AltHoldPID=========//
-			//Target Atitude
+			// Target Atitude
 			float _uORB_PID_Sonar_AltInput = 0;
 			int _uORB_PID_Sonar_GroundTimeOut = 0;
 			bool _uORB_PID_Sonar_GroundValid = false;
@@ -589,14 +591,14 @@ namespace SingleAPMAPI
 			float _uORB_PID_AltInput_Last_Final = 0;
 			float _uORB_PID_AltHold_Target = 0;
 			float _uORB_PID_PosZUserSpeed = 0;
-			//Target Speed
+			// Target Speed
 			float _uORB_PID_InputTarget = 0;
 			float _uORB_PID_Smooth_InputTarget = 0;
 			float _uORB_PID_SpeedZ_Final = 0;
 			float _uORB_PID_AccelZ_Bias = 0;
-			//Target Output
+			// Target Output
 			float _uORB_PID_Alt_Throttle = 0;
-			//AltHold Gain
+			// AltHold Gain
 			float _uORB_AccelBias_Beta = 0.02f;
 			float _uORB_Baro_Dynamic_Beta = 0.35f;
 			float _uORB_Sonar_Dynamic_Beta = 0.8f;
@@ -852,7 +854,7 @@ namespace SingleAPMAPI
 			int _Tmp_FlowThreadTimeNext = 0;
 			int _Tmp_FlowThreadTimeLoop = 0;
 			int _Tmp_FlowThreadError = 0;
-			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000; //Flow is 9HZ
+			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000; // Flow is 9HZ
 			int _flag_FlowErrorTimes = 0;
 			bool _flag_Flow_Task_Running = false;
 			std::thread FlowTask;
@@ -865,7 +867,7 @@ namespace SingleAPMAPI
 			int _flag_ExtErrorTimes = 0;
 			bool _flag_Ext_Task_Running = false;
 			std::thread ExtendTask;
-			//Blackbox
+			// Blackbox
 			int _Tmp_BBQThreadTimeStart = 0;
 			int _Tmp_BBQThreadTimeEnd = 0;
 			int _Tmp_BBQThreadTimeNext = 0;
