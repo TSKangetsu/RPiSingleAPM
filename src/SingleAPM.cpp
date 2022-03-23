@@ -1408,183 +1408,187 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 	if (DF._IsBlackBoxEnable)
 	{
 		TF._Tmp_BBQThreadTimeup = GetTimestamp();
-		TF.BlackBoxQTask = std::thread([&]
-									   {
-			bool IsFirstStart = true;
-			bool DISARMLOGLock = true;
-			bool ARMLOGLock = true;
-			int BlackOvertime = TF._Tmp_BBQThreadTimeup;
-			TF._flag_BBQ_Task_Running = true;
-			while (TF._flag_BBQ_Task_Running)
+		TF.BlackBoxQTask = std::thread(
+			[&]
 			{
-				TF._Tmp_BBQThreadTimeStart = GetTimestamp();
-				TF._Tmp_BBQThreadTimeNext = TF._Tmp_BBQThreadTimeStart - TF._Tmp_BBQThreadTimeEnd;
-				//
-				if (!AF._flag_ESC_ARMED)
+				bool IsFirstStart = true;
+				bool DISARMLOGLock = true;
+				bool ARMLOGLock = true;
+				int BlackOvertime = TF._Tmp_BBQThreadTimeup;
+				TF._flag_BBQ_Task_Running = true;
+				while (TF._flag_BBQ_Task_Running)
 				{
-					if (IsFirstStart || (!ARMLOGLock && (GetTimestamp() - TF._Tmp_BBQThreadTimeup) - BlackOvertime > 10000000))
+					TF._Tmp_BBQThreadTimeStart = GetTimestamp();
+					TF._Tmp_BBQThreadTimeNext = TF._Tmp_BBQThreadTimeStart - TF._Tmp_BBQThreadTimeEnd;
+					//
+					if (!AF._flag_ESC_ARMED)
 					{
-						std::vector<uint8_t> header(DF.BlackBoxDevice->FullBlackboxHeader.begin(), DF.BlackBoxDevice->FullBlackboxHeader.end());
-						TF.BlackBoxQeueue.push(header);
-					}
-
-					TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxPIPush(
+						if (IsFirstStart || (!ARMLOGLock && (GetTimestamp() - TF._Tmp_BBQThreadTimeup) - BlackOvertime > 10000000))
 						{
-							TF._Tmp_BBQThreadloopIteration,
-							GetTimestamp() - TF._Tmp_BBQThreadTimeup,
-							(int)PF._uORB_Leveling__Roll,
-							(int)PF._uORB_Leveling_Pitch,
-							(int)PF._uORB_Leveling___Yaw,
-							(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[0])), // Convert to Cleanflight output
-							(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1]),
-							(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
-							(RF._uORB_RC_Channel_PWM[2]),
-							(int)(SF._uORB_MPU_Data._uORB_Real__Roll * 100.f),
-							(int)(SF._uORB_MPU_Data._uORB_Real_Pitch * 100.f),
-							(int)(SF._uORB_MPU_Data._uORB_Real___Yaw * 100.f),
-							(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
-							(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
-							(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
-							(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_X / MPU9250_GYRO_LSB),
-							(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_Y / MPU9250_GYRO_LSB),
-							(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_Z / MPU9250_GYRO_LSB),
-							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y * MPU9250_ACCEL_LSB),
-							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_X * MPU9250_ACCEL_LSB),
-							(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Z * MPU9250_ACCEL_LSB),
-							SF._uORB_MAG_RawX,
-							SF._uORB_MAG_RawY,
-							SF._uORB_MAG_RawZ,
-							EF._uORB_B2_Speed,
-							EF._uORB_A2_Speed,
-							EF._uORB_B1_Speed,
-							EF._uORB_A1_Speed,
-							(int)PF._uORB_PID_BARO_AltInput,
-							(int)SF._uORB_MPU_Data._uORB_Acceleration_X,
-							(int)SF._uORB_MPU_Data._uORB_Acceleration_Y,
-							(int)SF._uORB_MPU_Data._uORB_Acceleration_Z,
-							(int)SF._uORB_True_Speed_X,
-							(int)SF._uORB_True_Speed_Y,
-							(int)SF._uORB_True_Speed_Z,
-							(int)SF._uORB_True_Movement_X,
-							(int)SF._uORB_True_Movement_Y,
-							(int)SF._uORB_True_Movement_Z,
-							(int)SF._uORB_MAG_Yaw,
-							(int)SF._uORB_MAG_StaticYaw,
-							(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
-							(int)PF._uORB_PID_PosX_Output,
-							(int)PF._uORB_PID_PosY_Output,
-							(int)PF._uORB_PID_Alt_Throttle,
-							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0],
-							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
-							(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
-							(int)(SF._uORB_ADC_Data.voltage * 112.8),
-							(int)(SF._uORB_ADC_Data.power),
-							(int)TF._Tmp_IMUAttThreadDT,
-						}));
+							std::vector<uint8_t> header(DF.BlackBoxDevice->FullBlackboxHeader.begin(), DF.BlackBoxDevice->FullBlackboxHeader.end());
+							TF.BlackBoxQeueue.push(header);
+						}
 
-					if (AF._flag_GPSData_AsyncB)
-					{
-						if (!SF._uORB_GPS_Data.DataUnCorrect)
-						{
-							TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxGPush({
+						TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxPIPush(
+							{
+								TF._Tmp_BBQThreadloopIteration,
 								GetTimestamp() - TF._Tmp_BBQThreadTimeup,
-								SF._uORB_GPS_Data.GPSQuality,
-								SF._uORB_GPS_Data.satillitesCount,
-								(int)(SF._uORB_GPS_Data.HDOP * 100),
-								(int)(SF._uORB_GPS_COR_Lat * 10),
-								(int)(SF._uORB_GPS_COR_Lng * 10),
-								(int)(SF._uORB_GPS_Speed_X),
-								(int)(SF._uORB_GPS_Speed_Y),
+								(int)PF._uORB_Leveling__Roll,
+								(int)PF._uORB_Leveling_Pitch,
+								(int)PF._uORB_Leveling___Yaw,
+								(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[0])), // Convert to Cleanflight output
+								(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1]),
+								(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
+								(RF._uORB_RC_Channel_PWM[2]),
+								(int)(SF._uORB_MPU_Data._uORB_Real__Roll * 100.f),
+								(int)(SF._uORB_MPU_Data._uORB_Real_Pitch * 100.f),
+								(int)(SF._uORB_MPU_Data._uORB_Real___Yaw * 100.f),
+								(int)SF._uORB_MPU_Data._uORB_Gryo__Roll,
+								(int)SF._uORB_MPU_Data._uORB_Gryo_Pitch,
+								(int)SF._uORB_MPU_Data._uORB_Gryo___Yaw,
+								(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_X / MPU9250_GYRO_LSB),
+								(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_Y / MPU9250_GYRO_LSB),
+								(int)(SF._uORB_MPU_Data._uORB_MPU9250_G_Z / MPU9250_GYRO_LSB),
+								(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Y * MPU9250_ACCEL_LSB),
+								(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_X * MPU9250_ACCEL_LSB),
+								(int)(SF._uORB_MPU_Data._uORB_MPU9250_ADF_Z * MPU9250_ACCEL_LSB),
+								SF._uORB_MAG_RawX,
+								SF._uORB_MAG_RawY,
+								SF._uORB_MAG_RawZ,
+								EF._uORB_B2_Speed,
+								EF._uORB_A2_Speed,
+								EF._uORB_B1_Speed,
+								EF._uORB_A1_Speed,
+								(int)PF._uORB_PID_BARO_AltInput,
+								(int)SF._uORB_MPU_Data._uORB_Acceleration_X,
+								(int)SF._uORB_MPU_Data._uORB_Acceleration_Y,
+								(int)SF._uORB_MPU_Data._uORB_Acceleration_Z,
+								(int)SF._uORB_True_Speed_X,
+								(int)SF._uORB_True_Speed_Y,
+								(int)SF._uORB_True_Speed_Z,
+								(int)SF._uORB_True_Movement_X,
+								(int)SF._uORB_True_Movement_Y,
+								(int)SF._uORB_True_Movement_Z,
+								(int)SF._uORB_MAG_Yaw,
+								(int)SF._uORB_MAG_StaticYaw,
 								(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
-								(int)(SF._uORB_GPS_Data.GPSAlititude),
+								(int)PF._uORB_PID_PosX_Output,
+								(int)PF._uORB_PID_PosY_Output,
+								(int)PF._uORB_PID_Alt_Throttle,
+								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0],
+								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
+								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
+								(int)(SF._uORB_ADC_Data.voltage * 112.8),
+								(int)(SF._uORB_ADC_Data.power),
+								(int)TF._Tmp_IMUAttThreadDT,
 							}));
-							TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxHPush({
-								(int)(SF._uORB_GPS_COR_Lat * 10),
-								(int)(SF._uORB_GPS_COR_Lng * 10),
-							}));
+
+						if (AF._flag_GPSData_AsyncB)
+						{
+							if (!SF._uORB_GPS_Data.DataUnCorrect)
+							{
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxGPush({
+									GetTimestamp() - TF._Tmp_BBQThreadTimeup,
+									SF._uORB_GPS_Data.GPSQuality,
+									SF._uORB_GPS_Data.satillitesCount,
+									(int)(SF._uORB_GPS_Data.HDOP * 100),
+									(int)(SF._uORB_GPS_COR_Lat * 10),
+									(int)(SF._uORB_GPS_COR_Lng * 10),
+									(int)(SF._uORB_GPS_Speed_X),
+									(int)(SF._uORB_GPS_Speed_Y),
+									(int)SF._uORB_MPU_Data._uORB_Real___Yaw,
+									(int)(SF._uORB_GPS_Data.GPSAlititude),
+								}));
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlaclboxHPush({
+									(int)(SF._uORB_GPS_COR_Lat * 10),
+									(int)(SF._uORB_GPS_COR_Lng * 10),
+								}));
+							}
+							AF._flag_GPSData_AsyncB = false;
 						}
-						AF._flag_GPSData_AsyncB = false;
-					}
 
-					TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
+						TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
 
-					if (IsFirstStart)
-					{
-						TF.BlackBoxQeueue.push(
-							DF.BlackBoxDevice->BlackboxEPush(
-								BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
-								(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
-						IsFirstStart = false;
-						ARMLOGLock = true;
-					}
-					else if (!ARMLOGLock)
-					{
-						if ((GetTimestamp() - TF._Tmp_BBQThreadTimeup) - BlackOvertime > 10000000)
+						if (IsFirstStart)
 						{
 							TF.BlackBoxQeueue.push(
 								DF.BlackBoxDevice->BlackboxEPush(
 									BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
 									(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
+							IsFirstStart = false;
+							ARMLOGLock = true;
 						}
-						else
+						else if (!ARMLOGLock)
 						{
-							TF.BlackBoxQeueue.push(
-								DF.BlackBoxDevice->BlackboxEPush(
-									BlackboxEvent::FLIGHT_LOG_EVENT_LOGGING_RESUME,
-									(GetTimestamp() - TF._Tmp_BBQThreadTimeup),
-									TF._Tmp_BBQThreadloopIteration, 0));
-							TF.BlackBoxQeueue.push(
-								DF.BlackBoxDevice->BlackboxEPush(
-									BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
-									(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
+							if ((GetTimestamp() - TF._Tmp_BBQThreadTimeup) - BlackOvertime > 10000000)
+							{
+								TF.BlackBoxQeueue.push(
+									DF.BlackBoxDevice->BlackboxEPush(
+										BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
+										(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
+							}
+							else
+							{
+								TF.BlackBoxQeueue.push(
+									DF.BlackBoxDevice->BlackboxEPush(
+										BlackboxEvent::FLIGHT_LOG_EVENT_LOGGING_RESUME,
+										(GetTimestamp() - TF._Tmp_BBQThreadTimeup),
+										TF._Tmp_BBQThreadloopIteration, 0));
+								TF.BlackBoxQeueue.push(
+									DF.BlackBoxDevice->BlackboxEPush(
+										BlackboxEvent::FLIGHT_LOG_EVENT_SYNC_BEEP,
+										(GetTimestamp() - TF._Tmp_BBQThreadTimeup), 0, 0));
+							}
+							ARMLOGLock = true;
 						}
-						ARMLOGLock = true;
-					}
 
-					DISARMLOGLock = false;
-				}
-				else
-				{
-					if (!IsFirstStart)
+						DISARMLOGLock = false;
+					}
+					else
 					{
-						if (!DISARMLOGLock)
+						if (!IsFirstStart)
 						{
-							TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(BlackboxEvent::FLIGHT_LOG_EVENT_DISARM, 0, 0, 4));
-							BlackOvertime = GetTimestamp() - TF._Tmp_BBQThreadTimeup;
-							DISARMLOGLock = true;
+							if (!DISARMLOGLock)
+							{
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(BlackboxEvent::FLIGHT_LOG_EVENT_DISARM, 0, 0, 4));
+								BlackOvertime = GetTimestamp() - TF._Tmp_BBQThreadTimeup;
+								DISARMLOGLock = true;
+							}
 						}
+						ARMLOGLock = false;
 					}
-					ARMLOGLock = false;
+					//
+					TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
+					TF._Tmp_BBQThreadTimeLoop = TF._Tmp_BBQThreadTimeEnd - TF._Tmp_BBQThreadTimeStart;
+					if (TF._Tmp_BBQThreadTimeLoop + TF._Tmp_BBQThreadTimeNext > TF._flag_BBQThreadTimeMax | TF._Tmp_BBQThreadTimeNext < 0)
+					{
+						usleep(100);
+					}
+					else
+					{
+						usleep(TF._flag_BBQThreadTimeMax - TF._Tmp_BBQThreadTimeLoop - TF._Tmp_BBQThreadTimeNext);
+					}
+					TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
 				}
-				//
-				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
-				TF._Tmp_BBQThreadTimeLoop = TF._Tmp_BBQThreadTimeEnd - TF._Tmp_BBQThreadTimeStart;
-				if (TF._Tmp_BBQThreadTimeLoop + TF._Tmp_BBQThreadTimeNext > TF._flag_BBQThreadTimeMax | TF._Tmp_BBQThreadTimeNext < 0)
-				{
-					usleep(100);
-				}
-				else
-				{
-					usleep(TF._flag_BBQThreadTimeMax - TF._Tmp_BBQThreadTimeLoop - TF._Tmp_BBQThreadTimeNext);
-				}
-				TF._Tmp_BBQThreadTimeEnd = GetTimestamp();
-			} });
+			});
 
-		TF.BlackBoxWTask = std::thread([&]
-									   {
-			TF._flag_BBW_Task_Running = true;
-			while (TF._flag_BBW_Task_Running)
+		TF.BlackBoxWTask = std::thread(
+			[&]
 			{
-				if (!TF.BlackBoxQeueue.empty())
+				TF._flag_BBW_Task_Running = true;
+				while (TF._flag_BBW_Task_Running)
 				{
-					FileInjectQueue(DF.BlackBoxFile, TF.BlackBoxQeueue.front());
-					TF.BlackBoxQeueue.pop();
+					if (!TF.BlackBoxQeueue.empty())
+					{
+						FileInjectQueue(DF.BlackBoxFile, TF.BlackBoxQeueue.front());
+						TF.BlackBoxQeueue.pop();
+					}
+					else
+					{
+						usleep(TF._flag_BBQThreadTimeMax * 2);
+					}
 				}
-				else
-				{
-					usleep(TF._flag_BBQThreadTimeMax * 2);
-				}
-			} });
+			});
 	}
 }
 
@@ -2267,7 +2271,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 	SF._uORB_True_Movement_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * pow((TF._Tmp_IMUNavThreadDT / 1000000.f), 2) / 2.f * PF._uORB_Accel_Dynamic_Beta;
 	SF._uORB_True_Speed_Z += (int)SF._uORB_MPU_Data._uORB_Acceleration_Z * (TF._Tmp_IMUNavThreadDT / 1000000.f) * pow(PF._uORB_Accel_Dynamic_Beta, 2);
 	//---------------------------------------------------------//
-	// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
+	// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel y to revert?
 	SF._uORB_Gryo_Body_Asix_X -= ((float)SF._uORB_MPU_Data._uORB_Gryo_Pitch) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
 	SF._uORB_Gryo_Body_Asix_Y += ((float)SF._uORB_MPU_Data._uORB_Gryo__Roll) * (TF._Tmp_IMUNavThreadDT / 1000000.f);
 	// POS Controller Reseter
@@ -2755,7 +2759,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
 
 			// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-			PF._uORB_PID_PosX_Output *= -1;
+			// FIXME: 2022-3-23 pitch for accel is y, WTF was I doing?
+			PF._uORB_PID_PosY_Output *= -1;
 		}
 	}
 
