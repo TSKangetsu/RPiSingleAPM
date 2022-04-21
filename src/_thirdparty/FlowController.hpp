@@ -39,7 +39,7 @@ private:
     uint32_t Time__End = 0;
     uint32_t Time_Next = 0;
     uint32_t ThreadSpend = 0;
-    uint32_t SleepOffset = 0;
+    uint32_t SleepOffset = 100;
 
     float tmpClock = 0;
     float targetClock = 0;
@@ -92,12 +92,13 @@ FlowThread::FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ
                   Time__End = GetTimeStamp() - TimeThreadStart;
                   TimeDT = Time__End - TimeStart;
                   //
-                  RunClockHz = clockcount > targetClock ? (1.f / (tmpClock / (float)clockcount) * 1000000.f) : RunClockHz;
-                  //
-                  tmpClock = clockcount > targetClock ? 0 : tmpClock;
+                  if (clockcount > targetClock)
+                  {
+                      RunClockHz = (1.f / (tmpClock / (float)clockcount) * 1000000.f);
+                      clockcount = 0;
+                      tmpClock = 0;
+                  }
                   tmpClock += TimeDT;
-                  //
-                  clockcount = clockcount > targetClock ? 0 : clockcount;
                   clockcount++;
               }
           })
