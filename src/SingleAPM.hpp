@@ -13,6 +13,7 @@
 #include <linux/i2c-dev.h>
 #include "_thirdparty/EKFImpement.hpp"
 #include "_thirdparty/ESCGenerator.hpp"
+#include "_thirdparty/FlowController.hpp"
 #include "_thirdparty/RaspberryPiBARO/src/BaroDevice.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
@@ -44,7 +45,6 @@
 #define FILTERMAGCUTOFF 5.f
 
 #define ESCRANGE 800.f
-#define LINUX_SYSTEM_SLEEP_DELAY 50
 
 #define AngleLimitTime 30000000.f
 #define CalibratorLimitTime 10000000.f
@@ -327,7 +327,6 @@ namespace SingleAPMAPI
 			bool _flag_RC_Error = false;
 			bool _flag_FakeRC_Error = false;
 			bool _flag_GPS_Error = false;
-			bool _flag_ClockingTime_Error = false;
 			bool _flag_AnagleOutOfLimit = false;
 
 			bool _flag_PreARM_Check = false;
@@ -779,94 +778,33 @@ namespace SingleAPMAPI
 
 		struct TaskThread
 		{
+			const int _flag_Sys_CPU_Asign = 3;
+
+			float _flag_IMUFlowFreq = 1000.f;
+			float _flag_RTXFlowFreq = 250.f;
+			float _flag_ESCFlowFreq = 1000.f;
+			const float _flag_ALTFlowFreq = 45.f;
+			const float _flag_GPSFlowFreq = 5.f;
+			const float _flag_MAGFlowFreq = 200.f;
+			const float _flag_OPFFlowFreq = 28.f;
+			const float _flag_EXTFlowFreq = 100.f;
+
+			std::unique_ptr<FlowThread> IMUFlow;
+			std::unique_ptr<FlowThread> RTXFlow;
+			std::unique_ptr<FlowThread> ESCFlow;
+			std::unique_ptr<FlowThread> ALTFlow;
+			std::unique_ptr<FlowThread> GPSFlow;
+			std::unique_ptr<FlowThread> MAGFlow;
+			std::unique_ptr<FlowThread> OPFFlow;
+			std::unique_ptr<FlowThread> EXTFlow;
+			std::unique_ptr<FlowThread> BBQFlow;
+
 			int _flag_SystemStartUp_Time = 0;
 
 			float _Tmp_IMUNavThreadDT = 0;
 			float _Tmp_IMUNavThreadLast = 0;
 			float _Tmp_IMUAttThreadDT = 0;
 			float _Tmp_IMUAttThreadLast = 0;
-
-			int _Tmp_IMUThreadTimeStart = 0;
-			int _Tmp_IMUThreadTimeEnd = 0;
-			int _Tmp_IMUThreadTimeNext = 0;
-			int _Tmp_IMUThreadTimeLoop = 0;
-			int _Tmp_IMUThreadSleepError = 0;
-			int _Tmp_IMUThreadError = 0;
-			int _flag_IMUThreadTimeMax = 0;
-			int _flag_IMUThreadFreq;
-			int _flag_IMUErrorTimes = 0;
-			bool _flag_IMU_Task_Running = false;
-			std::thread IMUTask;
-			int _Tmp_RXTThreadTimeStart = 0;
-			int _Tmp_RXTThreadTimeEnd = 0;
-			int _Tmp_RXTThreadTimeNext = 0;
-			int _Tmp_RXTThreadTimeLoop = 0;
-			int _Tmp_RXTThreadError = 0;
-			int _flag_RXTThreadTimeMax = 0;
-			int _flag_RXTThreadFreq;
-			int _flag_RXTErrorTimes = 0;
-			bool _flag_RXT_Task_Running = false;
-			std::thread RXTask;
-			int _Tmp_ESCThreadTimeStart = 0;
-			int _Tmp_ESCThreadTimeEnd = 0;
-			int _Tmp_ESCThreadTimeNext = 0;
-			int _Tmp_ESCThreadTimeLoop = 0;
-			int _Tmp_ESCThreadError = 0;
-			int _flag_ESCThreadTimeMax = 0;
-			int _flag_ESCThreadFreq;
-			int _flag_ESCErrorTimes = 0;
-			int _Tmp_ServoThreadClock = 0;
-			int _flag_ServoThreadFreq = 50;
-			int _flag_ServoThreadTimes = 0;
-			bool _flag_ESC_Task_Running = false;
-			std::thread ESCTask;
-			int _Tmp_ALTThreadTimeStart = 0;
-			int _Tmp_ALTThreadTimeEnd = 0;
-			int _Tmp_ALTThreadTimeNext = 0;
-			int _Tmp_ALTThreadTimeLoop = 0;
-			int _Tmp_ALTThreadError = 0;
-			int _flag_ALTThreadFreq = 45;
-			int _flag_ALTThreadTimeMax = (float)1 / 45 * 1000000;
-			int _flag_ALTErrorTimes = 0;
-			bool _flag_ALT_Task_Running = false;
-			std::thread ALTTask;
-			int _Tmp_GPSThreadTimeStart = 0;
-			int _Tmp_GPSThreadTimeEnd = 0;
-			int _Tmp_GPSThreadTimeNext = 0;
-			int _Tmp_GPSThreadTimeLoop = 0;
-			int _Tmp_GPSThreadError = 0;
-			int _flag_GPSThreadTimeMax = (float)1 / 5 * 1000000;
-			int _flag_GPSErrorTimes = 0;
-			bool _flag_GPS_Task_Running = false;
-			std::thread GPSTask;
-			int _Tmp_MAGThreadTimeStart = 0;
-			int _Tmp_MAGThreadTimeEnd = 0;
-			int _Tmp_MAGThreadTimeNext = 0;
-			int _Tmp_MAGThreadTimeLoop = 0;
-			int _Tmp_MAGThreadError = 0;
-			int _flag_MAGThreadTimeMax = (float)1 / 200 * 1000000;
-			int _flag_MAGErrorTimes = 0;
-			bool _flag_MAG_Task_Running = false;
-			std::thread MAGTask;
-			int _Tmp_FlowThreadSMooth = 0;
-			int _Tmp_FlowThreadTimeStart = 0;
-			int _Tmp_FlowThreadTimeEnd = 0;
-			int _Tmp_FlowThreadTimeNext = 0;
-			int _Tmp_FlowThreadTimeLoop = 0;
-			int _Tmp_FlowThreadError = 0;
-			int _flag_FlowThreadTimeMax = (float)1 / 28 * 1000000; // Flow is 9HZ
-			int _flag_FlowErrorTimes = 0;
-			bool _flag_Flow_Task_Running = false;
-			std::thread FlowTask;
-			int _Tmp_ExtThreadTimeStart = 0;
-			int _Tmp_ExtThreadTimeEnd = 0;
-			int _Tmp_ExtThreadTimeNext = 0;
-			int _Tmp_ExtThreadTimeLoop = 0;
-			int _Tmp_ExtThreadError = 0;
-			int _flag_ExtThreadTimeMax = (float)1 / 100 * 1000000;
-			int _flag_ExtErrorTimes = 0;
-			bool _flag_Ext_Task_Running = false;
-			std::thread ExtendTask;
 			// Blackbox
 			int _Tmp_BBQThreadTimeStart = 0;
 			int _Tmp_BBQThreadTimeEnd = 0;
