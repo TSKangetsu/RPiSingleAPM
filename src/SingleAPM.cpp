@@ -2837,10 +2837,12 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " Flag_RC_Error:          " << std::setw(3) << std::setfill(' ') << AF._flag_RC_Error << " |";
 	std::cout << " RC_Lose_Clocking:       " << std::setw(3) << std::setfill(' ') << AF.RC_Lose_Clocking << "                        \n\n";
 
-	// std::cout << " IMUNAVDT:    " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUNavThreadDT << "    \n";
-	// std::cout << " IMUATTDT:    " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUAttThreadDT << "    \n";
+	std::cout << " IMUNAVDT:    " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUNavThreadDT << "    \n";
+	std::cout << " IMUATTDT:    " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUAttThreadDT << "    \n";
 	std::cout << " IMU Freq:    " << std::setw(7) << std::setfill(' ') << (TF.IMUFlow ? TF.IMUFlow->RunClockHz : -1) << "    \n";
 	std::cout << " ESC Freq:    " << std::setw(7) << std::setfill(' ') << (TF.ESCFlow ? TF.ESCFlow->RunClockHz : -1) << "    \n";
+	std::cout << " RTX Freq:    " << std::setw(7) << std::setfill(' ') << (TF.RTXFlow ? TF.RTXFlow->RunClockHz : -1) << "    \n";
+	std::cout << " ALT Freq:    " << std::setw(7) << std::setfill(' ') << (TF.ALTFlow ? TF.ALTFlow->RunClockHz : -1) << "    \n";
 }
 
 int SingleAPMAPI::RPiSingleAPM::GetTimestamp()

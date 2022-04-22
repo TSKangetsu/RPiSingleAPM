@@ -88,12 +88,7 @@ FlowThread::FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ
                       {
                           TimeOut_MAX = ThreadSpend;
                       }
-                  }
-                  Time__End = GetTimeStamp() - TimeThreadStart;
-                  TimeDT = Time__End - TimeStart;
-                  //
-                  if (Time__Max > 0)
-                  {
+                      //
                       if (clockcount > targetClock)
                       {
                           RunClockHz = (1.f / (tmpClock / (float)clockcount) * 1000000.f);
@@ -103,13 +98,15 @@ FlowThread::FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ
                       tmpClock += TimeDT;
                       clockcount++;
                   }
+                  Time__End = GetTimeStamp() - TimeThreadStart;
+                  TimeDT = Time__End - TimeStart;
               }
           })
 {
     threadMain = thread;
     //
     targetClock = ClockingHZ;
-    Time__Max = ClockingHZ > 0.0 ? ((int)((1.f / ClockingHZ) * 1000000.f)) : -1;
+    Time__Max = ClockingHZ > 0.0 ? ((int)((1.f / ClockingHZ) * 1000000.f)) : 0;
     //
     if (CPUID >= 0)
     {
@@ -119,9 +116,10 @@ FlowThread::FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ
         int rc = pthread_setaffinity_np(this->native_handle(), sizeof(cpu_set_t), &cpuset);
     }
     //
-    std::unique_lock<std::mutex> lockWaitMain{copylock};
-    //
-    lockFlag = true;
+    {
+        std::unique_lock<std::mutex> lockWaitMain{copylock};
+        lockFlag = true;
+    }
     notifyWait.notify_all();
 };
 
