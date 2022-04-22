@@ -13,9 +13,9 @@ class FlowThread : public std::thread
 public:
     inline FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ);
 
-    inline FlowThread(std::function<void()> thread) { FlowThread(thread, -1, -1); };
-    inline FlowThread(std::function<void()> thread, int CPUID) { FlowThread(thread, CPUID, -1); };
-    inline FlowThread(std::function<void()> thread, float ClockingHZ) { FlowThread(thread, -1, ClockingHZ); };
+    inline FlowThread(std::function<void()> thread) : FlowThread(thread, -1, -1){};
+    inline FlowThread(std::function<void()> thread, int CPUID) : FlowThread(thread, CPUID, -1){};
+    inline FlowThread(std::function<void()> thread, float ClockingHZ) : FlowThread(thread, -1, ClockingHZ){};
 
     inline void FlowTryStop();
     inline void FlowStopAndWait();
@@ -92,14 +92,17 @@ FlowThread::FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ
                   Time__End = GetTimeStamp() - TimeThreadStart;
                   TimeDT = Time__End - TimeStart;
                   //
-                  if (clockcount > targetClock)
+                  if (Time__Max > 0)
                   {
-                      RunClockHz = (1.f / (tmpClock / (float)clockcount) * 1000000.f);
-                      clockcount = 0;
-                      tmpClock = 0;
+                      if (clockcount > targetClock)
+                      {
+                          RunClockHz = (1.f / (tmpClock / (float)clockcount) * 1000000.f);
+                          clockcount = 0;
+                          tmpClock = 0;
+                      }
+                      tmpClock += TimeDT;
+                      clockcount++;
                   }
-                  tmpClock += TimeDT;
-                  clockcount++;
               }
           })
 {
