@@ -8,6 +8,8 @@ This project differs from Betaflight and inav in that it focuses on running cont
 
 Warnning: This project is GPL3.0! <br/>
 
+# develop suppend for few months, if any questions, ask in issues <br/>
+
 #
 - GetStarted
   - [Features](#Features)
