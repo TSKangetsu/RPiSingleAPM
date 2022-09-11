@@ -200,20 +200,24 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #ifdef RPiDEBUGStart
 			std::cout << "Check! \n";
 #endif
+			for (size_t i = 0; i < 20; i++)
+			{
+				SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
+				usleep(15 * 1000);
+			}
+			SF._uORB_BAT_Scount = (int)(SF._uORB_ADC_Data.voltage / 3.7f);
+			//
+			DF._IsINAEnable = true;
 		}
 		catch (int &e)
 		{
 #ifdef RPiDEBUGStart
 			std::cout << "[RPiSingleAPM] ADC No Detected.\n";
 #endif
+			//
+			DF._IsINAEnable = false;
 		}
 		//
-		for (size_t i = 0; i < 20; i++)
-		{
-			SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
-			usleep(15 * 1000);
-		}
-		SF._uORB_BAT_Scount = (int)(SF._uORB_ADC_Data.voltage / 3.7f);
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -1127,11 +1131,14 @@ void SingleAPMAPI::RPiSingleAPM::ExtendMonitorTaskReg()
 		[&]
 		{
 			//
-			DF.I2CLock.lock();
-			SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
-			DF.I2CLock.unlock();
-			//
-			SF._uORB_BAT_SingleVol = SF._uORB_ADC_Data.voltage / (float)SF._uORB_BAT_Scount;
+			if (DF._IsINAEnable)
+			{
+				DF.I2CLock.lock();
+				SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
+				DF.I2CLock.unlock();
+				//
+				SF._uORB_BAT_SingleVol = SF._uORB_ADC_Data.voltage / (float)SF._uORB_BAT_Scount;
+			}
 		},
 		TF._flag_Sys_CPU_Asign, TF._flag_EXTFlowFreq));
 }

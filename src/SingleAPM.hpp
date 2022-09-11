@@ -399,6 +399,7 @@ namespace SingleAPMAPI
 			bool _IsRCSafeEnable;
 			bool _IsBAROEnable;
 			bool _IsBlackBoxEnable;
+			bool _IsINAEnable; // FIXME: decide by Failed or not;
 
 			std::mutex I2CLock;
 			std::unique_ptr<Sbus> SbusInit;
