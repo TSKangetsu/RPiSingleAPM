@@ -1048,7 +1048,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 			[&]
 			{
 				{
-					// TF._Tmp_FlowThreadSMooth++;
+					SF._Tmp_FlowThreadTimeout++;
 					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._Tmp_Flow_Altitude, SF._uORB_Flow_Quality);
 					//
 					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
@@ -1101,7 +1101,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
 						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
 
-						// TF._Tmp_FlowThreadSMooth = 0;
+						SF._Tmp_FlowThreadTimeout = 0;
 						AF._flag_FlowData_Async = true;
 						SF._uORB_Gryo_Body_Asix_X = 0;
 						SF._uORB_Gryo_Body_Asix_Y = 0;
@@ -1114,11 +1114,11 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 							SF._uORB_Flow_YOutput_Total = 0;
 						}
 					}
-					// if (TF._Tmp_FlowThreadSMooth > 3)
-					// {
-					// 	SF._uORB_Gryo_Body_Asix_X = 0;
-					// 	SF._uORB_Gryo_Body_Asix_Y = 0;
-					// }
+					if (SF._Tmp_FlowThreadTimeout > 3)
+					{
+						SF._uORB_Gryo_Body_Asix_X = 0;
+						SF._uORB_Gryo_Body_Asix_Y = 0;
+					}
 				}
 			},
 			TF._flag_Sys_CPU_Asign, TF._flag_OPFFlowFreq));
@@ -2170,9 +2170,10 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		}
 		//===============================================//
 		// Air cushion effect
-		bool isAirCushionEffectDetected = (PF._uORB_PID_Sonar_GroundValid && (PF._uORB_PID_BARO_AltInput < -1.f * PF._uORB_PID_Sonar_GroundOffset));
+		bool isAirCushionEffectDetected = (PF._uORB_PID_Sonar_GroundValid && (PF._uORB_PID_BARO_AltInput < -PF._uORB_PID_Sonar_GroundOffset));
 		PF._uORB_PID_BARO_AltInput = (isAirCushionEffectDetected ? 0 : PF._uORB_PID_BARO_AltInput);
 		//===============================================//
+		// FIXME: Find a way to balance Sonar and Baro Altitude
 		if (AF._flag_IsSonarAvalible)
 		{
 			PF._uORB_PID_MoveZCorrection += (PF._uORB_PID_Sonar_AltInput - SF._uORB_True_Movement_Z) *
@@ -2197,7 +2198,6 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_AccelZ_Bias -= (PF._uORB_PID_BARO_AltInput - SF._uORB_True_Movement_Z) *
 										pow(PF._uORB_Baro_Dynamic_Beta, 2) * PF._uORB_AccelBias_Beta *
 										(TF._Tmp_IMUNavThreadDT / 1000000.f);
-			PF._uORB_PID_Sonar_AltInput = PF._uORB_PID_BARO_AltInput;
 		}
 		else
 		{

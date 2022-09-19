@@ -54,7 +54,7 @@
 
 #define I2CCOMPASS_ADDR 0x1e
 #define I2CBARO_ADDR 0x77
-#define I2CPCA_ADDR 0x41
+#define I2CPCA_ADDR 0x70
 #define I2CINA_ADDR 0x40
 
 #define INA226_MaxCurrent 5.f
@@ -514,6 +514,8 @@ namespace SingleAPMAPI
 			double _uORB_Flow_Altitude_Final = 0;
 			double _uORB_Flow_Altitude_Last_Final = 0;
 			double _uORB_Flow_ClimbeRate = 0;
+
+			int _Tmp_FlowThreadTimeout =0;
 			//========================Extend=======//
 			ADCData _uORB_ADC_Data;
 			int _uORB_BAT_Scount = 0;
