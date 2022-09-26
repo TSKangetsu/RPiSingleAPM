@@ -2137,10 +2137,11 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		}
 		else if (AF._flag_IsAutoTakeoffRequire)
 		{
+			// TODO: suit to config outside
 			PF._uORB_PID_AltHold_Target = PF._flag_PID_Takeoff_Altitude;
 			PF._uORB_PID_Alt_Accel_Max = PF._flag_PID_TakeOff_Accel_Max;
 			PF._uORB_PID_Alt_Speed_Max = PF._flag_PID_TakeOff_Speed_Max;
-			if (PF._uORB_PID_AltInput_Final > PF._flag_PID_Takeoff_Altitude)
+			if (SF._uORB_True_Movement_Z > PF._flag_PID_Takeoff_Altitude)
 			{
 				AF._flag_IsAutoTakeoffRequire = false;
 			}

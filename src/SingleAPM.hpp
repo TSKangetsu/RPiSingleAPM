@@ -515,7 +515,7 @@ namespace SingleAPMAPI
 			double _uORB_Flow_Altitude_Last_Final = 0;
 			double _uORB_Flow_ClimbeRate = 0;
 
-			int _Tmp_FlowThreadTimeout =0;
+			int _Tmp_FlowThreadTimeout = 0;
 			//========================Extend=======//
 			ADCData _uORB_ADC_Data;
 			int _uORB_BAT_Scount = 0;
@@ -589,7 +589,6 @@ namespace SingleAPMAPI
 			float _uORB_PID_BARO_AltInput = 0;
 			float _uORB_PID_MoveZCorrection = 0;
 			float _uORB_PID_SpeedZCorrection = 0;
-			float _uORB_PID_AltInput_Final = 0;
 			float _uORB_PID_AltInput_Last_Final = 0;
 			float _uORB_PID_AltHold_Target = 0;
 			float _uORB_PID_PosZUserSpeed = 0;
