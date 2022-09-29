@@ -64,6 +64,7 @@ FlowThread::FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ
               while (!lockFlag)
                   notifyWait.wait(lockWait);
               //
+              TimeThreadStart = GetTimeStamp();
               while (IsThreadRunning)
               {
                   TimeStart = GetTimeStamp() - TimeThreadStart;
