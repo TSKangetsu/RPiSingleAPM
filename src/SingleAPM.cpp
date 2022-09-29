@@ -1803,22 +1803,23 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsNAVAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsNAVAvalible))
 			{
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-				PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
-				PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
+				PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
+				PF._uORB_PID_Pitch_Input -= PF._uORB_PID_PosY_Output;
 			}
 			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsNAVAvalible)
 			{
+				// FIXME: change output to same as RC out
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 				// if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
 				if (RF._uORB_RC_Out__Roll != 0)
 					PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle__Roll_Gain;
 				else
-					PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
+					PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
 				// if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
 				if (RF._uORB_RC_Out_Pitch != 0)
 					PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Pitch_Gain;
 				else
-					PF._uORB_PID_Pitch_Input += PF._uORB_PID_PosY_Output;
+					PF._uORB_PID_Pitch_Input -= PF._uORB_PID_PosY_Output;
 			}
 			else if (AF.AutoPilotMode == APModeINFO::AutoStable ||
 					 AF.AutoPilotMode == APModeINFO::AltHold)
@@ -2554,7 +2555,9 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 
 			// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 			// FIXME: 2022-3-23 pitch for accel is y, WTF was I doing?
-			PF._uORB_PID_PosY_Output *= -1;
+			PF._uORB_PID_PosX_Output *= -1;
+			// FIXME: change output to same as RC out
+			// PF._uORB_PID_PosY_Output *= -1;
 		}
 	}
 
