@@ -58,6 +58,7 @@ FlowThread::FlowThread(std::function<void()> thread, int CPUID, float ClockingHZ
     : std::thread(
           [&]
           {
+              sleep(1);
               IsThreadRunning = true;
               //
               std::unique_lock<std::mutex> lockWait{copylock};
