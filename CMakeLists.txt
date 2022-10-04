@@ -1,5 +1,12 @@
 set(MPUDriver "pigpio" CACHE  INTERNAL "")
 
+execute_process(
+  COMMAND git log -1 --format=%h
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,6 +24,7 @@ IF(UNIX)
     find_package(Threads REQUIRED)
     add_subdirectory(src)
     add_executable(SingleFlight "TestModule.cpp")
+    target_compile_definitions(SingleFlight PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
     target_link_libraries(SingleFlight PRIVATE  RPiSingleAPI)
     target_link_libraries(SingleFlight PRIVATE Threads::Threads)
     
