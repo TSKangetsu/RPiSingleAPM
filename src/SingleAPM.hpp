@@ -369,7 +369,7 @@ namespace SingleAPMAPI
 			bool _flag_IsNotTakeOff = false;
 			bool _flag_IsNotTakeOff_Lock = false;
 
-			bool _flag_IsINUHDiable = false;
+			bool _flag_IsINUHDisable = false;
 			bool _flag_IsPositionXChange = false;
 			bool _flag_IsPositionYChange = false;
 			bool _flag_IsBrakingXSet = false;

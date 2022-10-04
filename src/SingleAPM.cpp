@@ -18,7 +18,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_FakeRC_Disconnected = false;
 		AF._flag_AnagleOutOfLimit = false;
 		AF._flag_ESC_ARMED = true;
-		AF._flag_IsINUHDiable = true;
+		AF._flag_IsINUHDisable = true;
 		AF._flag_IsFlowAvalible = false;
 		AF._flag_StartUP_Protect = true;
 		AF._flag_IsSonarAvalible = false;
@@ -34,6 +34,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		AF._flag_PreARM_Check_Lock = false;
 		AF._flag_IsNAVAvalible = false;
 		AF._flag_GPS_Recovered = true;
+		AF._flag_GPS_Error = true;
 		AF.AutoPilotMode = APModeINFO::AutoStable;
 		AF._flag_FailedSafe_Level = 0;
 		AF._flag_PreARM_Check_Level = 0;
@@ -510,7 +511,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		AF.FakeRC_Deprive_Clocking = 0;
 		AF._flag_FakeRC_Disconnected = 0;
 		AF._flag_ESC_ARMED = true;
-		AF._flag_IsINUHDiable = true;
+		AF._flag_IsINUHDisable = true;
 		AF._flag_IsFlowAvalible = false;
 		AF._flag_StartUP_Protect = true;
 		AF._flag_IsSonarAvalible = false;
@@ -1105,9 +1106,9 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						{
 							SF._uORB_Flow_Speed_X = (SF._uORB_Flow_Filter_XOutput / 50.f) / ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
 							SF._uORB_Flow_Speed_Y = (SF._uORB_Flow_Filter_YOutput / 50.f) / ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
+							SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
+							SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
 						}
-						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
-						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
 
 						SF._Tmp_FlowThreadTimeout = 0;
 						AF._flag_FlowData_Async = true;
@@ -2101,7 +2102,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 	{
 		if (AF._flag_ESC_ARMED)
 		{
-			AF._flag_IsINUHDiable = true;
+			AF._flag_IsINUHDisable = true;
 			PF._uORB_PID_Sonar_GroundOffset = 0 - SF._uORB_BARO_Altitude;
 			PF._uORB_PID_AccelX_Bias = 0;
 			PF._uORB_PID_AccelY_Bias = 0;
@@ -2111,7 +2112,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		}
 		else
 		{
-			AF._flag_IsINUHDiable = false;
+			AF._flag_IsINUHDisable = false;
 			if (SF._uORB_True_Movement_Z > 15)
 			{
 				if (GetTimestamp() > PF._uORB_PID_Sonar_GroundTimeOut)
@@ -2121,7 +2122,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			}
 		}
 		//
-		if (AF._flag_IsINUHDiable)
+		if (AF._flag_IsINUHDisable)
 		{
 			PF._uORB_Sonar_Dynamic_Beta = 1.f;
 			PF._uORB_Baro_Dynamic_Beta = 1.f;
@@ -2782,8 +2783,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ||FlowYOut:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput << "    ";
 	std::cout << " ||FlowAltitude: " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Sonar_AltInput << "    ";
 	std::cout << " ||FlowSpeedX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Speed_X << "cm/s            \n";
-	std::cout << " FlowXOutTotal:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput_Total << "    ";
-	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput_Total << "    ";
+	std::cout << " FlowXOutTotal:  " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Flow_PosInput_X << "    ";
+	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Flow_PosInput_Y << "    ";
 	std::cout << " ||FlowSpeed:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_ClimbeRate << "cm/s";
 	std::cout << " ||FlowQuality:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Quality << "    ";
 	std::cout << " ||FlowSpeedY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Speed_Y << "cm/s            \n";
@@ -2886,7 +2887,6 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerFakeRC(int *ChannelData, bool IsEr
 void SingleAPMAPI::RPiSingleAPM::APMControllerARMED()
 {
 	AF._flag_Error = false;
-	AF._flag_GPS_Error = false;
 
 	AF._flag_ESC_ARMED = true;
 	AF._flag_StartUP_Protect = false;
