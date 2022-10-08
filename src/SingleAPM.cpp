@@ -253,7 +253,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::strftime(outTime, sizeof(outTime), "%Y%m%d%H%M%S", std::localtime(&t));
 			std::string file = (std::string(BlackBoxLogDir, sizeof(BlackBoxLogDir) - 1) +
 								std::string("SingleflightBlackBox", sizeof("SingleflightBlackBox") - 1) +
-								std::string(".LOG", sizeof(".LOG") - 1));
+								std::string(".BBL", sizeof(".BBL") - 1));
 			DF.BlackBoxFile.open(file.c_str(), std::ios::out | std::ios::binary | std::ios::app);
 
 			std::vector<BlackboxList> BlackBoxIInfo = {
@@ -2356,8 +2356,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 				AF._flag_IsPositionXChange = false;
-				// if (-10.f < SF._uORB_True_Speed_X && SF._uORB_True_Speed_X < 10.f)
-				AF._flag_IsBrakingXSet = false;
+				if (-10.f < SF._uORB_True_Speed_X && SF._uORB_True_Speed_X < 10.f)
+					AF._flag_IsBrakingXSet = false;
 			}
 			if (AF._flag_IsPositionYChange || AF._flag_IsBrakingYSet)
 			{
@@ -2367,8 +2367,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
 				AF._flag_IsPositionYChange = false;
-				// if (-10.f < SF._uORB_True_Speed_Y && SF._uORB_True_Speed_Y < 10.f)
-				AF._flag_IsBrakingYSet = false;
+				if (-10.f < SF._uORB_True_Speed_Y && SF._uORB_True_Speed_Y < 10.f)
+					AF._flag_IsBrakingYSet = false;
 			}
 		}
 
