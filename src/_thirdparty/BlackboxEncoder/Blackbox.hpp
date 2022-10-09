@@ -1,5 +1,4 @@
 #pragma once
-
 #include <iostream>
 
 #include <deque>
@@ -71,13 +70,48 @@ enum BlackboxEvent
     FLIGHT_LOG_EVENT_LOG_END = 255
 };
 
+enum RCFlightModeEVENT
+{
+    ACRO = 0,
+    ARM = 1 << 0,
+    ANGLE = 1 << 1,
+    HORIZON = 1 << 2,
+    BARO = 1 << 3,
+    ANTIGRAVITY = 1 << 4,
+    MAG = 1 << 5,
+    HARDFREE = 1 << 6,
+    HEADADJ = 1 << 7,
+    CAMSTAB = 1 << 8,
+    CAMTRIG = 1 << 9,
+    GPSHOME = 1 << 10,
+    GPSHOLD = 1 << 11,
+    PASSTHRU = 1 << 12,
+    BEEPER = 1 << 13,
+    LEDMAX = 1 << 14,
+    LEDLOW = 1 << 15,
+    LLIGHTS = 1 << 16,
+    CALIB = 1 << 17,
+    GOV = 1 << 18,
+    OSD = 1 << 19,
+    TELEMETRY = 1 << 20,
+    GTUNE = 1 << 21,
+    SONAR = 1 << 22,
+    SERVO1 = 1 << 23,
+    SERVO2 = 1 << 24,
+    SERVO3 = 1 << 25,
+    BLACKBOX = 1 << 26,
+    FAILSAFE = 1 << 27,
+    AIRMODE = 1 << 29,
+    D3DDISABLE = 1 << 30
+};
+
 class BlackboxEncoder
 {
 public:
     std::string FullBlackboxHeader;
     inline BlackboxEncoder(BlackboxHeaderInfo);
     inline std::vector<uint8_t> BlackboxPIPush(std::vector<int> data);
-    inline std::vector<uint8_t> BlackboxEPush(BlackboxEvent event, int time, int LoopIteration, int ext);
+    inline std::vector<uint8_t> BlackboxEPush(BlackboxEvent event, int time, int LoopIteration, int ext, int ext2 = 0);
     inline std::vector<uint8_t> BlaclboxGPush(std::vector<int> data);
     inline std::vector<uint8_t> BlaclboxHPush(std::vector<int> data);
     inline std::vector<uint8_t> BlaclboxSPush(std::vector<int> data);
@@ -474,13 +508,13 @@ std::vector<uint8_t> BlackboxEncoder::BlackboxPIPush(std::vector<int> data)
     return FrameBuffer;
 }
 
-std::vector<uint8_t> BlackboxEncoder::BlackboxEPush(BlackboxEvent event, int time, int LoopIteration, int ext)
+std::vector<uint8_t> BlackboxEncoder::BlackboxEPush(BlackboxEvent event, int time, int LoopIteration, int ext, int ext2)
 {
     std::vector<uint8_t> wdata;
     wdata.push_back(((uint8_t)'E'));
     wdata.push_back(((uint8_t)event));
 
-    //Now serialize the data for this specific frame type
+    // Now serialize the data for this specific frame type
     switch (event)
     {
     case FLIGHT_LOG_EVENT_SYNC_BEEP:
@@ -489,10 +523,15 @@ std::vector<uint8_t> BlackboxEncoder::BlackboxEPush(BlackboxEvent event, int tim
             wdata.push_back(unsignedBtyeEncode(time)[i]);
         }
         break;
-    case FLIGHT_LOG_EVENT_FLIGHTMODE: // New flightmode flags write
-        // TODO: Not support Yet
-        // blackboxWriteUnsignedVB(data->flightMode.flags);
-        // blackboxWriteUnsignedVB(data->flightMode.lastFlags);
+    case FLIGHT_LOG_EVENT_FLIGHTMODE:
+        for (size_t i = 0; i < unsignedBtyeEncode(ext).size(); i++)
+        {
+            wdata.push_back(unsignedBtyeEncode(ext)[i]);
+        }
+        for (size_t i = 0; i < unsignedBtyeEncode(ext2).size(); i++)
+        {
+            wdata.push_back(unsignedBtyeEncode(ext2)[i]);
+        }
         break;
     case FLIGHT_LOG_EVENT_DISARM:
         for (size_t i = 0; i < unsignedBtyeEncode(ext).size(); i++)

@@ -1209,6 +1209,10 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 		TF.BlackBoxQTask = std::thread(
 			[&]
 			{
+				int AutoPilotModeLast = APModeINFO::AutoStable;
+				bool isAltholdSONARSwitch = true;
+				bool isNAVSwitch = true;
+				//
 				bool IsFirstStart = true;
 				bool DISARMLOGLock = true;
 				bool ARMLOGLock = true;
@@ -1304,7 +1308,79 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 							}
 							AF._flag_GPSData_AsyncB = false;
 						}
-
+						// Handle event flightmode
+						if (AutoPilotModeLast != AF.AutoPilotMode)
+						{
+							// TODO: need to convert usr mode
+							switch (AF.AutoPilotMode)
+							{
+							case APModeINFO::AutoStable:
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::ANGLE, 0));
+								break;
+							case APModeINFO::AltHold:
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::BARO | RCFlightModeEVENT::SONAR, 0));
+								break;
+							case APModeINFO::PositionHold:
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::GPSHOLD | RCFlightModeEVENT::ANGLE, 0));
+								break;
+							case APModeINFO::SpeedHold:
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::GPSHOLD | RCFlightModeEVENT::GPSHOME, 0));
+								break;
+							case APModeINFO::UserAuto:
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::GPSHOLD | RCFlightModeEVENT::PASSTHRU, 0));
+								break;
+							case APModeINFO::RateHold:
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::ACRO, 0));
+								break;
+							}
+							AutoPilotModeLast = AF.AutoPilotMode;
+						}
+						// Handle Event from system
+						if (isAltholdSONARSwitch != AF._flag_IsSonarAvalible)
+						{
+							if (AF._flag_IsSonarAvalible)
+							{
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::SONAR, RCFlightModeEVENT::BARO));
+							}
+							else
+							{
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::BARO, RCFlightModeEVENT::SONAR));
+							}
+							isAltholdSONARSwitch = AF._flag_IsSonarAvalible;
+						}
+						if (isNAVSwitch != AF._flag_IsNAVAvalible)
+						{
+							if (AF._flag_IsNAVAvalible)
+							{
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, RCFlightModeEVENT::GPSHOLD, 0));
+							}
+							else
+							{
+								TF.BlackBoxQeueue.push(DF.BlackBoxDevice->BlackboxEPush(
+									BlackboxEvent::FLIGHT_LOG_EVENT_FLIGHTMODE,
+									0, 0, 0, RCFlightModeEVENT::GPSHOLD));
+							}
+							isNAVSwitch = AF._flag_IsNAVAvalible;
+						}
+						//====================================================================//
 						TF._Tmp_BBQThreadloopIteration += TF._flag_P_Interval;
 
 						if (IsFirstStart)
@@ -1801,26 +1877,44 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			PF._uORB_PID__Roll_Input = 0;
 			PF._uORB_PID_Pitch_Input = 0;
 			//---MODE SWITCHER----------------------------------------------------------//
-			if ((AF.AutoPilotMode == APModeINFO::SpeedHold && AF._flag_IsNAVAvalible) || (AF.AutoPilotMode == APModeINFO::UserAuto && AF._flag_IsNAVAvalible))
+			if (AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto)
 			{
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-				PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
-				PF._uORB_PID_Pitch_Input -= PF._uORB_PID_PosY_Output;
+				if (AF._flag_IsNAVAvalible)
+				{
+					PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
+					PF._uORB_PID_Pitch_Input -= PF._uORB_PID_PosY_Output;
+				}
+				else
+				{
+					PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle__Roll_Gain;
+					PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Pitch_Gain;
+				}
 			}
-			else if (AF.AutoPilotMode == APModeINFO::PositionHold && AF._flag_IsNAVAvalible)
+
+			else if (AF.AutoPilotMode == APModeINFO::PositionHold)
 			{
+				// FIXME: force reapply when navigation no avaliable
 				// FIXME: change output to same as RC out
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-				// if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
-				if (RF._uORB_RC_Out__Roll != 0)
+				if (AF._flag_IsNAVAvalible)
+				{
+					// if (RF._uORB_RC_Out__Roll != 0 && !AF._flag_IsBrakingXSet)
+					if (RF._uORB_RC_Out__Roll != 0)
+						PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle__Roll_Gain;
+					else
+						PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
+					// if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
+					if (RF._uORB_RC_Out_Pitch != 0)
+						PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Pitch_Gain;
+					else
+						PF._uORB_PID_Pitch_Input -= PF._uORB_PID_PosY_Output;
+				}
+				else
+				{
 					PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle__Roll_Gain;
-				else
-					PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
-				// if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
-				if (RF._uORB_RC_Out_Pitch != 0)
 					PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Pitch_Gain;
-				else
-					PF._uORB_PID_Pitch_Input -= PF._uORB_PID_PosY_Output;
+				}
 			}
 			else if (AF.AutoPilotMode == APModeINFO::AutoStable ||
 					 AF.AutoPilotMode == APModeINFO::AltHold)
