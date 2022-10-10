@@ -207,10 +207,10 @@
             "_flag_Filter_PID_D_ST2_CutOff": 80,
             "_flag_Filter_PID_I_CutOff": 15.0,
             "_flag_Filter_RC_CutOff": 15,
-            "_flag_Flow_Config_Beta": 1.0,
+            "_flag_Flow_Config_Beta": 2.0,
             "_flag_GPSAlt_Trust_Beta": 0.15,
             "_flag_GPS_Config_Beta": 1.0,
-            "_flag_Sonar_Trust_Beta": 1.0
+            "_flag_Sonar_Trust_Beta": 2.0
         },
         "PID": {
             "AltitudePID": {
@@ -226,11 +226,11 @@
                 "_flag_PID_Takeoff_Altitude": 50.0
             },
             "AttitudePID": {
-                "_flag_PID_AngleRate_Pitch_Gain": 10.0,
-                "_flag_PID_AngleRate__Roll_Gain": 10.0,
-                "_flag_PID_AngleRate___Yaw_Gain": 10.0,
-                "_flag_PID_D_Pitch_Gain": 40,
-                "_flag_PID_D__Roll_Gain": 40,
+                "_flag_PID_AngleRate_Pitch_Gain": 10,
+                "_flag_PID_AngleRate__Roll_Gain": 10,
+                "_flag_PID_AngleRate___Yaw_Gain": 10,
+                "_flag_PID_D_Pitch_Gain": 60,
+                "_flag_PID_D__Roll_Gain": 60,
                 "_flag_PID_D___Yaw_Gain": 0,
                 "_flag_PID_I_Pitch_Gain": 0.002,
                 "_flag_PID_I_Pitch_Max__Value": 300,
@@ -239,8 +239,8 @@
                 "_flag_PID_I___Yaw_Gain": 0.025,
                 "_flag_PID_I___Yaw_Max__Value": 250,
                 "_flag_PID_Level_Max": 400,
-                "_flag_PID_P_Pitch_Gain": 1.2,
-                "_flag_PID_P__Roll_Gain": 1.2,
+                "_flag_PID_P_Pitch_Gain": 1.5,
+                "_flag_PID_P__Roll_Gain": 1.5,
                 "_flag_PID_P___Yaw_Gain": 3.5,
                 "_flag_PID_RCAngle_Pitch_Gain": 0.6,
                 "_flag_PID_RCAngle__Roll_Gain": 0.6,
@@ -249,14 +249,14 @@
                 "_flag_PID_RCRate__Roll_Gain": 1.5,
                 "_flag_PID_RCRate___Yaw_Gain": 1.5,
                 "_flag_PID_Rate_Limit": 700.0,
-                "_flag_PID_TPA_BreakPoint": 1350,
-                "_flag_PID_TPA_Trust": 0.65
+                "_flag_PID_TPA_BreakPoint": 1200,
+                "_flag_PID_TPA_Trust": 0.5
             },
             "NAVPID": {
-                "_flag_PID_D_SpeedX_Gain": 0.05,
-                "_flag_PID_D_SpeedY_Gain": 0.05,
-                "_flag_PID_I_PosX_Gain": 5.0,
-                "_flag_PID_I_PosY_Gain": 5.0,
+                "_flag_PID_D_SpeedX_Gain": 0,
+                "_flag_PID_D_SpeedY_Gain": 0,
+                "_flag_PID_I_PosX_Gain": 20.0,
+                "_flag_PID_I_PosY_Gain": 20.0,
                 "_flag_PID_I_SpeedX_Gain": 0,
                 "_flag_PID_I_SpeedY_Gain": 0,
                 "_flag_PID_P_PosX_Gain": 1.0,
