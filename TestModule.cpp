@@ -336,9 +336,9 @@ void configWrite(const char *configDir, const char *substr, const char *Target, 
 	std::string content((std::istreambuf_iterator<char>(config)),
 						(std::istreambuf_iterator<char>()));
 	nlohmann::json Configdata = nlohmann::json::parse(content);
-	nlohmann::json subdata = Configdata[substr];
+	nlohmann::json subdata = Configdata[substr]["Sensor"];
 	subdata[Target] = obj;
-	Configdata[substr] = subdata;
+	Configdata[substr]["Sensor"] = subdata;
 	std::ofstream configs;
 	configs.open(configDir);
 	configs << std::setw(4) << Configdata << std::endl;

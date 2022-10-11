@@ -1250,8 +1250,8 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 								(int)PF._uORB_Leveling__Roll,
 								(int)PF._uORB_Leveling_Pitch,
 								(int)PF._uORB_Leveling___Yaw,
-								(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[0])), // Convert to Cleanflight output
-								(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1]),
+								(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[0])),
+								(-1 * (RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[1])),
 								(RF._flag_RC_Mid_PWM_Value - RF._uORB_RC_Channel_PWM[3]),
 								(RF._uORB_RC_Channel_PWM[2]),
 								(int)(SF._uORB_MPU_Data._uORB_Real__Roll * 100.f),
@@ -1900,7 +1900,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 				if (AF._flag_IsNAVAvalible)
 				{
-					PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
+					PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
 					PF._uORB_PID_Pitch_Input -= PF._uORB_PID_PosY_Output;
 				}
 				else
@@ -1921,7 +1921,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 					if (RF._uORB_RC_Out__Roll != 0)
 						PF._uORB_PID__Roll_Input -= RF._uORB_RC_Out__Roll * PF._flag_PID_RCAngle__Roll_Gain;
 					else
-						PF._uORB_PID__Roll_Input -= PF._uORB_PID_PosX_Output;
+						PF._uORB_PID__Roll_Input += PF._uORB_PID_PosX_Output;
 					// if (RF._uORB_RC_Out_Pitch != 0 && !AF._flag_IsBrakingYSet)
 					if (RF._uORB_RC_Out_Pitch != 0)
 						PF._uORB_PID_Pitch_Input -= RF._uORB_RC_Out_Pitch * PF._flag_PID_RCAngle_Pitch_Gain;
@@ -2621,6 +2621,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			// else
 			// {
 			PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max;
+			// }
 			//
 		}
 		//
@@ -2668,7 +2669,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 
 			// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 			// FIXME: 2022-3-23 pitch for accel is y, WTF was I doing?
-			PF._uORB_PID_PosX_Output *= -1;
+			// PF._uORB_PID_PosX_Output *= -1;
 			// FIXME: change output to same as RC out
 			// PF._uORB_PID_PosY_Output *= -1;
 		}
