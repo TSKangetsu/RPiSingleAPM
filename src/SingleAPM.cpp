@@ -169,6 +169,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		config.AccTargetFreqency = ACCEL_UPDATE_HZ;
 		config.AccelFilterType = SF._flag_Filter_Accel_Type;
 		config.AccelFilterCutOff = SF._flag_Filter_Accel_CutOff;
+		config.AccelFilterNotchCutOff = 80;
+		config.AccelFilterNotchCenterFreq = 100;
 		DF.MPUDevice.reset(new RPiMPU9250(config));
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
@@ -2664,8 +2666,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			PF._uORB_PID_PosX_Output = PF._uORB_PID_PosX_Output > PF._flag_PID_Pos_Level_Max ? PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosX_Output;
 			PF._uORB_PID_PosX_Output = PF._uORB_PID_PosX_Output < -1 * PF._flag_PID_Pos_Level_Max ? -1 * PF._flag_PID_Pos_Level_Max : PF._uORB_PID_PosX_Output;
 
-			PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
-			PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
+			// PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
+			// PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
 
 			// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
 			// FIXME: 2022-3-23 pitch for accel is y, WTF was I doing?
