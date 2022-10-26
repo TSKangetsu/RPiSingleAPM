@@ -55,7 +55,7 @@
 #define I2CCOMPASS_ADDR 0x1e
 #define I2CBARO_ADDR 0x77
 #define I2CPCA_ADDR 0x70
-#define I2CINA_ADDR 0x40
+#define I2CINA_ADDR 0x44
 
 #define INA226_MaxCurrent 5.f
 #define INA226_ShuntOfR 0.01
@@ -144,7 +144,6 @@ namespace SingleAPMAPI
 			float _flag_PID_Alt_Accel_Max;
 			float _flag_PID_PosMan_Speed_Max;
 			float _flag_PID_Pos_Speed_Max;
-			float _flag_PID_Pos_Accel_Max;
 
 			float _flag_PID_TPA_Trust;
 			float _flag_PID_TPA_BreakPoint;
@@ -242,7 +241,6 @@ namespace SingleAPMAPI
 			float _flag_GPS_Config_Beta = 1.f;
 			float _flag_Flow_Config_Beta = 1.f;
 			float _flag_Braking_Speed_Gain = 2.0f;
-			float _flag_Braking_AccelMax_Gain = 2.0f;
 
 			float _flag_Filter_RC_CutOff;
 			float _flag_Filter_AngleRate_CutOff;
@@ -654,7 +652,6 @@ namespace SingleAPMAPI
 
 			float _flag_GPS_Dynamic_Beta = .8f;
 			float _flag_Flow_Dynamic_Beta = 1.f;
-			float _flag_Braking_AccelMax_Gain = 2.0f;
 			float _flag_Braking_Speed_Gain = 2.0f;
 
 			float _flag_PID_SpeedX_Max = 0;
@@ -664,8 +661,6 @@ namespace SingleAPMAPI
 			float _flag_PID_P_SpeedX_Gain = 0;
 			float _flag_PID_I_SpeedX_Gain = 0;
 			float _flag_PID_D_SpeedX_Gain = 0;
-			float _uORB_PID_P_PosX_Dynamic_Gain = 0;
-			float _uORB_PID_I_PosX_Dynamic_Gain = 0;
 
 			float _flag_PID_SpeedY_Max = 0;
 			float _flag_PID_AccelY_Max = 0;
@@ -674,15 +669,10 @@ namespace SingleAPMAPI
 			float _flag_PID_P_SpeedY_Gain = 0;
 			float _flag_PID_I_SpeedY_Gain = 0;
 			float _flag_PID_D_SpeedY_Gain = 0;
-			float _uORB_PID_P_PosY_Dynamic_Gain = 0;
-			float _uORB_PID_I_PosY_Dynamic_Gain = 0;
 
 			float _flag_PID_PosMan_Speed_Max = 50;
 			float _flag_PID_Pos_Speed_Max = 50;
-			float _flag_PID_Pos_Accel_Max = 500;
 			float _flag_PID_Pos_Level_Max = 250;
-			float _uORB_PID_Pos_AccelX_Max = 500;
-			float _uORB_PID_Pos_AccelY_Max = 500;
 
 			float _uORB_PID_I_Last_Value_SpeedX = 0;
 			float _uORB_PID_D_Last_Value_SpeedX = 0;

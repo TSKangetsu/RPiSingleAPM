@@ -266,7 +266,6 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.PC._flag_PID_D_SpeedY_Gain = PNC["_flag_PID_D_SpeedY_Gain"].get<float>();
 	APMInit.PC._flag_PID_Pos_Level_Max = PNC["_flag_PID_Pos_Level_Max"].get<float>();
 	APMInit.PC._flag_PID_PosMan_Speed_Max = PNC["_flag_PID_PosMan_Speed_Max"].get<float>();
-	APMInit.PC._flag_PID_Pos_Accel_Max = PNC["_flag_PID_Pos_Accel_Max"].get<float>();
 	APMInit.PC._flag_PID_Pos_Speed_Max = PNC["_flag_PID_Pos_Speed_Max"].get<float>();
 	//==============================================================Sensors cofig==/
 	nlohmann::json SCS = Configdata["Sensor"];
@@ -327,7 +326,6 @@ void configSettle(const char *configDir, const char *substr, APMSettinngs &APMIn
 	APMInit.FC._flag_GPS_Config_Beta = SCF["_flag_GPS_Config_Beta"].get<double>();
 	APMInit.FC._flag_Flow_Config_Beta = SCF["_flag_Flow_Config_Beta"].get<double>();
 	APMInit.FC._flag_Braking_Speed_Gain = SCF["_flag_Braking_Speed_Gain"].get<double>();
-	APMInit.FC._flag_Braking_AccelMax_Gain = SCF["_flag_Braking_AccelMax_Gain"].get<double>();
 }
 
 void configWrite(const char *configDir, const char *substr, const char *Target, double obj)

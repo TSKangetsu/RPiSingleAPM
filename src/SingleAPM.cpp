@@ -1728,7 +1728,6 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_PID_Alt_Accel_Max = APMInit.PC._flag_PID_Alt_Accel_Max;
 	PF._flag_PID_PosMan_Speed_Max = APMInit.PC._flag_PID_PosMan_Speed_Max;
 	PF._flag_PID_Pos_Speed_Max = APMInit.PC._flag_PID_Pos_Speed_Max;
-	PF._flag_PID_Pos_Accel_Max = APMInit.PC._flag_PID_Pos_Accel_Max;
 
 	PF._flag_PID_AngleRate__Roll_Gain = APMInit.PC._flag_PID_AngleRate__Roll_Gain;
 	PF._flag_PID_AngleRate_Pitch_Gain = APMInit.PC._flag_PID_AngleRate_Pitch_Gain;
@@ -1802,7 +1801,6 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 	PF._flag_GPS_Dynamic_Beta = APMInit.FC._flag_GPS_Config_Beta;
 	PF._flag_Flow_Dynamic_Beta = APMInit.FC._flag_Flow_Config_Beta;
 	PF._flag_Braking_Speed_Gain = APMInit.FC._flag_Braking_Speed_Gain;
-	PF._flag_Braking_AccelMax_Gain = APMInit.FC._flag_Braking_AccelMax_Gain;
 }
 
 //=-----------------------------------------------------------------------------------------==//
@@ -2364,6 +2362,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 	// PositionHold Caculate
 	{
 		// Speed Brake Flag Manager
+		// FIXME: Any better way?
 		{
 			if (AF.AutoPilotMode == APModeINFO::SpeedHold)
 			{
@@ -2589,63 +2588,27 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		SF._uORB_True_Speed_X += PF._uORB_PID_SpeedXCorrection;
 		SF._uORB_True_Movement_Y += PF._uORB_PID_MoveYCorrection;
 		SF._uORB_True_Speed_Y += PF._uORB_PID_SpeedYCorrection;
-
-		// Pos and Braking Dynamic caculate
+		// TODO: new BrakingMode Implement
 		{
-			// if (abs(SF._uORB_True_Speed_X) < 10.f)
-			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = 5.f;
-			// else if (10.f < abs(SF._uORB_True_Speed_X) && abs(SF._uORB_True_Speed_X) < 20.f)
-			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * ((abs(SF._uORB_True_Speed_X) - 10.f) / 20.f) + 5.f;
-			// else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-			PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain;
-
-			// if (abs(SF._uORB_True_Speed_Y) <= 10.f)
-			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = 5.f;
-			// else if (10.f < abs(SF._uORB_True_Speed_Y) && abs(SF._uORB_True_Speed_Y) < 20.f)
-			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * ((abs(SF._uORB_True_Speed_Y) - 10.f) / 20.f) + 5.f;
-			// else if (abs(SF._uORB_True_Speed_Y) >= 20.f)
-			PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain;
-
 			// if (AF._flag_IsBrakingXSet && abs(SF._uORB_True_Speed_X) > 45.f)
 			// {
-			// 	PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
-			// 	PF._uORB_PID_I_PosX_Dynamic_Gain = PF._flag_PID_I_PosX_Gain * PF._flag_Braking_Speed_Gain;
-			// }
-			// else
-			// {
-			PF._uORB_PID_Pos_AccelX_Max = PF._flag_PID_Pos_Accel_Max;
 			// }
 			// if (AF._flag_IsBrakingYSet && abs(SF._uORB_True_Speed_Y) > 45.f)
 			// {
-			// 	PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max * PF._flag_Braking_AccelMax_Gain;
-			// 	PF._uORB_PID_I_PosY_Dynamic_Gain = PF._flag_PID_I_PosY_Gain * PF._flag_Braking_Speed_Gain;
 			// }
-			// else
-			// {
-			PF._uORB_PID_Pos_AccelY_Max = PF._flag_PID_Pos_Accel_Max;
-			// }
-			//
 		}
 		//
 		double TargetSpeedX = (SF._uORB_True_Movement_X - PF._uORB_PID_PosXUserTarget) * PF._flag_PID_P_PosX_Gain -
 							  RF._uORB_RC_Out_PosHoldSpeedX - PF._uORB_PID_PosXUserSpeed;
 		TargetSpeedX = TargetSpeedX > PF._flag_PID_Pos_Speed_Max ? PF._flag_PID_Pos_Speed_Max : TargetSpeedX;
 		TargetSpeedX = TargetSpeedX < -1 * PF._flag_PID_Pos_Speed_Max ? -1 * PF._flag_PID_Pos_Speed_Max : TargetSpeedX;
-
-		double TargetAccelX = (TargetSpeedX + SF._uORB_True_Speed_X) * PF._uORB_PID_I_PosX_Dynamic_Gain;
-		TargetAccelX = TargetAccelX > PF._uORB_PID_Pos_AccelX_Max ? PF._uORB_PID_Pos_AccelX_Max : TargetAccelX;
-		TargetAccelX = TargetAccelX < -1 * PF._uORB_PID_Pos_AccelX_Max ? -1 * PF._uORB_PID_Pos_AccelX_Max : TargetAccelX;
-		PF._uORB_PID_PosXTarget = TargetAccelX + SF._uORB_MPU_Data._uORB_Acceleration_X;
+		PF._uORB_PID_PosXTarget = (TargetSpeedX + SF._uORB_True_Speed_X);
 		//
 		double TargetSpeedY = (SF._uORB_True_Movement_Y - PF._uORB_PID_PosYUserTarget) * PF._flag_PID_P_PosY_Gain -
 							  RF._uORB_RC_Out_PosHoldSpeedY - PF._uORB_PID_PosYUserSpeed;
 		TargetSpeedY = TargetSpeedY > PF._flag_PID_Pos_Speed_Max ? PF._flag_PID_Pos_Speed_Max : TargetSpeedY;
 		TargetSpeedY = TargetSpeedY < -1 * PF._flag_PID_Pos_Speed_Max ? -1 * PF._flag_PID_Pos_Speed_Max : TargetSpeedY;
-
-		double TargetAccelY = (TargetSpeedY + SF._uORB_True_Speed_Y) * PF._uORB_PID_I_PosY_Dynamic_Gain;
-		TargetAccelY = TargetAccelY > PF._uORB_PID_Pos_AccelY_Max ? PF._uORB_PID_Pos_AccelY_Max : TargetAccelY;
-		TargetAccelY = TargetAccelY < -1 * PF._uORB_PID_Pos_AccelY_Max ? -1 * PF._uORB_PID_Pos_AccelY_Max : TargetAccelY;
-		PF._uORB_PID_PosYTarget = TargetAccelY + SF._uORB_MPU_Data._uORB_Acceleration_Y;
+		PF._uORB_PID_PosYTarget = (TargetSpeedY + SF._uORB_True_Speed_Y);
 		//
 		if ((AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::SpeedHold ||
 			 AF.AutoPilotMode == APModeINFO::UserAuto) &&
@@ -2668,12 +2631,6 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 
 			// PF._uORB_PID_PosX_Output = pt1FilterApply4(&DF.POSOutLPF[0], PF._uORB_PID_PosX_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
 			// PF._uORB_PID_PosY_Output = pt1FilterApply4(&DF.POSOutLPF[1], PF._uORB_PID_PosY_Output, FILTERPOSOUTLPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
-
-			// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-			// FIXME: 2022-3-23 pitch for accel is y, WTF was I doing?
-			// PF._uORB_PID_PosX_Output *= -1;
-			// FIXME: change output to same as RC out
-			// PF._uORB_PID_PosY_Output *= -1;
 		}
 	}
 
