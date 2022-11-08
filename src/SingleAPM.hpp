@@ -55,7 +55,7 @@
 #define I2CCOMPASS_ADDR 0x1e
 #define I2CBARO_ADDR 0x77
 #define I2CPCA_ADDR 0x70
-#define I2CINA_ADDR 0x44
+#define I2CINA_ADDR 0x40
 
 #define INA226_MaxCurrent 5.f
 #define INA226_ShuntOfR 0.01
