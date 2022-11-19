@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <asm/ioctls.h>
 #include <sys/types.h>
 #include <linux/i2c-dev.h>
 
@@ -113,11 +114,11 @@ private:
 PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
 {
     if ((ADCFD = open(I2CChannel, O_RDWR)) < 0)
-        throw - 1;
+        throw -1;
     if (ioctl(ADCFD, I2C_SLAVE, I2CAddress) < 0)
-        throw - 1;
+        throw -1;
     if (ioctl(ADCFD, I2C_TIMEOUT, 0x01) < 0) // set to 10ms?
-        throw - 1;
+        throw -1;
     // Check INA226's ID
     {
         uint8_t WHOAMI = 0xFE;
@@ -125,7 +126,7 @@ PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
         read(ADCFD, tmpbuffer, 2);
         int whoAMI = tmpbuffer[0] << 8 | tmpbuffer[1];
         if (whoAMI != DEV_INA226_ID)
-            throw - 2;
+            throw -2;
     }
 
     {
@@ -134,7 +135,7 @@ PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
         read(ADCFD, tmpbuffer, 2);
         int whoAMI = tmpbuffer[0] << 8 | tmpbuffer[1];
         if (whoAMI != DEV_INA226_DIEID)
-            throw - 2;
+            throw -2;
     }
     // reset
     {
@@ -143,7 +144,7 @@ PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
         uint8_t config_reg_revM = (uint8_t)(configs >> 8);
         uint8_t configsw[3] = {INA226_REG_CONFIGURATION, config_reg_revM, config_reg_revL};
         if (write(ADCFD, &configsw, 3) < 0)
-            throw - 3;
+            throw -3;
     }
     // turn off
     {
@@ -152,7 +153,7 @@ PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
         uint8_t config_reg_revM = (uint8_t)(configs >> 8);
         uint8_t configsw[3] = {INA226_REG_CONFIGURATION, config_reg_revM, config_reg_revL};
         if (write(ADCFD, &configsw, 3) < 0)
-            throw - 3;
+            throw -3;
     }
     // Calibration apply
     {
@@ -164,7 +165,7 @@ PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
         uint8_t calib_reg_revM = (uint8_t)(calib_reg >> 8);
         uint8_t caliw[3] = {INA226_REG_CALIBRATION, calib_reg_revM, calib_reg_revL};
         if (write(ADCFD, &caliw, 3) < 0)
-            throw - 3;
+            throw -3;
     }
     // config apply
     {
@@ -173,7 +174,7 @@ PowerADC::PowerADC(const char *I2CChannel, uint8_t I2CAddress, ADCConfig config)
         uint8_t config_reg_revM = (uint8_t)(configs >> 8);
         uint8_t configsw[3] = {INA226_REG_CONFIGURATION, config_reg_revM, config_reg_revL};
         if (write(ADCFD, &configsw, 3) < 0)
-            throw - 3;
+            throw -3;
     }
 }
 

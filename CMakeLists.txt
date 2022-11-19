@@ -1,4 +1,4 @@
-set(MPUDriver "pigpio" CACHE  INTERNAL "")
+set(MPUDriver "spidev" CACHE  INTERNAL "")
 
 execute_process(
   COMMAND git log -1 --format=%h

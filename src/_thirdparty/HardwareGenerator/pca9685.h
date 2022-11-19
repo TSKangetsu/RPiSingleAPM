@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <asm/ioctls.h>
 #include <sys/types.h>
 #include <linux/i2c-dev.h>
 
@@ -167,7 +168,7 @@ inline int pca9685PWMWrite(int fd, int pin, int on, int off)
         if (write(fd, wdatam, 2) < 0)
             return -1;
     }
-    
+
     return 0;
 }
 
