@@ -95,7 +95,7 @@ ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, uint8_t 
     }
 
     if (GeneratorFD < 0)
-        throw - 1;
+        throw std::invalid_argument("[ESC] I2C process failed");
 }
 
 void ESCGenerator::ESCUpdate(int ID, int Range)
