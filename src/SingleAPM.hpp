@@ -289,7 +289,7 @@ namespace SingleAPMAPI
 
 		void APMControllerDISARM(APModeINFO APMode);
 
-		void APMControllerServo(int pin, int on, int off);
+		void APMControllerServo(int pin, int PWMInUs);
 
 		void APMControllerPosition(int x, int y, int z, bool resetHome);
 

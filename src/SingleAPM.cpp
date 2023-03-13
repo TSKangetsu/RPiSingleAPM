@@ -3049,6 +3049,9 @@ void SingleAPMAPI::RPiSingleAPM::APMControllerSpeed(int x, int y, int z)
 	}
 }
 
-void SingleAPMAPI::RPiSingleAPM::APMControllerServo(int pin, int on, int off)
+void SingleAPMAPI::RPiSingleAPM::APMControllerServo(int pin, int PWMInUs)
 {
+	DF.I2CLock.lock();
+	DF.ESCDevice->ESCUpdate(pin, PWMInUs);
+	DF.I2CLock.unlock();
 }

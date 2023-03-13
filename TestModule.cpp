@@ -1,6 +1,7 @@
 #include "./src/SingleAPM.hpp"
 #include <fstream>
 #include "Drive_Json.hpp"
+#include "UserImpTestModule.hpp"
 using namespace SingleAPMAPI;
 
 #ifndef GIT_COMMIT_HASH
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
 	int argvs;
 	double data[20] = {0};
 	APMSettinngs setting;
-	while ((argvs = getopt(argc, argv, "e:E:C:r:a:jh")) != -1)
+	while ((argvs = getopt(argc, argv, "e:E:C:r:s:a:jh")) != -1)
 	{
 		switch (argvs)
 		{
@@ -42,6 +43,22 @@ int main(int argc, char *argv[])
 			//
 			APM_Settle.RPiSingleAPMStartUp();
 			APM_Settle.TaskThreadBlock();
+		}
+		break;
+		case 's':
+		{
+			FlightControllMain APM_Settle;
+			configSettle(CONFIGDIR, optarg, setting);
+			APM_Settle.RPiSingleAPMInit(setting);
+			// Because of PiGPIO ,if you must handle Signal, should be call after RPiSingleAPMInit()
+			std::signal(SIGINT, SignalCatch);
+			std::signal(SIGTERM, SignalCatch);
+			APM_Settle.ServoControllInit();
+			//
+			APM_Settle.RPiSingleAPMStartUp();
+			APM_Settle.TaskThreadBlock();
+			//
+			APM_Settle.stopAndWaitForExit();
 		}
 		break;
 		case 'e':

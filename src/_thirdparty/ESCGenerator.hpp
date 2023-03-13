@@ -61,8 +61,8 @@ ESCGenerator::ESCGenerator(GeneratorType generator, const char *device, uint8_t 
                                    PlFrequency);
         pca9685PWMReset(GeneratorFD);
         pca9685PWMResetON(GeneratorFD, PCA9685_ALL_PIN);
-        ThrotteMin = PCA9685_PWM_MIN;
-        ThrotteMax = PCA9685_PWM_MAX;
+        ThrotteMin = (PCA9685_RANGE - 1) / 2.f;
+        ThrotteMax = (PCA9685_RANGE - 1);
         ThrotteRange = ThrotteMax - ThrotteMin;
     }
     break;
