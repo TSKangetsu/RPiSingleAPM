@@ -10,7 +10,7 @@ Warnning: This project is GPL3.0! <br/>
 
 ## develop suppend for few weeks, if any questions, ask in issues <br/>
 
-becuse of job ... </br>
+I try to using openwrt for assembly release, this not a easy job ....</br>
 
 #
 - GetStarted
