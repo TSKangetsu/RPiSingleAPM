@@ -1,4 +1,5 @@
 set(MPUDriver "spidev" CACHE  INTERNAL "")
+set(FULLSTATIC TRUE CACHE  INTERNAL bool)
 
 execute_process(
   COMMAND git log -1 --format=%h
@@ -11,9 +12,20 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -s")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -s")
 project(SingleFlight)
+
+
+IF(FULLSTATIC)
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+  set(BUILD_SHARED_LIBS OFF)
+  set(CMAKE_EXE_LINKER_FLAGS "-static -static-libstdc++ -static-libgcc")
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+ENDIF()
+
 IF(UNIX)
 ###########################code Definetion##################
     add_definitions(-DRPiDEBUGStart)
@@ -25,6 +37,7 @@ IF(UNIX)
     add_subdirectory(src)
     add_executable(SingleFlight "TestModule.cpp")
     target_compile_definitions(SingleFlight PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
-    target_link_libraries(SingleFlight PRIVATE  RPiSingleAPI)
+    target_link_libraries(SingleFlight PRIVATE gcc_pic) # this option must link with musl
+    target_link_libraries(SingleFlight PRIVATE RPiSingleAPI)
     target_link_libraries(SingleFlight PRIVATE Threads::Threads)
 ENDIF()
