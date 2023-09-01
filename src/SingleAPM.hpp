@@ -18,6 +18,7 @@
 #include "_thirdparty/RaspberryPiRC/RPiGPS/RPiGPS.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
+#include "_thirdparty/RaspberryPiRC/CRSF/CRSFUartRC.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
@@ -32,6 +33,7 @@
 
 #define RCIsIbus 0
 #define RCIsSbus 1
+#define RCIsCRSF 2
 
 #define ESCCalibration 10
 #define CaliESCStart 0
@@ -402,6 +404,7 @@ namespace SingleAPMAPI
 			std::mutex I2CLock;
 			std::unique_ptr<Sbus> SbusInit;
 			std::unique_ptr<Ibus> IbusInit;
+			std::unique_ptr<CRSF> CRSFInit;
 			std::unique_ptr<BaroDevice> BaroDeviceD;
 			std::unique_ptr<GPSUart> GPSInit;
 			std::unique_ptr<ESCGenerator> ESCDevice;
@@ -783,6 +786,7 @@ namespace SingleAPMAPI
 
 			std::unique_ptr<FlowThread> IMUFlow;
 			std::unique_ptr<FlowThread> RTXFlow;
+			std::unique_ptr<FlowThread> RXCFlow;
 			std::unique_ptr<FlowThread> ESCFlow;
 			std::unique_ptr<FlowThread> ALTFlow;
 			std::unique_ptr<FlowThread> GPSFlow;

@@ -70,6 +70,13 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 #endif
 			DF.SbusInit.reset(new Sbus(DF.RCDevice.c_str()));
 		}
+		else if (RF.RC_Type == RCIsCRSF)
+		{
+#ifdef RPiDEBUGStart
+			std::cout << "[RPiSingleAPM]Controller CRSF config comfirm\n";
+#endif
+			DF.CRSFInit.reset(new CRSF(DF.RCDevice.c_str()));
+		}
 	}
 	//--------------------------------------------------------------------//
 	{
@@ -631,6 +638,7 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			{
 				if (RF.RC_Type == RCIsSbus)
 				{
+					// TODO: full posix read support
 					if (DF.SbusInit->SbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 					{
 						for (size_t i = 0; i < 16; i++)
@@ -646,11 +654,28 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 				}
 				else if (RF.RC_Type == RCIsIbus)
 				{
+					// TODO: full posix read support
 					if (DF.IbusInit->IbusRead(RF._Tmp_RC_Data, 0, 1) != -1)
 					{
 						for (size_t i = 0; i < 16; i++)
 						{
 							RF._uORB_RC_Channel_PWM[i] = RF._Tmp_RC_Data[i];
+						}
+						AF._flag_RC_Disconnected = false;
+					}
+					else
+					{
+						AF._flag_RC_Disconnected = true;
+					}
+				}
+				else if (RF.RC_Type == RCIsCRSF)
+				{
+					// FIXME: support lower than 100HZ update speed
+					if (DF.CRSFInit->CRSFRead(RF._Tmp_RC_Data, 15000) > 0)
+					{
+						for (size_t i = 0; i < 16; i++)
+						{
+							RF._uORB_RC_Channel_PWM[i] = DF.CRSFInit->rcToUs(RF._Tmp_RC_Data[i]);
 						}
 						AF._flag_RC_Disconnected = false;
 					}
