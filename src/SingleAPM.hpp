@@ -499,6 +499,7 @@ namespace SingleAPMAPI
 			int _uORB_Flow_XOutput = 0;
 			int _uORB_Flow_YOutput = 0;
 			int _uORB_Flow_Quality = 0;
+			int _uORB_RF_Quality = 0;
 			double _uORB_Gryo_Body_Asix_X = 0;
 			double _uORB_Gryo_Body_Asix_Y = 0;
 			double _uORB_Flow_Body_Asix_X = 0;

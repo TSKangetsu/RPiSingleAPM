@@ -1093,7 +1093,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 			{
 				{
 					SF._Tmp_FlowThreadTimeout++;
-					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._Tmp_Flow_Altitude, SF._uORB_Flow_Quality);
+					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._uORB_Flow_Quality, SF._Tmp_Flow_Altitude, SF._uORB_RF_Quality);
 					//
 					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
 					{
