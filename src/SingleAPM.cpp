@@ -193,39 +193,38 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	{
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Init Extenal Monitor: \n";
-		std::cout << "[RPiSingleAPM] ADC ....";
+		std::cout << "[RPiSingleAPM]ADC ....";
 		std::cout.flush();
 #endif
 		try
 		{
-			DF.ADCDevice.reset(new PowerADC(DF.I2CDevice.c_str(), I2CINA_ADDR,
-											{
-												.MAXCurrent = INA226_MaxCurrent,
-												.ROfShunt = INA226_ShuntOfR,
-												.ADCBus = INA226_TIME_8MS,
-												.Shunttime = INA226_TIME_8MS,
-												.Averages = INA226_AVERAGES_1,
-												.Mode = INA226_MODE_SHUNT_BUS_CONTINUOUS,
-											}));
+			DF.ADCDevice.reset(new ADS111x(DF.I2CDevice.c_str()));
 #ifdef RPiDEBUGStart
 			std::cout << "Check! \n";
 #endif
 			for (size_t i = 0; i < 20; i++)
 			{
-				SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
+				SF._uORB_BAT_Voltage =
+					DF.ADCDevice->ADS111xReadmV({
+						.Pin = 5,
+						.Range = ADS111x::SL_RangeFSR::V4_096,
+						.DataRate = ADS111x::SL_DataRateSPS::SPS_860,
+					}) /
+					1000.f / ADC_FRONT_GAIN;
 				usleep(15 * 1000);
 			}
-			SF._uORB_BAT_Scount = (int)(SF._uORB_ADC_Data.voltage / 3.7f);
+			SF._uORB_BAT_Scount = (int)(SF._uORB_BAT_Voltage / 3.7f);
 			//
-			DF._IsINAEnable = true;
+			DF._IsADCEnable = true;
 		}
 		catch (int &e)
 		{
+
 #ifdef RPiDEBUGStart
-			std::cout << "[RPiSingleAPM] ADC No Detected.\n";
+			std::cout << "\n[RPiSingleAPM] ADC No Detected.\n";
 #endif
 			//
-			DF._IsINAEnable = false;
+			DF._IsADCEnable = false;
 		}
 		//
 	}
@@ -320,7 +319,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "DynamicNotch[2]", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "vbatLatest", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
-				{.FrameName = "devicepower", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 				{.FrameName = "IMUDT", .FrameSigned = 0, .FramePredictor = 0, .FrameEncoder = 1},
 			};
 
@@ -379,7 +377,6 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				{.FrameName = "DynamicNotch[1]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "DynamicNotch[2]", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "vbatLatest", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
-				{.FrameName = "devicepower", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 				{.FrameName = "IMUDT", .FrameSigned = 1, .FramePredictor = 1, .FrameEncoder = 0},
 			};
 
@@ -432,7 +429,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 					"H minthrottle:1000\n",
 					"H maxthrottle:2000\n",
 					"H vbatscale:110\n",
-					("H vbatref:" + std::to_string(SF._uORB_ADC_Data.voltage * 112.8) + "\n"),
+					("H vbatref:" + std::to_string(SF._uORB_BAT_Voltage * 112.8) + "\n"),
 					"H vbatcellvoltage:33,35,43\n",
 					("H looptime:" + std::to_string(1.f / (float)TF._flag_IMUFlowFreq * 1000000.f) + "\n"),
 				},
@@ -1095,7 +1092,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					SF._Tmp_FlowThreadTimeout++;
 					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._uORB_Flow_Quality, SF._Tmp_Flow_Altitude, SF._uORB_RF_Quality);
 					//
-					if (SF._Tmp_Flow___Status == 1 || SF._Tmp_Flow___Status == 3)
+					if (SF._Tmp_Flow___Status == 1)
 					{
 						SF._uORB_Flow_Altitude = SF._Tmp_Flow_Altitude * (1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real_Pitch) * 3.14 / 180.f) *
 																					(1.f - cos(abs(SF._uORB_MPU_Data._uORB_Real__Roll) * 3.14 / 180.f)));
@@ -1128,26 +1125,22 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 						}
 						AF._flag_SonarData_Async = true;
 					}
-					if (SF._Tmp_Flow___Status == 2 || SF._Tmp_Flow___Status == 3)
+					if (SF._Tmp_Flow___Status == 2)
 					{
-						if (SF._uORB_Flow_Quality < 105.f)
-							AF._flag_IsFlowAvalible = false;
-						else
-							AF._flag_IsFlowAvalible = true;
+						// if (SF._uORB_Flow_Quality < 105.f)
+						// 	AF._flag_IsFlowAvalible = false;
+						// else
+						AF._flag_IsFlowAvalible = true;
 
 						// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-						SF._uORB_Flow_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X * 10.f;
-						SF._uORB_Flow_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y * 10.f;
-						SF._uORB_Flow_Filter_XOutput = ((float)SF._uORB_Flow_XOutput + SF._uORB_Flow_Body_Asix_X) * SF._uORB_Flow_Altitude / 100.f;
-						SF._uORB_Flow_Filter_YOutput = ((float)SF._uORB_Flow_YOutput + SF._uORB_Flow_Body_Asix_Y) * SF._uORB_Flow_Altitude / 100.f;
+						SF._uORB_Flow_Filter_XOutput = (float)SF._uORB_Flow_XOutput;
+						SF._uORB_Flow_Filter_YOutput = (float)SF._uORB_Flow_YOutput;
 						// FIXME: TimeDT will zero, x /0 will cause nan, fxck
-						if (TF.OPFFlow->TimeDT != 0)
-						{
-							SF._uORB_Flow_Speed_X = (SF._uORB_Flow_Filter_XOutput / 50.f) / ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
-							SF._uORB_Flow_Speed_Y = (SF._uORB_Flow_Filter_YOutput / 50.f) / ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
-							SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
-							SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
-						}
+
+						SF._uORB_Flow_Speed_X = SF._uORB_Flow_Filter_XOutput;
+						SF._uORB_Flow_Speed_Y = SF._uORB_Flow_Filter_YOutput;
+						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X;
+						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y;
 
 						SF._Tmp_FlowThreadTimeout = 0;
 						AF._flag_FlowData_Async = true;
@@ -1156,10 +1149,10 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 
 						if (!AF._flag_IsFlowAvalible)
 						{
-							SF._uORB_Flow_Speed_X = 0;
-							SF._uORB_Flow_Speed_Y = 0;
-							SF._uORB_Flow_XOutput_Total = 0;
-							SF._uORB_Flow_YOutput_Total = 0;
+							// 	SF._uORB_Flow_Speed_X = 0;
+							// 	SF._uORB_Flow_Speed_Y = 0;
+							// SF._uORB_Flow_XOutput_Total = 0;
+							// SF._uORB_Flow_YOutput_Total = 0;
 						}
 					}
 					if (SF._Tmp_FlowThreadTimeout > 3)
@@ -1169,7 +1162,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					}
 				}
 			},
-			TF._flag_Sys_CPU_Asign, TF._flag_OPFFlowFreq));
+			TF._flag_Sys_CPU_Asign));
 	}
 }
 
@@ -1179,13 +1172,19 @@ void SingleAPMAPI::RPiSingleAPM::ExtendMonitorTaskReg()
 		[&]
 		{
 			//
-			if (DF._IsINAEnable)
+			if (DF._IsADCEnable)
 			{
 				DF.I2CLock.lock();
-				SF._uORB_ADC_Data = DF.ADCDevice->ADCGetData();
+				SF._uORB_BAT_Voltage =
+					DF.ADCDevice->ADS111xReadmV({
+						.Pin = ADC_VBAT_PIN,
+						.Range = ADS111x::SL_RangeFSR::V4_096,
+						.DataRate = ADS111x::SL_DataRateSPS::SPS_860,
+					}) /
+					1000.f / ADC_FRONT_GAIN;
 				DF.I2CLock.unlock();
 				//
-				SF._uORB_BAT_SingleVol = SF._uORB_ADC_Data.voltage / (float)SF._uORB_BAT_Scount;
+				SF._uORB_BAT_SingleVol = SF._uORB_BAT_Voltage / (float)SF._uORB_BAT_Scount;
 			}
 		},
 		TF._flag_Sys_CPU_Asign, TF._flag_EXTFlowFreq));
@@ -1325,8 +1324,7 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0],
 								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
 								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
-								(int)(SF._uORB_ADC_Data.voltage * 112.8),
-								(int)(SF._uORB_ADC_Data.power),
+								(int)(SF._uORB_BAT_Voltage * 112.8),
 								(int)TF._Tmp_IMUAttThreadDT,
 							}));
 
@@ -2221,8 +2219,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		if (!(AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto) ||
 			AF._flag_ESC_ARMED)
 		{
-			SF._uORB_Flow_XOutput_Total = 0;
-			SF._uORB_Flow_YOutput_Total = 0;
+			// SF._uORB_Flow_XOutput_Total = 0;
+			// SF._uORB_Flow_YOutput_Total = 0;
 			SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
 			SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 			PF._uORB_PID_PosX_Output = 0;
@@ -2489,7 +2487,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			if (AF._flag_IsPositionXChange || AF._flag_IsBrakingXSet)
 			{
 				SF._uORB_True_Movement_X = 0;
-				SF._uORB_Flow_YOutput_Total = 0;
+				// SF._uORB_Flow_YOutput_Total = 0;
 				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
@@ -2500,7 +2498,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			if (AF._flag_IsPositionYChange || AF._flag_IsBrakingYSet)
 			{
 				SF._uORB_True_Movement_Y = 0;
-				SF._uORB_Flow_XOutput_Total = 0;
+				// SF._uORB_Flow_XOutput_Total = 0;
 				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
@@ -2880,8 +2878,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " ||FlowYOut:     " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput << "    ";
 	std::cout << " ||FlowAltitude: " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Sonar_AltInput << "    ";
 	std::cout << " ||FlowSpeedX:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Speed_X << "cm/s            \n";
-	std::cout << " FlowXOutTotal:  " << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Flow_PosInput_X << "    ";
-	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)PF._uORB_PID_Flow_PosInput_Y << "    ";
+	std::cout << " FlowXOutTotal:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_XOutput_Total << "    ";
+	std::cout << " ||FlowYOutTotal:" << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_YOutput_Total << "    ";
 	std::cout << " ||FlowSpeed:    " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_ClimbeRate << "cm/s";
 	std::cout << " ||FlowQuality:  " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Quality << "    ";
 	std::cout << " ||FlowSpeedY:   " << std::setw(7) << std::setfill(' ') << (int)SF._uORB_Flow_Speed_Y << "cm/s            \n";
@@ -2922,11 +2920,8 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 
 	std::cout << "ADCINFO:     "
 			  << " \n";
-	std::cout << " voltage:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.voltage << " V";
+	std::cout << " voltage:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_BAT_Voltage << " V";
 	std::cout << " ||sin_vol:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_BAT_SingleVol << " V";
-	std::cout << " ||current:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.current << " mA";
-	std::cout << " ||power  :" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.power << " mW";
-	std::cout << " ||svoltag:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_ADC_Data.shunt_voltage << " V            \n";
 	std::cout << " \n";
 
 	std::bitset<16> x(AF._flag_PreARM_Check_Level);

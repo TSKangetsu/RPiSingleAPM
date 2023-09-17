@@ -23,7 +23,8 @@
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/Dense"
-#include "_thirdparty/PowerMonitor/PowerADC.hpp"
+// #include "_thirdparty/PowerMonitor/PowerADC.hpp"
+#include "_thirdparty/PowerMonitor/ADS111x.hpp"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/BlackboxEncoder/Blackbox.hpp"
 
@@ -59,8 +60,8 @@
 #define I2CPCA_ADDR 0x70
 #define I2CINA_ADDR 0x40
 
-#define INA226_MaxCurrent 5.f
-#define INA226_ShuntOfR 0.01
+#define ADC_FRONT_GAIN 0.10138
+#define ADC_VBAT_PIN 5
 
 #define BlackBoxIInterval 32
 #define BlackBoxFirmware "Cleanflight"
@@ -399,7 +400,7 @@ namespace SingleAPMAPI
 			bool _IsRCSafeEnable;
 			bool _IsBAROEnable;
 			bool _IsBlackBoxEnable;
-			bool _IsINAEnable; // FIXME: decide by Failed or not;
+			bool _IsADCEnable; // FIXME: decide by Failed or not;
 
 			std::mutex I2CLock;
 			std::unique_ptr<Sbus> SbusInit;
@@ -412,7 +413,8 @@ namespace SingleAPMAPI
 			std::unique_ptr<RPiMPU9250> MPUDevice;
 			std::unique_ptr<MSPUartFlow> FlowInit;
 			std::unique_ptr<BlackboxEncoder> BlackBoxDevice;
-			std::unique_ptr<PowerADC> ADCDevice;
+			// std::unique_ptr<PowerADC> ADCDevice;
+			std::unique_ptr<ADS111x> ADCDevice;
 			std::ofstream BlackBoxFile;
 			TotalEKF EKFDevice;
 
@@ -519,8 +521,8 @@ namespace SingleAPMAPI
 
 			int _Tmp_FlowThreadTimeout = 0;
 			//========================Extend=======//
-			ADCData _uORB_ADC_Data;
 			int _uORB_BAT_Scount = 0;
+			float _uORB_BAT_Voltage = 0;
 			float _uORB_BAT_SingleVol = 0;
 		} SF;
 
