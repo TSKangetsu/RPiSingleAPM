@@ -23,7 +23,6 @@
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/Dense"
-// #include "_thirdparty/PowerMonitor/PowerADC.hpp"
 #include "_thirdparty/PowerMonitor/ADS111x.hpp"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/BlackboxEncoder/Blackbox.hpp"
@@ -58,7 +57,7 @@
 #define I2CCOMPASS_ADDR 0x1e
 #define I2CBARO_ADDR 0x77
 #define I2CPCA_ADDR 0x70
-#define I2CINA_ADDR 0x40
+#define I2CADS111x_ADDR 0x49
 
 #define ADC_FRONT_GAIN 0.10138
 #define ADC_VBAT_PIN 5

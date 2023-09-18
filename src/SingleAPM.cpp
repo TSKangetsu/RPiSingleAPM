@@ -1090,7 +1090,8 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 			{
 				{
 					SF._Tmp_FlowThreadTimeout++;
-					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_XOutput, SF._uORB_Flow_YOutput, SF._uORB_Flow_Quality, SF._Tmp_Flow_Altitude, SF._uORB_RF_Quality);
+					// NOTE: Movement is Y header, so revered X&Y
+					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_YOutput, SF._uORB_Flow_XOutput, SF._uORB_Flow_Quality, SF._Tmp_Flow_Altitude, SF._uORB_RF_Quality);
 					//
 					if (SF._Tmp_Flow___Status == 1)
 					{
@@ -1127,20 +1128,24 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					}
 					if (SF._Tmp_Flow___Status == 2)
 					{
-						// if (SF._uORB_Flow_Quality < 105.f)
-						// 	AF._flag_IsFlowAvalible = false;
-						// else
-						AF._flag_IsFlowAvalible = true;
+						if (SF._uORB_Flow_Quality < 105.f)
+							AF._flag_IsFlowAvalible = false;
+						else
+							AF._flag_IsFlowAvalible = true;
 
 						// FIXME: CP:Pitch header revert , Now Posout is revert. Consider change accel x to revert?
-						SF._uORB_Flow_Filter_XOutput = (float)SF._uORB_Flow_XOutput;
-						SF._uORB_Flow_Filter_YOutput = (float)SF._uORB_Flow_YOutput;
+						SF._uORB_Flow_Body_Asix_X = SF._uORB_Gryo_Body_Asix_X * 10.f;
+						SF._uORB_Flow_Body_Asix_Y = SF._uORB_Gryo_Body_Asix_Y * 10.f;
+						SF._uORB_Flow_Filter_XOutput = ((float)SF._uORB_Flow_XOutput + SF._uORB_Flow_Body_Asix_X) * SF._uORB_Flow_Altitude / 100.f;
+						SF._uORB_Flow_Filter_YOutput = ((float)SF._uORB_Flow_YOutput + SF._uORB_Flow_Body_Asix_Y) * SF._uORB_Flow_Altitude / 100.f;
 						// FIXME: TimeDT will zero, x /0 will cause nan, fxck
-
-						SF._uORB_Flow_Speed_X = SF._uORB_Flow_Filter_XOutput;
-						SF._uORB_Flow_Speed_Y = SF._uORB_Flow_Filter_YOutput;
-						SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X;
-						SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y;
+						if (TF.OPFFlow->TimeDT != 0)
+						{
+							SF._uORB_Flow_Speed_X = (SF._uORB_Flow_Filter_XOutput / 50.f) / ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
+							SF._uORB_Flow_Speed_Y = (SF._uORB_Flow_Filter_YOutput / 50.f) / ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
+							SF._uORB_Flow_XOutput_Total += SF._uORB_Flow_Speed_X * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
+							SF._uORB_Flow_YOutput_Total += SF._uORB_Flow_Speed_Y * ((float)TF.OPFFlow->TimeDT * 3.f / 1000000.f);
+						}
 
 						SF._Tmp_FlowThreadTimeout = 0;
 						AF._flag_FlowData_Async = true;
@@ -1149,10 +1154,10 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 
 						if (!AF._flag_IsFlowAvalible)
 						{
-							// 	SF._uORB_Flow_Speed_X = 0;
-							// 	SF._uORB_Flow_Speed_Y = 0;
-							// SF._uORB_Flow_XOutput_Total = 0;
-							// SF._uORB_Flow_YOutput_Total = 0;
+							SF._uORB_Flow_Speed_X = 0;
+							SF._uORB_Flow_Speed_Y = 0;
+							SF._uORB_Flow_XOutput_Total = 0;
+							SF._uORB_Flow_YOutput_Total = 0;
 						}
 					}
 					if (SF._Tmp_FlowThreadTimeout > 3)
@@ -2219,8 +2224,12 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		if (!(AF.AutoPilotMode == APModeINFO::PositionHold || AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto) ||
 			AF._flag_ESC_ARMED)
 		{
-			// SF._uORB_Flow_XOutput_Total = 0;
-			// SF._uORB_Flow_YOutput_Total = 0;
+			// FIXME: speed XY init too slow
+			SF._uORB_True_Speed_X = 0;
+			SF._uORB_True_Speed_Y = 0;
+			//
+			SF._uORB_Flow_XOutput_Total = 0;
+			SF._uORB_Flow_YOutput_Total = 0;
 			SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
 			SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 			PF._uORB_PID_PosX_Output = 0;
@@ -2487,7 +2496,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			if (AF._flag_IsPositionXChange || AF._flag_IsBrakingXSet)
 			{
 				SF._uORB_True_Movement_X = 0;
-				// SF._uORB_Flow_YOutput_Total = 0;
+				SF._uORB_Flow_YOutput_Total = 0;
 				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
@@ -2498,7 +2507,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			if (AF._flag_IsPositionYChange || AF._flag_IsBrakingYSet)
 			{
 				SF._uORB_True_Movement_Y = 0;
-				// SF._uORB_Flow_XOutput_Total = 0;
+				SF._uORB_Flow_XOutput_Total = 0;
 				SF._uORB_GPS_Hold_Lng = SF._uORB_GPS_COR_Lng;
 				// TODO: apply adding Y when X is move, because global position has angle
 				SF._uORB_GPS_Hold_Lat = SF._uORB_GPS_COR_Lat;
