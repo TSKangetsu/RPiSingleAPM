@@ -19,6 +19,7 @@
 #include "_thirdparty/RaspberryPiRC/RPiIBus/RPiIBus.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiSBus/RPiSBus.hpp"
 #include "_thirdparty/RaspberryPiRC/CRSF/CRSFUartRC.hpp"
+#include "_thirdparty/RaspberryPiRC/CRSF/CRSFProtocol.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
@@ -779,15 +780,17 @@ namespace SingleAPMAPI
 
 			float _flag_IMUFlowFreq = 1000.f;
 			float _flag_RTXFlowFreq = 250.f;
+			float _flag_TELFlowFreq = 100.f;
 			float _flag_ESCFlowFreq = 1000.f;
 			const float _flag_ALTFlowFreq = 45.f;
 			const float _flag_GPSFlowFreq = 5.f;
 			const float _flag_MAGFlowFreq = 200.f;
 			const float _flag_OPFFlowFreq = 28.f;
-			const float _flag_EXTFlowFreq = 100.f;
+			const float _flag_EXTFlowFreq = 30.f;
 
 			std::unique_ptr<FlowThread> IMUFlow;
 			std::unique_ptr<FlowThread> RTXFlow;
+			std::unique_ptr<FlowThread> TELFlow;
 			std::unique_ptr<FlowThread> RXCFlow;
 			std::unique_ptr<FlowThread> ESCFlow;
 			std::unique_ptr<FlowThread> ALTFlow;

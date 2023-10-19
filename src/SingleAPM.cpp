@@ -477,6 +477,8 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 		TF.IMUFlow->FlowStopAndWait();
 	if (TF.RTXFlow)
 		TF.RTXFlow->FlowStopAndWait();
+	if (TF.TELFlow)
+		TF.TELFlow->FlowStopAndWait();
 	if (TF.ESCFlow)
 		TF.ESCFlow->FlowStopAndWait();
 	if (TF.ALTFlow)
@@ -492,6 +494,7 @@ void SingleAPMAPI::RPiSingleAPM::RPiSingleAPMDeInit()
 
 	TF.IMUFlow.reset();
 	TF.RTXFlow.reset();
+	TF.TELFlow.reset();
 	TF.ESCFlow.reset();
 	TF.ALTFlow.reset();
 	TF.GPSFlow.reset();
@@ -965,6 +968,56 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 			}
 		},
 		TF._flag_Sys_CPU_Asign, TF._flag_RTXFlowFreq));
+
+	if (RF.RC_Type == RCIsCRSF) // FIXME: I think only crsf support telemetry...?
+	{
+		TF.TELFlow.reset(new FlowThread(
+			[&]
+			{
+				DF.CRSFInit->CRSFTelemtry(CRSFTelemetry::crsfFrameAttitude(
+					crsfProtocol::CRSF_SYNC_BYTE,
+					(int)SF._uORB_MPU_Data._uORB_Real_Pitch * 10,
+					(int)SF._uORB_MPU_Data._uORB_Real__Roll * -10,
+					(int)SF._uORB_MPU_Data._uORB_Real___Yaw * 10));
+
+				// TODO: should support all bat args?
+				DF.CRSFInit->CRSFTelemtry(CRSFTelemetry::crsfFrameBatterySensor(
+					crsfProtocol::CRSF_SYNC_BYTE,
+					SF._uORB_BAT_Voltage * 10,
+					0 * 10,
+					0,
+					80));
+
+				// TODO: FlightMode
+				const char *flightMode = "OK";
+				switch (AF.AutoPilotMode)
+				{
+				case APModeINFO::RateHold:
+					flightMode = "ACRO";
+					break;
+				case APModeINFO::AutoStable:
+					flightMode = "ANGL";
+					break;
+				case APModeINFO::AltHold:
+					flightMode = "AH";
+					break;
+				case APModeINFO::PositionHold:
+					flightMode = "HOLD";
+					break;
+				case APModeINFO::SpeedHold:
+					flightMode = "CRSZ";
+					break;
+				case APModeINFO::UserAuto:
+					flightMode = "WP";
+					break;
+				}
+				DF.CRSFInit->CRSFTelemtry(
+					CRSFTelemetry::crsfFrameFlightMode(
+						crsfProtocol::CRSF_SYNC_BYTE,
+						flightMode));
+			},
+			TF._flag_Sys_CPU_Asign, TF._flag_TELFlowFreq));
+	}
 }
 
 void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()

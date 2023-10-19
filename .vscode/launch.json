@@ -16,8 +16,8 @@
             "environment": [],
             "externalConsole": true,
             "MIMode": "gdb",
-            "miDebuggerServerAddress": "192.168.250.2:9590",
-            "miDebuggerPath": "arm-openwrt-linux-gdb",
+            "miDebuggerServerAddress": "192.168.6.65:9590",
+            "miDebuggerPath": "/home/user/build/RPiSingleAPM/.vscode/gdb.sh",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

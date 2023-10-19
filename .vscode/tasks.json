@@ -24,8 +24,8 @@
             "args": [
                 "${workspaceFolder}/.vscode/remote.sh",
                 "root",
-                "192.168.250.2",
-                "-r 7inch-2806"
+                "192.168.6.65",
+                "-r 7inch-Default"
             ],
             "dependsOn": [
                 "cbuild"
