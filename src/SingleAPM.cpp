@@ -980,14 +980,6 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					(int)SF._uORB_MPU_Data._uORB_Real__Roll * -10,
 					(int)SF._uORB_MPU_Data._uORB_Real___Yaw * 10));
 
-				// TODO: should support all bat args?
-				DF.CRSFInit->CRSFTelemtry(CRSFTelemetry::crsfFrameBatterySensor(
-					crsfProtocol::CRSF_SYNC_BYTE,
-					SF._uORB_BAT_Voltage * 10,
-					0 * 10,
-					0,
-					80));
-
 				// TODO: FlightMode
 				const char *flightMode = "OK";
 				switch (AF.AutoPilotMode)
@@ -1011,10 +1003,31 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 					flightMode = "WP";
 					break;
 				}
+
 				DF.CRSFInit->CRSFTelemtry(
 					CRSFTelemetry::crsfFrameFlightMode(
 						crsfProtocol::CRSF_SYNC_BYTE,
 						flightMode));
+
+				DF.CRSFInit->CRSFTelemtry(
+					CRSFTelemetry::crsfFrameVarioSensor(
+						crsfProtocol::CRSF_SYNC_BYTE,
+						SF._uORB_True_Speed_Z));
+
+				// TODO: should support all bat args?
+				DF.CRSFInit->CRSFTelemtry(CRSFTelemetry::crsfFrameBatterySensor(
+					crsfProtocol::CRSF_SYNC_BYTE,
+					SF._uORB_BAT_Voltage * 10,
+					0 * 10,
+					0,
+					80));
+
+				DF.CRSFInit->CRSFTelemtry(
+					CRSFTelemetry::crsfFrameGps(crsfProtocol::CRSF_SYNC_BYTE,
+												0, 0, 0,
+												33000,
+												SF._uORB_True_Movement_Z + 1000,
+												2));
 			},
 			TF._flag_Sys_CPU_Asign, TF._flag_TELFlowFreq));
 	}

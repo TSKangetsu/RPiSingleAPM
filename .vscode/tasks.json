@@ -23,9 +23,12 @@
             "group": "build",
             "args": [
                 "${workspaceFolder}/.vscode/remote.sh",
-                "root",
-                "192.168.6.65",
-                "-r 7inch-Default"
+                "${config:custom.user}",
+                "${config:custom.ipaddress}",
+                "${config:custom.exe}",
+                "${config:custom.exeargs}",
+                "${config:custom.proxyext}",
+                "${config:custom.extenalcmd}"
             ],
             "dependsOn": [
                 "cbuild"

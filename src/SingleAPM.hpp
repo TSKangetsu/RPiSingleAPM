@@ -786,7 +786,7 @@ namespace SingleAPMAPI
 			const float _flag_GPSFlowFreq = 5.f;
 			const float _flag_MAGFlowFreq = 200.f;
 			const float _flag_OPFFlowFreq = 28.f;
-			const float _flag_EXTFlowFreq = 30.f;
+			const float _flag_EXTFlowFreq = 15.f;
 
 			std::unique_ptr<FlowThread> IMUFlow;
 			std::unique_ptr<FlowThread> RTXFlow;
