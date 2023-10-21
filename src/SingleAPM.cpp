@@ -974,6 +974,14 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 		TF.TELFlow.reset(new FlowThread(
 			[&]
 			{
+				// TODO: should support all bat args?
+				DF.CRSFInit->CRSFTelemtry(CRSFTelemetry::crsfFrameBatterySensor(
+					crsfProtocol::CRSF_SYNC_BYTE,
+					SF._uORB_BAT_Voltage * 10,
+					0 * 10,
+					0,
+					80));
+
 				DF.CRSFInit->CRSFTelemtry(CRSFTelemetry::crsfFrameAttitude(
 					crsfProtocol::CRSF_SYNC_BYTE,
 					(int)SF._uORB_MPU_Data._uORB_Real_Pitch * 10,
@@ -982,26 +990,33 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 
 				// TODO: FlightMode
 				const char *flightMode = "OK";
-				switch (AF.AutoPilotMode)
+				if (!AF._flag_PreARM_Check && AF._flag_ESC_ARMED)
 				{
-				case APModeINFO::RateHold:
-					flightMode = "ACRO";
-					break;
-				case APModeINFO::AutoStable:
-					flightMode = "ANGL";
-					break;
-				case APModeINFO::AltHold:
-					flightMode = "AH";
-					break;
-				case APModeINFO::PositionHold:
-					flightMode = "HOLD";
-					break;
-				case APModeINFO::SpeedHold:
-					flightMode = "CRSZ";
-					break;
-				case APModeINFO::UserAuto:
-					flightMode = "WP";
-					break;
+					flightMode = "WAIT";
+				}
+				else
+				{
+					switch (AF.AutoPilotMode)
+					{
+					case APModeINFO::RateHold:
+						flightMode = "ACRO";
+						break;
+					case APModeINFO::AutoStable:
+						flightMode = "ANGL";
+						break;
+					case APModeINFO::AltHold:
+						flightMode = "AH";
+						break;
+					case APModeINFO::PositionHold:
+						flightMode = "HOLD";
+						break;
+					case APModeINFO::SpeedHold:
+						flightMode = "CRSZ";
+						break;
+					case APModeINFO::UserAuto:
+						flightMode = "WP";
+						break;
+					}
 				}
 
 				DF.CRSFInit->CRSFTelemtry(
@@ -1014,20 +1029,14 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 						crsfProtocol::CRSF_SYNC_BYTE,
 						SF._uORB_True_Speed_Z));
 
-				// TODO: should support all bat args?
-				DF.CRSFInit->CRSFTelemtry(CRSFTelemetry::crsfFrameBatterySensor(
-					crsfProtocol::CRSF_SYNC_BYTE,
-					SF._uORB_BAT_Voltage * 10,
-					0 * 10,
-					0,
-					80));
-
 				DF.CRSFInit->CRSFTelemtry(
 					CRSFTelemetry::crsfFrameGps(crsfProtocol::CRSF_SYNC_BYTE,
-												0, 0, 0,
-												33000,
-												SF._uORB_True_Movement_Z + 1000,
-												2));
+												SF._uORB_True_Movement_X * 10,				// currently use as debug nav
+												SF._uORB_True_Movement_Y * 10,				// currently use as debug nav
+												0,											// currently not support
+												(SF._uORB_MPU_Data._uORB_Real___Yaw * 100), // FIXME: uint16 define in edgetx is int16, so when value over 32700, will -value
+												(SF._uORB_True_Movement_Z / 100.f) + 1000,
+												SF._uORB_GPS_Data.satillitesCount));
 			},
 			TF._flag_Sys_CPU_Asign, TF._flag_TELFlowFreq));
 	}
@@ -3029,6 +3038,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " IMU Freq:    " << std::setw(7) << std::setfill(' ') << (TF.IMUFlow ? TF.IMUFlow->RunClockHz : -1) << "    \n";
 	std::cout << " ESC Freq:    " << std::setw(7) << std::setfill(' ') << (TF.ESCFlow ? TF.ESCFlow->RunClockHz : -1) << "    \n";
 	std::cout << " RTX Freq:    " << std::setw(7) << std::setfill(' ') << (TF.RTXFlow ? TF.RTXFlow->RunClockHz : -1) << "    \n";
+	std::cout << " TEL Freq:    " << std::setw(7) << std::setfill(' ') << (TF.TELFlow ? TF.TELFlow->RunClockHz : -1) << "    \n";
 	std::cout << " ALT Freq:    " << std::setw(7) << std::setfill(' ') << (TF.ALTFlow ? TF.ALTFlow->RunClockHz : -1) << "    \n";
 }
 

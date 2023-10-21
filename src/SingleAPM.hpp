@@ -780,7 +780,7 @@ namespace SingleAPMAPI
 
 			float _flag_IMUFlowFreq = 1000.f;
 			float _flag_RTXFlowFreq = 250.f;
-			float _flag_TELFlowFreq = 100.f;
+			float _flag_TELFlowFreq = 15.f;
 			float _flag_ESCFlowFreq = 1000.f;
 			const float _flag_ALTFlowFreq = 45.f;
 			const float _flag_GPSFlowFreq = 5.f;
