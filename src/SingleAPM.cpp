@@ -1031,8 +1031,8 @@ void SingleAPMAPI::RPiSingleAPM::ControllerTaskReg()
 
 				DF.CRSFInit->CRSFTelemtry(
 					CRSFTelemetry::crsfFrameGps(crsfProtocol::CRSF_SYNC_BYTE,
-												SF._uORB_True_Movement_X * 10,				// currently use as debug nav
-												SF._uORB_True_Movement_Y * 10,				// currently use as debug nav
+												SF._uORB_True_Movement_X * 100,				// currently use as debug nav
+												SF._uORB_True_Movement_Y * 100,				// currently use as debug nav
 												0,											// currently not support
 												(SF._uORB_MPU_Data._uORB_Real___Yaw * 100), // FIXME: uint16 define in edgetx is int16, so when value over 32700, will -value
 												(SF._uORB_True_Movement_Z / 100.f) + 1000,

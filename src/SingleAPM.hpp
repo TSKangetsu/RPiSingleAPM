@@ -60,7 +60,7 @@
 #define I2CPCA_ADDR 0x70
 #define I2CADS111x_ADDR 0x49
 
-#define ADC_FRONT_GAIN 0.10138
+#define ADC_FRONT_GAIN 0.0934343
 #define ADC_VBAT_PIN 5
 
 #define BlackBoxIInterval 32

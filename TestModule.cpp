@@ -34,6 +34,10 @@ int main(int argc, char *argv[])
 		case 'r':
 		{
 			// system("clear");
+			char cmd[50];
+			sprintf(cmd, "mkdir %s", BlackBoxLogDir);
+			std::cout << "[RPiSingleAPM] Create log dir: " << cmd << "\n";
+			system(cmd);
 			RPiSingleAPM APM_Settle;
 			configSettle(CONFIGDIR, optarg, setting);
 			APM_Settle.RPiSingleAPMInit(setting);
