@@ -42,6 +42,7 @@
 #define ACCELCalibration 11
 #define COMPASSCalibration 12
 
+#define FILTERIMUDTLPFCUTOFF 1.f
 #define FILTERBAROLPFCUTOFF 1.f
 #define FILTERTHROTTLELPFCUTOFF 4.f
 #define FILTERPOSOUTLPFCUTOFF 4.f
@@ -65,7 +66,7 @@
 
 #define BlackBoxIInterval 32
 #define BlackBoxFirmware "Cleanflight"
-#define BlackBoxLogDir "/var/log/Singleflight/"
+#define BlackBoxLogDir "/usr/log/Singleflight/"
 
 namespace SingleAPMAPI
 {
@@ -430,6 +431,7 @@ namespace SingleAPMAPI
 			pt1Filter_t DtermFilterPitchST2;
 			pt1Filter_t DtermFilterRollST2;
 			pt1Filter_t RCLPF[3];
+			pt1Filter_t IMUDtLPF;
 			biquadFilter_t MAGFilter[3];
 		} DF;
 
@@ -776,7 +778,7 @@ namespace SingleAPMAPI
 
 		struct TaskThread
 		{
-			const int _flag_Sys_CPU_Asign = 3;
+			const int _flag_Sys_CPU_Asign = 2;
 
 			float _flag_IMUFlowFreq = 1000.f;
 			float _flag_RTXFlowFreq = 250.f;
@@ -806,6 +808,7 @@ namespace SingleAPMAPI
 			float _Tmp_IMUNavThreadLast = 0;
 			float _Tmp_IMUAttThreadDT = 0;
 			float _Tmp_IMUAttThreadLast = 0;
+			float _uORB_IMUAttThreadDT = 0;
 			// Blackbox
 			int _Tmp_BBQThreadTimeStart = 0;
 			int _Tmp_BBQThreadTimeEnd = 0;

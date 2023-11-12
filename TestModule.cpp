@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 		{
 			// system("clear");
 			char cmd[50];
-			sprintf(cmd, "mkdir %s", BlackBoxLogDir);
+			sprintf(cmd, "mkdir -p %s", BlackBoxLogDir);
 			std::cout << "[RPiSingleAPM] Create log dir: " << cmd << "\n";
 			system(cmd);
 			RPiSingleAPM APM_Settle;

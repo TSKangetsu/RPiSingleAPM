@@ -44,6 +44,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		TF._Tmp_IMUNavThreadDT = GetTimestamp();
 		TF._Tmp_IMUNavThreadLast = GetTimestamp();
 		TF._Tmp_IMUAttThreadDT = GetTimestamp();
+		TF._uORB_IMUAttThreadDT = GetTimestamp();
 		TF._Tmp_IMUAttThreadLast = GetTimestamp();
 	}
 	ConfigReader(APMInit);
@@ -248,6 +249,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		pt1FilterInit(&DF.RCLPF[1], RF._flag_Filter_RC_CutOff, 0.f);
 		pt1FilterInit(&DF.RCLPF[2], RF._flag_Filter_RC_CutOff, 0.f);
 		pt1FilterInit(&DF.BAROLPF, FILTERBAROLPFCUTOFF, 0.0f);
+		pt1FilterInit(&DF.IMUDtLPF, FILTERIMUDTLPFCUTOFF, 0.0f);
 		biquadFilterInitLPF(&DF.MAGFilter[0], FILTERMAGCUTOFF, 1.f / (float)TF._flag_MAGFlowFreq * 1000000.f);
 		biquadFilterInitLPF(&DF.MAGFilter[1], FILTERMAGCUTOFF, 1.f / (float)TF._flag_MAGFlowFreq * 1000000.f);
 		biquadFilterInitLPF(&DF.MAGFilter[2], FILTERMAGCUTOFF, 1.f / (float)TF._flag_MAGFlowFreq * 1000000.f);
@@ -1405,7 +1407,7 @@ void SingleAPMAPI::RPiSingleAPM::BlackBoxTaskReg()
 								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1],
 								(int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2],
 								(int)(SF._uORB_BAT_Voltage * 112.8),
-								(int)TF._Tmp_IMUAttThreadDT,
+								(int)TF._uORB_IMUAttThreadDT,
 							}));
 
 						if (AF._flag_GPSData_AsyncB)
@@ -1911,6 +1913,11 @@ void SingleAPMAPI::RPiSingleAPM::ConfigReader(APMSettinngs APMInit)
 void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 {
 	TF._Tmp_IMUAttThreadDT = GetTimestamp() - TF._Tmp_IMUAttThreadLast;
+
+	// Roll PID Mix
+	// FIXME: Before I or D controller, shoud filter DT, it's bumpping
+	TF._uORB_IMUAttThreadDT = (int)pt1FilterApply4(&DF.IMUDtLPF, (int)TF._Tmp_IMUAttThreadDT, FILTERIMUDTLPFCUTOFF, 1.f / TF._flag_IMUFlowFreq);
+	//
 	// FIXME: https://github.com/TSKangetsu/RPiSingleAPM/issues/89
 	// if (TF._Tmp_IMUAttThreadDT <= 0)
 	// 	TF._Tmp_IMUAttThreadDT = TF._flag_IMUThreadTimeMax;
@@ -1979,19 +1986,19 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			//--------------------------------------------------------------------------//
 			if (PF._flag_Filter_AngleRate_CutOff != 0)
 				PF._uORB_PID_AngleRate__Roll = pt1FilterApply4(&DF.AngleRateLPF[0], SF._uORB_MPU_Data._uORB_Real__Roll,
-															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			else
 				PF._uORB_PID_AngleRate__Roll = SF._uORB_MPU_Data._uORB_Real__Roll;
 			//
 			if (PF._flag_Filter_AngleRate_CutOff != 0)
 				PF._uORB_PID_AngleRate_Pitch = pt1FilterApply4(&DF.AngleRateLPF[1], SF._uORB_MPU_Data._uORB_Real_Pitch,
-															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+															   PF._flag_Filter_AngleRate_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			else
 				PF._uORB_PID_AngleRate_Pitch = SF._uORB_MPU_Data._uORB_Real_Pitch;
 			//
 			if (SF._flag_Filter_GYaw_CutOff != 0)
 				PF._uORB_PID_GYaw_Output = pt1FilterApply4(&DF.AngleRateLPF[2], SF._uORB_MPU_Data._uORB_Gryo___Yaw,
-														   SF._flag_Filter_GYaw_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+														   SF._flag_Filter_GYaw_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			else
 				PF._uORB_PID_GYaw_Output = SF._uORB_MPU_Data._uORB_Gryo___Yaw;
 			//--------------------------------------------------------------------------//
@@ -2083,20 +2090,19 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			else
 				PF._uORB_PID_TPA_Beta = 1.f;
 			//--------------------------------------------------------------------------//
-			// Roll PID Mix
 			float ROLLDInput = SF._uORB_MPU_Data._uORB_Gryo__Roll - PF._uORB_PID_D_Last_Value__Roll;
 			PF._uORB_PID_D_Last_Value__Roll = SF._uORB_MPU_Data._uORB_Gryo__Roll;
 			float ROLLITERM = PF._uORB_PID__Roll_Input;
 			float ROLLDTERM = ROLLDInput;
 			if (PF._flag_Filter_PID_I_CutOff)
-				ROLLITERM = pt1FilterApply4(&DF.ItermFilterRoll, PF._uORB_PID__Roll_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+				ROLLITERM = pt1FilterApply4(&DF.ItermFilterRoll, PF._uORB_PID__Roll_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST1_CutOff)
-				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, ROLLDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRoll, ROLLDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
-				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+				ROLLDTERM = pt1FilterApply4(&DF.DtermFilterRollST2, ROLLDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			PID_CaculateHyper((PF._uORB_PID__Roll_Input),
-							  (ROLLITERM * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
-							  (ROLLDTERM / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
+							  (ROLLITERM * (TF._uORB_IMUAttThreadDT / PID_DT_DEFAULT)),
+							  (ROLLDTERM / (TF._uORB_IMUAttThreadDT / PID_DT_DEFAULT)),
 							  PF._uORB_Leveling__Roll, PF._uORB_PID_I_Last_Value__Roll, PF._uORB_PID_D_Last_Value__Roll,
 							  (PF._flag_PID_P__Roll_Gain * PF._uORB_PID_TPA_Beta),
 							  (PF._flag_PID_I__Roll_Gain * PF._uORB_PID_I_Dynamic_Gain),
@@ -2113,14 +2119,14 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 			float PITCHITERM = PF._uORB_PID_Pitch_Input;
 			float PITCHDTERM = PITCHDInput;
 			if (PF._flag_Filter_PID_I_CutOff)
-				PITCHITERM = pt1FilterApply4(&DF.ItermFilterPitch, PF._uORB_PID_Pitch_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+				PITCHITERM = pt1FilterApply4(&DF.ItermFilterPitch, PF._uORB_PID_Pitch_Input, PF._flag_Filter_PID_I_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST1_CutOff)
-				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PITCHDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitch, PITCHDInput, PF._flag_Filter_PID_D_ST1_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			if (PF._flag_Filter_PID_D_ST2_CutOff)
-				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._Tmp_IMUAttThreadDT / 1000000.f));
+				PITCHDTERM = pt1FilterApply4(&DF.DtermFilterPitchST2, PITCHDTERM, PF._flag_Filter_PID_D_ST2_CutOff, ((float)TF._uORB_IMUAttThreadDT / 1000000.f));
 			PID_CaculateHyper((PF._uORB_PID_Pitch_Input),
-							  (PITCHITERM * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
-							  (PITCHDTERM / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
+							  (PITCHITERM * (TF._uORB_IMUAttThreadDT / PID_DT_DEFAULT)),
+							  (PITCHDTERM / (TF._uORB_IMUAttThreadDT / PID_DT_DEFAULT)),
 							  PF._uORB_Leveling_Pitch, PF._uORB_PID_I_Last_Value_Pitch, PF._uORB_PID_D_Last_Value_Pitch,
 							  (PF._flag_PID_P_Pitch_Gain * PF._uORB_PID_TPA_Beta),
 							  (PF._flag_PID_I_Pitch_Gain * PF._uORB_PID_I_Dynamic_Gain),
@@ -2132,9 +2138,10 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				PF._uORB_Leveling_Pitch = PF._flag_PID_Level_Max * -1;
 
 			// Yaw PID Mix
-			PID_CaculateExtend((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain),
-							   ((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) * (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
-							   ((((PF._uORB_PID_GYaw_Output) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) / (TF._Tmp_IMUAttThreadDT / PID_DT_DEFAULT)),
+			// FIXME: avoid blackbox catch reversing
+			PID_CaculateExtend((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) * EF._flag_YAWOut_Reverse,
+							   ((((PF._uORB_PID_GYaw_Output + RF._uORB_RC_Out___Yaw) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) * (TF._uORB_IMUAttThreadDT / PID_DT_DEFAULT)) * EF._flag_YAWOut_Reverse,
+							   ((((PF._uORB_PID_GYaw_Output) / 15.f) * PF._flag_PID_AngleRate___Yaw_Gain) / (TF._uORB_IMUAttThreadDT / PID_DT_DEFAULT)) * EF._flag_YAWOut_Reverse,
 							   PF._uORB_Leveling___Yaw, PF._uORB_PID_I_Last_Value___Yaw, PF._uORB_PID_D_Last_Value___Yaw,
 							   PF._flag_PID_P___Yaw_Gain, (PF._flag_PID_I___Yaw_Gain * PF._uORB_PID_I_Dynamic_Gain), PF._flag_PID_D___Yaw_Gain, PF._flag_PID_I___Yaw_Max__Value);
 
@@ -2142,7 +2149,7 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 				PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max;
 			if (PF._uORB_Leveling___Yaw < PF._flag_PID_Level_Max * -1)
 				PF._uORB_Leveling___Yaw = PF._flag_PID_Level_Max * -1;
-			PF._uORB_Leveling___Yaw *= EF._flag_YAWOut_Reverse;
+			// PF._uORB_Leveling___Yaw *= EF._flag_YAWOut_Reverse; // FIXME: avoid blackbox catch it
 		}
 	};
 	// reset output before caculate
@@ -3034,7 +3041,7 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	std::cout << " RC_Lose_Clocking:       " << std::setw(3) << std::setfill(' ') << AF.RC_Lose_Clocking << "                        \n\n";
 
 	std::cout << " IMUNAVDT:    " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUNavThreadDT << "    \n";
-	std::cout << " IMUATTDT:    " << std::setw(7) << std::setfill(' ') << TF._Tmp_IMUAttThreadDT << "    \n";
+	std::cout << " IMUATTDT:    " << std::setw(7) << std::setfill(' ') << TF._uORB_IMUAttThreadDT << "    \n";
 	std::cout << " IMU Freq:    " << std::setw(7) << std::setfill(' ') << (TF.IMUFlow ? TF.IMUFlow->RunClockHz : -1) << "    \n";
 	std::cout << " ESC Freq:    " << std::setw(7) << std::setfill(' ') << (TF.ESCFlow ? TF.ESCFlow->RunClockHz : -1) << "    \n";
 	std::cout << " RTX Freq:    " << std::setw(7) << std::setfill(' ') << (TF.RTXFlow ? TF.RTXFlow->RunClockHz : -1) << "    \n";
