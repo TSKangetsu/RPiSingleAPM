@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 			std::cout << "[RPiSingleAPM] version 0.9.0 Beta, build: "
 					  << GIT_COMMIT_HASH
 					  << " , Acess By TSKangetsu\n"
+					  <<"    Resign By KoKoMier\r\n"
 					  << "	checkout : https://github.com/TSKangetsu/RPiSingleAPM \n";
 		}
 		break;
