@@ -7,4 +7,9 @@
     "custom.exeargs": "-r 7inchDefault",
     "custom.proxyext": "proxychains -f /etc/proxychains4_dev1.conf -q",
     "custom.extenalcmd": "scp APMconfig.json root@192.168.6.56:/etc/",
+    "files.associations": {
+        "iostream": "cpp",
+        "cmath": "cpp",
+        "alignedvector3": "cpp"
+    },
 }
