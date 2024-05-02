@@ -52,12 +52,12 @@
                 "_flag_PID_Alt_Accel_Max": 300.0,
                 "_flag_PID_Alt_Level_Max": 300,
                 "_flag_PID_Alt_Speed_Max": 50.0,
-                "_flag_PID_D_SpeedZ_Gain": 0,
+                "_flag_PID_D_SpeedZ_Gain": 220,
                 "_flag_PID_Hover_Throttle": 1300,
                 "_flag_PID_I_Alt_Gain": 8.0,
-                "_flag_PID_I_SpeedZ_Gain": 0.2,
+                "_flag_PID_I_SpeedZ_Gain": 0.065,
                 "_flag_PID_P_Alt_Gain": 1.5,
-                "_flag_PID_P_SpeedZ_Gain": 0.125,
+                "_flag_PID_P_SpeedZ_Gain": 1.5,
                 "_flag_PID_Takeoff_Altitude": 50.0
             },
             "AttitudePID": {

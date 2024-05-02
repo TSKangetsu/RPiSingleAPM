@@ -8,7 +8,7 @@ using namespace SingleAPMAPI;
 #define GIT_COMMIT_HASH "0000000" // 0000000 means uninitialized
 #endif
 
-#define CONFIGDIR "/etc/APMconfig.json"
+#define CONFIGDIR "./APMconfig.json"
 
 void configWrite(const char *configDir, const char *substr, const char *Target, double obj);
 void configSettle(const char *configDir, const char *substr, APMSettinngs &APMInit);

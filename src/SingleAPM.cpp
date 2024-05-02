@@ -87,7 +87,8 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			std::cout << "[RPiSingleAPM]Baro initializating ......";
 #endif
 			std::cout.flush();
-			DF.BaroDeviceD.reset(new BaroDevice(BaroType::BMP280, DF.I2CDevice.c_str(), I2CBARO_ADDR));
+			// DF.MTF02Device.reset(new MTF02("/dev/i2c-7", 0x31));
+			// DF.BaroDeviceD.reset(new BaroDevice(BaroType::BMP280, DF.I2CDevice.c_str(), I2CBARO_ADDR));
 #ifdef RPiDEBUGStart
 			std::cout << "Done!\n";
 #endif
@@ -131,7 +132,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				std::cout << "[RPiSingleAPM]Setting UP FlowSensor... ";
 				std::cout.flush();
 #endif
-				DF.FlowInit.reset(new MSPUartFlow(DF.FlowDevice.c_str()));
+				// DF.FlowInit.reset(new MSPUartFlow(DF.FlowDevice.c_str()));
+				DF.MTF02Device.reset(new MTF02("/dev/i2c-7", 0x31));
+
 #ifdef RPiDEBUGStart
 				std::cout << "Done \n";
 #endif
@@ -620,11 +623,11 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 		TF.ALTFlow.reset(new FlowThread(
 			[&]
 			{
-				SF._uORB_BARO_Data = DF.BaroDeviceD->BaroRead(&DF.I2CLock);
-
+				SF.MTFData = DF.MTF02Device->MTF02DataGet();
 				float DT = (float)TF.ALTFlow->TimeDT / 1000000.f;
-				SF._uORB_BARO_Altitude = pt1FilterApply3(&DF.BAROLPF, (SF._uORB_BARO_Data.AltitudeM * 100.f), DT);
+				SF._uORB_BARO_Altitude = pt1FilterApply3(&DF.BAROLPF, (SF.MTFData.Distance), DT);
 				//
+
 				AF._flag_BARO_Async = true;
 			},
 			TF._flag_Sys_CPU_Asign, TF._flag_ALTFlowFreq));
@@ -1168,7 +1171,13 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 				{
 					SF._Tmp_FlowThreadTimeout++;
 					// NOTE: Movement is Y header, so revered X&Y
-					SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_YOutput, SF._uORB_Flow_XOutput, SF._uORB_Flow_Quality, SF._Tmp_Flow_Altitude, SF._uORB_RF_Quality);
+					// SF._Tmp_Flow___Status = DF.FlowInit->MSPDataRead(SF._uORB_Flow_YOutput, SF._uORB_Flow_XOutput, SF._uORB_Flow_Quality, SF._Tmp_Flow_Altitude, SF._uORB_RF_Quality);
+					SF.MTFData = DF.MTF02Device->MTF02DataGet();
+					SF._uORB_Flow_YOutput = SF.MTFData.Pos_Y;
+					SF._uORB_Flow_XOutput = SF.MTFData.Pos_X;
+					SF._uORB_Flow_Quality = SF.MTFData.Pos_Strength;
+					SF._Tmp_Flow_Altitude = SF.MTFData.Distance;
+					SF._uORB_RF_Quality = SF.MTFData.Distance_Strength;
 					//
 					if (SF._Tmp_Flow___Status == 1)
 					{
@@ -1205,7 +1214,7 @@ void SingleAPMAPI::RPiSingleAPM::PositionTaskReg()
 					}
 					if (SF._Tmp_Flow___Status == 2)
 					{
-						if (SF._uORB_Flow_Quality < 105.f)
+						if (SF._uORB_Flow_Quality < 20.f)
 							AF._flag_IsFlowAvalible = false;
 						else
 							AF._flag_IsFlowAvalible = true;
@@ -2298,8 +2307,8 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 			AF._flag_ESC_ARMED)
 		{
 			PF._uORB_PID_Alt_Throttle = 0;
-			PF._uORB_PID_I_Last_Value_SpeedZ = 0;
-			PF._uORB_PID_D_Last_Value_SpeedZ = 0;
+			// PF._uORB_PID_I_Last_Value_SpeedZ = 0;
+			// PF._uORB_PID_D_Last_Value_SpeedZ = 0;
 			PF._uORB_PID_AltHold_Target = SF._uORB_True_Movement_Z;
 		}
 		//
@@ -2462,6 +2471,7 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 		// TargetAccel = TargetAccel < -1 * PF._uORB_PID_Alt_Accel_Max ? -1 * PF._uORB_PID_Alt_Accel_Max : TargetAccel;
 		// PF._uORB_PID_InputTarget = TargetAccel - SF._uORB_MPU_Data._uORB_Acceleration_Z;
 		//
+
 		if (AF.AutoPilotMode == APModeINFO::AltHold || AF.AutoPilotMode == APModeINFO::PositionHold ||
 			AF.AutoPilotMode == APModeINFO::SpeedHold || AF.AutoPilotMode == APModeINFO::UserAuto)
 		{
@@ -2470,6 +2480,10 @@ void SingleAPMAPI::RPiSingleAPM::NavigationUpdate()
 							   PF._flag_PID_P_SpeedZ_Gain, PF._flag_PID_I_SpeedZ_Gain / 100.f, PF._flag_PID_D_SpeedZ_Gain,
 							   PF._flag_PID_Alt_Level_Max);
 			PF._uORB_PID_Alt_Throttle = pt1FilterApply4(&DF.ThrottleLPF, PF._uORB_PID_Alt_Throttle, FILTERTHROTTLELPFCUTOFF, (TF._Tmp_IMUNavThreadDT / 1000000.f));
+			std::cout << "_uORB_RC_Out_AltHoldSpeed:" << PF._uORB_PID_Alt_Throttle
+					  << " \n";
+			std::cout << "\033[1A";
+			std::cout << "\033[K";
 			PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle > PF._flag_PID_Alt_Level_Max ? PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
 			PF._uORB_PID_Alt_Throttle = PF._uORB_PID_Alt_Throttle < -1 * PF._flag_PID_Alt_Level_Max ? -1 * PF._flag_PID_Alt_Level_Max : PF._uORB_PID_Alt_Throttle;
 		}
@@ -2860,18 +2874,16 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 {
 
-	std::cout << "_uORB_RC_Out_AltHoldSpeed:" <<RF._uORB_RC_Out_AltHoldSpeed
-			  << " \n";
-			  
-	std::cout << "_uORB_PID_PosZUserSpeed:" << PF._uORB_PID_PosZUserSpeed
-			  << " \n";
-	// std::cout << "_uORB_True_Movement_Z:" << SF._uORB_True_Movement_Z
+	// std::cout << "_uORB_PID_I_Last_Value_SpeedZ:" << PF._uORB_PID_I_Last_Value_SpeedZ
+	// 		  << " \n";
+	// std::cout << "_uORB_PID_D_Last_Value_SpeedZ:" << PF._uORB_PID_D_Last_Value_SpeedZ
 	// 		  << " \n";
 	// std::cout << "_uORB_PID_Sonar_GroundOffset:" << PF._uORB_PID_Sonar_GroundOffset
 	// 		  << " \n";
 	// std::cout << "_uORB_PID_InputTarget:" << PF._uORB_PID_InputTarget
 	//   << " \n";
-
+	// std::cout << "_uORB_RC_Out_AltHoldSpeed:" << RF._uORB_RC_Out_AltHoldSpeed
+	// 		  << " \n";
 	// std::cout << "\033[2A";
 	// std::cout << "\033[K";
 	// std::cout << "\033[200A";

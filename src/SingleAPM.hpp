@@ -27,6 +27,7 @@
 #include "_thirdparty/PowerMonitor/ADS111x.hpp"
 #include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
 #include "_thirdparty/BlackboxEncoder/Blackbox.hpp"
+#include "_thirdparty/RaspberryPiRC/MTF-02/MTF-02.hpp"
 
 #define PI 3.1415926
 #define SpeedUnusableRES 1.5
@@ -408,6 +409,7 @@ namespace SingleAPMAPI
 			std::unique_ptr<Ibus> IbusInit;
 			std::unique_ptr<CRSF> CRSFInit;
 			std::unique_ptr<BaroDevice> BaroDeviceD;
+			std::unique_ptr<MTF02> MTF02Device;
 			std::unique_ptr<GPSUart> GPSInit;
 			std::unique_ptr<ESCGenerator> ESCDevice;
 			std::unique_ptr<GPSI2CCompass> CompassDevice;
@@ -467,6 +469,8 @@ namespace SingleAPMAPI
 			int _uORB_Accel_Clipped_Count = 0;
 			//=========================Baro=====//
 			BaroData _uORB_BARO_Data;
+			MTF02::MTF02Data MTFData;
+
 			float _uORB_BARO_Altitude;
 			//=========================GPS=========//
 			GPSUartData _uORB_GPS_Data;
