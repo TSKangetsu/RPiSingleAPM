@@ -625,9 +625,9 @@ void SingleAPMAPI::RPiSingleAPM::AltholdSensorsTaskReg()
 				float DT = (float)TF.ALTFlow->TimeDT / 1000000.f;
 				SF._uORB_BARO_Altitude = pt1FilterApply3(&DF.BAROLPF, (SF._uORB_BARO_Data.AltitudeM * 100.f), DT);
 				//
-				std::cout<<"SF._uORB_BARO_Data.AltitudeM"<<SF._uORB_BARO_Data.AltitudeM<<"\r\n";
-				std::cout<<"SF._uORB_BARO_Data.PressureHPA"<<SF._uORB_BARO_Data.PressureHPA<<"\r\n";
-				std::cout<<"----------------------------------------"<<"\r\n";
+				// std::cout<<"SF._uORB_BARO_Data.AltitudeM"<<SF._uORB_BARO_Data.AltitudeM<<"\r\n";
+				// std::cout<<"SF._uORB_BARO_Data.PressureHPA"<<SF._uORB_BARO_Data.PressureHPA<<"\r\n";
+				// std::cout<<"----------------------------------------"<<"\r\n";
 				AF._flag_BARO_Async = true;
 			},
 			TF._flag_Sys_CPU_Asign, TF._flag_ALTFlowFreq));
@@ -2861,35 +2861,35 @@ void SingleAPMAPI::RPiSingleAPM::SaftyCheck()
 
 void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 {
-	// std::cout << "\033[200A";
-	// std::cout << "\033[K";
-	// std::cout << "FlyMode:\n";
-	// if (AF.AutoPilotMode == APModeINFO::AutoStable)
-	// {
-	// 	std::cout << " AutoStable        ";
-	// }
-	// else if (AF.AutoPilotMode == APModeINFO::AltHold)
-	// {
-	// 	std::cout << " AltHold           ";
-	// }
-	// else if (AF.AutoPilotMode == APModeINFO::PositionHold)
-	// {
-	// 	std::cout << " PositionHold      ";
-	// }
-	// else if (AF.AutoPilotMode == APModeINFO::SpeedHold)
-	// {
-	// 	std::cout << " SpeedHold         ";
-	// }
-	// else if (AF.AutoPilotMode == APModeINFO::RateHold)
-	// {
-	// 	std::cout << " RateHold        ";
-	// }
-	// else if (AF.AutoPilotMode == APModeINFO::UserAuto)
-	// {
-	// 	std::cout << " UserAuto          ";
-	// }
+	std::cout << "\033[200A";
+	std::cout << "\033[K";
+	std::cout << "FlyMode:\n";
+	if (AF.AutoPilotMode == APModeINFO::AutoStable)
+	{
+		std::cout << " AutoStable        ";
+	}
+	else if (AF.AutoPilotMode == APModeINFO::AltHold)
+	{
+		std::cout << " AltHold           ";
+	}
+	else if (AF.AutoPilotMode == APModeINFO::PositionHold)
+	{
+		std::cout << " PositionHold      ";
+	}
+	else if (AF.AutoPilotMode == APModeINFO::SpeedHold)
+	{
+		std::cout << " SpeedHold         ";
+	}
+	else if (AF.AutoPilotMode == APModeINFO::RateHold)
+	{
+		std::cout << " RateHold        ";
+	}
+	else if (AF.AutoPilotMode == APModeINFO::UserAuto)
+	{
+		std::cout << " UserAuto          ";
+	}
 
-	// std::cout << "\n";
+	std::cout << "\n";
 	// std::cout << "ESCSpeedOutput:"
 	// 		  << " \n";
 	// std::cout << " A1 " << EF._uORB_A1_Speed << "    "
