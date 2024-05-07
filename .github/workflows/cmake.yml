@@ -16,12 +16,11 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - uses: ./
-      with:
-          name: "musl"
-          url: "https://musl.cc/aarch64-linux-musl-cross.tgz"
-          pathInArchive: "/usr/"
-
+    - name: set musl
+      run: |
+          wget https://musl.cc/aarch64-linux-musl-cross.tgz
+          tar -zxf aarch64-linux-musl-cross.tgz -C /usr/
+           
     - name: add to PATH
       run: echo "/usr/bin/aarch64-linux-musl-cross/bin/" >> $GITHUB_PATH
           
