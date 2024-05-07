@@ -16,12 +16,6 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - name: musl cross-compiler download
-      run: wget https://musl.cc/aarch64-linux-musl-cross.tgz
-
-    - name: musl unzip
-      run: tar -zxf aarch64-linux-musl-cross.tgz -c /usr/
-
     - uses: ./
       with:
           name: "musl"
