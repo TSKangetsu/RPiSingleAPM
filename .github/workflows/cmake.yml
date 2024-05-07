@@ -25,7 +25,7 @@ jobs:
       run: git submodule update --init --recursive
       
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: CC=aarch64-linux-musl-gcc CXX=aarch64-linux-musl-g++ cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -E env 
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: CC=aarch64-linux-musl-gcc CXX=aarch64-linux-musl-g++ cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
