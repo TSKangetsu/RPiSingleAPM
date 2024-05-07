@@ -8,4 +8,7 @@ This project differs from Betaflight and inav in that it focuses on running cont
 
 Warnning: This project is GPL3.0! <br/>
 
+
+addon: when will it release first version? after GPS hold has done, should comming soon
+
 ## TODO: NOW trying support rockpi4b, openwrt onborad version will comming soon
