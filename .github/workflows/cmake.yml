@@ -16,10 +16,14 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - name: musl cross-compiler
-      uses: Lesmiscore/musl-cross-compilers@v0.5
-      with:
-        target: aarch64-linux-musl
+    - name: musl cross-compiler download
+      run: wget https://musl.cc/aarch64-linux-musl-cross.tgz
+
+    - name: musl unzip
+      run: tar -zxf aarch64-linux-musl-cross.tgz -c /usr/
+
+    - name: add to PATH
+      run: echo "/usr/bin/aarch64-linux-musl-cross/bin/" >> $GITHUB_PATH
           
     - name: Checkout submodules
       run: git submodule update --init --recursive
