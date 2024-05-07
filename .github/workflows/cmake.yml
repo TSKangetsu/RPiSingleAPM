@@ -19,12 +19,12 @@ jobs:
     - name: set musl
       run: |
           sudo mkdir -p /usr/crpgcc/
-          chmod 777 -R /usr/crpgcc/
+          sudo chmod 777 -R /usr/crpgcc/
           wget https://musl.cc/aarch64-linux-musl-cross.tgz
           tar -zxf aarch64-linux-musl-cross.tgz -C /usr/crpgcc/
            
     - name: add to PATH
-      run: echo "/usr/bin/aarch64-linux-musl-cross/bin/" >> $GITHUB_PATH
+      run: echo "/usr/crpgcc/aarch64-linux-musl-cross/bin/" >> $GITHUB_PATH
           
     - name: Checkout submodules
       run: git submodule update --init --recursive
