@@ -3009,6 +3009,35 @@ void SingleAPMAPI::RPiSingleAPM::DebugOutPut()
 	}
 	std::cout << "                            \n";
 
+	std::cout << (int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[0] << "          \n";
+	std::cout << (int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[1] << "          \n";
+	std::cout << (int)SF._uORB_MPU_Data._uORB_Gyro_Dynamic_NotchCenterHZ[2] << "          \n";
+
+	std::cout << (int)SF._uORB_MPU_Data.fftindexs[0] << "          \n";
+	std::cout << (int)SF._uORB_MPU_Data.fftindexs[1] << "          \n";
+	std::cout << (int)SF._uORB_MPU_Data.fftindexs[2] << "          \n";
+
+	if (SF._uORB_MPU_Data.FFTSampleBox.size() > 2)
+	{
+		for (size_t i = 0; i < SF._uORB_MPU_Data.FFTSampleBox[0].size() / 2; i++)
+		{
+			std::cout << " " << (int)SF._uORB_MPU_Data.FFTSampleBox[0][i] << " ";
+		}
+		std::cout << "                            \n";
+
+		for (size_t i = 0; i < SF._uORB_MPU_Data.FFTSampleBox[1].size() / 2; i++)
+		{
+			std::cout << " " << (int)SF._uORB_MPU_Data.FFTSampleBox[1][i] << " ";
+		}
+		std::cout << "                            \n";
+
+		for (size_t i = 0; i < SF._uORB_MPU_Data.FFTSampleBox[2].size() / 2; i++)
+		{
+			std::cout << " " << (int)SF._uORB_MPU_Data.FFTSampleBox[2][i] << " ";
+		}
+		std::cout << "                            \n";
+	}
+
 	std::cout << "ADCINFO:     "
 			  << " \n";
 	std::cout << " voltage:" << std::setw(7) << std::setfill(' ') << std::setiosflags(std::ios::fixed) << std::setprecision(2) << SF._uORB_BAT_Voltage << " V";

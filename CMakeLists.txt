@@ -1,5 +1,6 @@
 set(MPUDriver "spidev" CACHE  INTERNAL "")
 set(FULLSTATIC TRUE CACHE  INTERNAL bool)
+set(OPENWRT FALSE CACHE  INTERNAL bool)
 
 execute_process(
   COMMAND git log -1 --format=%h
@@ -36,8 +37,12 @@ IF(UNIX)
     find_package(Threads REQUIRED)
     add_subdirectory(src)
     add_executable(SingleFlight "TestModule.cpp")
-    target_compile_definitions(SingleFlight PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
-    target_link_libraries(SingleFlight PRIVATE gcc_pic) # this option must link with musl
+    target_compile_definitions(SingleFlight PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")   
     target_link_libraries(SingleFlight PRIVATE RPiSingleAPI)
     target_link_libraries(SingleFlight PRIVATE Threads::Threads)
+
+IF(OPENWRT)
+    target_link_libraries(SingleFlight PRIVATE gcc_pic) # this option must link with musl in openwrt
+ENDIF()
+
 ENDIF()
