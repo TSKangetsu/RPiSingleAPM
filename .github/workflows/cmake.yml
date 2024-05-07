@@ -11,16 +11,19 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@master
+
+    - name: musl cross-compiler
+      uses: Lesmiscore/musl-cross-compilers@v0.5
+      with:
+        target: aarch64-linux-musl
+          
     - name: Checkout submodules
       run: git submodule update --init --recursive
-       
-    - name: Install wiringpi
-      run: sudo apt-get install wiringpi pigpio
-
+      
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
