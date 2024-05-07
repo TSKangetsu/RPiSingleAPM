@@ -18,8 +18,9 @@ jobs:
 
     - name: set musl
       run: |
+          mkdir -p /usr/spd/
           wget https://musl.cc/aarch64-linux-musl-cross.tgz
-          tar -zxf aarch64-linux-musl-cross.tgz -C /usr/
+          tar -zxf aarch64-linux-musl-cross.tgz -C /usr/spd/
            
     - name: add to PATH
       run: echo "/usr/bin/aarch64-linux-musl-cross/bin/" >> $GITHUB_PATH
