@@ -18,9 +18,10 @@ jobs:
 
     - name: set musl
       run: |
-          mkdir -p /usr/spd/
+          sudo mkdir -p /usr/crpgcc/
+          chmod 777 -R /usr/crpgcc/
           wget https://musl.cc/aarch64-linux-musl-cross.tgz
-          tar -zxf aarch64-linux-musl-cross.tgz -C /usr/spd/
+          tar -zxf aarch64-linux-musl-cross.tgz -C /usr/crpgcc/
            
     - name: add to PATH
       run: echo "/usr/bin/aarch64-linux-musl-cross/bin/" >> $GITHUB_PATH
