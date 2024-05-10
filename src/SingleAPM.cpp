@@ -84,13 +84,26 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		if (DF._IsBAROEnable)
 		{
 #ifdef RPiDEBUGStart
-			std::cout << "[RPiSingleAPM]Baro initializating ......";
+			std::cout << "[RPiSingleAPM]Baro initializating ......\n";
 #endif
 			std::cout.flush();
-			DF.BaroDeviceD.reset(new BaroDevice(BaroType::MS5611, DF.I2CDevice.c_str(), I2CBARO_ADDR));
-#ifdef RPiDEBUGStart
-			std::cout << "Done!\n";
-#endif
+			try
+			{
+				std::cout << "[RPiSingleAPM]Try Baro MS5611 \n";
+				DF.BaroDeviceD.reset(new BaroDevice(BaroType::MS5611, DF.I2CDevice.c_str(), I2CBARO_MS5611_ADDR));
+			}
+			catch (int e)
+			{
+				std::cout << "[RPiSingleAPM]Try Baro BMP280 \n";
+				try
+				{
+					DF.BaroDeviceD.reset(new BaroDevice(BaroType::BMP280, DF.I2CDevice.c_str(), I2CBARO_BMP280_ADDR));
+				}
+				catch (int e)
+				{
+					std::cout << "[RPiSingleAPM]Baro not found, disabled \n";
+				}
+			}
 		}
 	}
 	//--------------------------------------------------------------------//
