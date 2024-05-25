@@ -62,8 +62,12 @@
 #define I2CPCA_ADDR 0x70
 #define I2CADS111x_ADDR 0x49
 
-#define ADC_FRONT_GAIN 0.0934343
-#define ADC_VBAT_PIN 5
+#define ADC_FRONT_GAIN 0.0909 // to ground 1KΩ , to port 10KΩ, ADC_FRONT_GAIN will be 1K / (1K + 10K) = 0.09090909;
+#define ADC_VBAT_PIN 4 // 4 is ain0 5 is ain1
+
+// old rockpi4b hat R version
+// #define ADC_FRONT_GAIN 0.0934343
+// #define ADC_VBAT_PIN 5
 
 #define BlackBoxIInterval 32
 #define BlackBoxFirmware "Cleanflight"

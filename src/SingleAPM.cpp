@@ -220,7 +220,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			{
 				SF._uORB_BAT_Voltage =
 					DF.ADCDevice->ADS111xReadmV({
-						.Pin = 5,
+						.Pin = ADC_VBAT_PIN,
 						.Range = ADS111x::SL_RangeFSR::V4_096,
 						.DataRate = ADS111x::SL_DataRateSPS::SPS_860,
 					}) /
@@ -2257,6 +2257,22 @@ void SingleAPMAPI::RPiSingleAPM::AttitudeUpdate()
 		EF._uORB_A2_Speed = EF._uORB_A2_Speed > EF._Flag_Max__Throttle ? EF._Flag_Max__Throttle : EF._uORB_A2_Speed;
 		EF._uORB_B1_Speed = EF._uORB_B1_Speed > EF._Flag_Max__Throttle ? EF._Flag_Max__Throttle : EF._uORB_B1_Speed;
 		EF._uORB_B2_Speed = EF._uORB_B2_Speed > EF._Flag_Max__Throttle ? EF._Flag_Max__Throttle : EF._uORB_B2_Speed;
+
+		// TODO: prepare for new flexable mixer table
+		// motors for non-servo mixes
+		// for (int i = 0; i < motorCount; i++)
+		// {
+		// 	rpyMix[i] =
+		// 		(input[PITCH] * currentMixer[i].pitch +
+		// 		 input[ROLL] * currentMixer[i].roll +
+		// 		 -motorYawMultiplier * input[YAW] * currentMixer[i].yaw) *
+		// 		mixerScale;
+
+		// 	if (rpyMix[i] > rpyMixMax)
+		// 		rpyMixMax = rpyMix[i];
+		// 	if (rpyMix[i] < rpyMixMin)
+		// 		rpyMixMin = rpyMix[i];
+		// }
 	}
 	TF._Tmp_IMUAttThreadLast = GetTimestamp();
 }
