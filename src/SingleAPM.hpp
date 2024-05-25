@@ -21,11 +21,11 @@
 #include "_thirdparty/RaspberryPiRC/CRSF/CRSFUartRC.hpp"
 #include "_thirdparty/RaspberryPiRC/CRSF/CRSFProtocol.hpp"
 #include "_thirdparty/RaspberryPiRC/RPiFlow/RPiFlow.hpp"
-#include "_thirdparty/RaspberryPiMPU/src/MPU9250/filter.h"
+#include "_thirdparty/RaspberryPiMPU/src/filter.h"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/LU"
 #include "_thirdparty/RaspberryPiMPU/src/_thirdparty/libeigen/Eigen/Dense"
 #include "_thirdparty/PowerMonitor/ADS111x.hpp"
-#include "_thirdparty/RaspberryPiMPU/src/MPU9250/MPU9250.hpp"
+#include "_thirdparty/RaspberryPiMPU/src/MPUProcess.hpp"
 #include "_thirdparty/BlackboxEncoder/Blackbox.hpp"
 
 #define PI 3.1415926

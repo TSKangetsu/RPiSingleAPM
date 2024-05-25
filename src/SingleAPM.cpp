@@ -161,8 +161,9 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 	//--------------------------------------------------------------------//
 	{
 		MPUConfig config;
+		config.GyroScope = SensorType::MPU9250;
 		config.MPUType = SF.MPU9250_Type;
-		config.MPUSPIChannel = DF.MPUDeviceSPI.c_str();
+		config.GyroSPIChannel = DF.MPUDeviceSPI.c_str();
 		config.MPUI2CAddress = DF.MPU9250_ADDR;
 		config.MPU9250_SPI_Freq = 1000 * 1000;
 		//
