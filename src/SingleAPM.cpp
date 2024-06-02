@@ -7,7 +7,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		clock_gettime(CLOCK_MONOTONIC, &tv);
 		TF._flag_SystemStartUp_Time = ((tv.tv_sec * (uint64_t)1000000 + (tv.tv_nsec / 1000)));
 	}
-	//--------------------------------------------------------------------//
+	// set config-----------------------------------------------------------//
 	{
 		DF.APMStatus = -1;
 		AF.RC_Lose_Clocking = 0;
@@ -48,14 +48,14 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		TF._Tmp_IMUAttThreadLast = GetTimestamp();
 	}
 	ConfigReader(APMInit);
-	//--------------------------------------------------------------------//
+	// ESC init-------------------------------------------------------------//
 	{
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]ESCControllerIniting \n";
 #endif
 		DF.ESCDevice.reset(new ESCGenerator(EF.ESCControllerType, DF.I2CDevice.c_str(), I2CPCA_ADDR, EF.ESCPLFrequency));
 	}
-	//--------------------------------------------------------------------//
+	// RC init--------------------------------------------------------------//
 	{
 		if (RF.RC_Type == RCIsIbus)
 		{
@@ -79,7 +79,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			DF.CRSFInit.reset(new CRSF(DF.RCDevice.c_str()));
 		}
 	}
-	//--------------------------------------------------------------------//
+	// Baro init------------------------------------------------------------//
 	{
 		if (DF._IsBAROEnable)
 		{
@@ -106,7 +106,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 		}
 	}
-	//--------------------------------------------------------------------//
+	// Positon refrence init------------------------------------------------//
 	{
 		if (DF._IsGPSEnable)
 		{
@@ -158,10 +158,10 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 			}
 		}
 	}
-	//--------------------------------------------------------------------//
+	// ACC Gyro init--------------------------------------------------------//
 	{
 		MPUConfig config;
-		config.GyroScope = SensorType::MPU9250;
+		config.GyroScope = SensorType::AUTO;
 		config.MPUType = SF.MPU9250_Type;
 		config.GyroSPIChannel = DF.MPUDeviceSPI.c_str();
 		config.MPUI2CAddress = DF.MPU9250_ADDR;
@@ -195,6 +195,26 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		config.AccelFilterNotchCenterFreq = 100;
 		DF.MPUDevice.reset(new RPiMPU9250(config));
 #ifdef RPiDEBUGStart
+		std::cout << "[RPiSingleAPM]MPU Detected: ";
+		switch (DF.MPUDevice->GetMPUTypeDetected())
+		{
+		case SensorType::MPU9250:
+			std::cout << "MPU9250 \n";
+			break;
+
+		case SensorType::ICM20602:
+			std::cout << "ICM20602 \n";
+			break;
+
+		case SensorType::ICM42605:
+			std::cout << "ICM42605 \n";
+			break;
+
+		default:
+			// FIXME: if not detected any gyro, expection will throw from driver, so not handle.
+			break;
+		}
+
 		std::cout << "[RPiSingleAPM]MPU Calibrating Gryo ......";
 		std::cout.flush();
 #endif
@@ -204,7 +224,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 				  << "\n";
 #endif
 	}
-	//--------------------------------------------------------------------//
+	// EXT init-------------------------------------------------------------//
 	{
 #ifdef RPiDEBUGStart
 		std::cout << "[RPiSingleAPM]Init Extenal Monitor: \n";
@@ -243,7 +263,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		}
 		//
 	}
-	//--------------------------------------------------------------------//
+	// LPF init-------------------------------------------------------------//
 	{
 		pt1FilterInit(&DF.ThrottleLPF, FILTERTHROTTLELPFCUTOFF, 0.f);
 		pt1FilterInit(&DF.POSOutLPF[0], FILTERPOSOUTLPFCUTOFF, 0.f);
@@ -268,7 +288,7 @@ int SingleAPMAPI::RPiSingleAPM::RPiSingleAPMInit(APMSettinngs APMInit)
 		biquadFilterInitLPF(&DF.MAGFilter[1], FILTERMAGCUTOFF, 1.f / (float)TF._flag_MAGFlowFreq * 1000000.f);
 		biquadFilterInitLPF(&DF.MAGFilter[2], FILTERMAGCUTOFF, 1.f / (float)TF._flag_MAGFlowFreq * 1000000.f);
 	}
-	//--------------------------------------------------------------------//
+	// BlackBox init--------------------------------------------------------//
 	{
 		if (DF._IsBlackBoxEnable)
 		{
