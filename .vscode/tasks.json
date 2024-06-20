@@ -29,6 +29,8 @@
                 "${config:custom.exeargs}",
                 "${config:custom.proxyext}",
                 "${config:custom.extenalcmd}",
+                "${config:custom.targetdir}",
+                "${config:custom.runwith}",
                 "1"
             ],
             "dependsOn": [
@@ -69,6 +71,8 @@
                 "${config:custom.exeargs}",
                 "${config:custom.proxyext}",
                 "${config:custom.extenalcmd}",
+                "${config:custom.targetdir}",
+                "${config:custom.runwith}",
             ],
             "dependsOn": [
                 "cbuild"
