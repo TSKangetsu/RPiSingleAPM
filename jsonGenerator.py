@@ -10,14 +10,13 @@ def parseByWord(dataInput=[], matchList=[str, []], matchStatic=[], blackList=[])
     matchStatus = []
     matchBuffer = [0, 0]
     matchCount = 0
-    for line in data:
+    for line in dataInput:
         line = line.strip()
         matchBuffer.append(line)
         if len(matchBuffer) >= 2:
             matchBuffer.pop(0)
         # match statement 1
         if matchBuffer[0] == matchList[0]:
-            matchesHeader.append(matchBuffer[0])
             matchingSignal = True
 
         if matchingSignal:
@@ -32,6 +31,7 @@ def parseByWord(dataInput=[], matchList=[str, []], matchStatic=[], blackList=[])
                 if len(matchStatus) == 1:
                     matchesTail.append(matchBuffer[1])
                     matchStatus.pop()
+                    matchesHeader.remove(matchList[0])
                     return matchesData, matchesHeader, matchesTail
                 elif matchStatus[len(matchStatus) - 1] == True:
                     matchesTail.append(matchBuffer[1])
@@ -53,27 +53,52 @@ with open("src/SingleAPM.hpp", 'r') as tojsonfile:
 main, header, tail = parseByWord(data, ["struct APMSettinngs", [
                                  "none"]], matchStatic=["{", "}"], blackList=["//"])
 
+# print(main)
+
 jsonlist = []
-jsonlistR = []
-for x in range(len(main)):
-    for s in range(len(main[x])):
-        jsonlist.append(main[x][s].split(" ")[1].split(";")[0])
+jsonlistR = [[]]
+
+i = 0
+for x in main:
+    if len(x) != 0:
+        jsonlist.append([])
+        for s in x:
+            jsonlist[i].append(s.split(" ")[1].split(";")[0])
+        i += 1
 
 i = 0
 n = 0
+k = 0
 for x in main:
     if len(x) != 0:
+        jsonlistR.append([])
         for s in x:
-            jsonlistR.append(("p." + tail[i].split(" ")
-                              [1].split(";")[0] + '.' + jsonlist[n].split(";")[0]))
+            jsonlistR[i].append(("p." + tail[i].split(" ")
+                              [1].split(";")[0] + '.' + jsonlist[i][n].split(";")[0]))
             n += 1
+        n = 0
         i += 1
-print("JSONLIST:")
-print(jsonlist)
-print("JSONLISTR:")
-print(jsonlistR)
+    k += 1
 
-for s in range(len(jsonlist)):
-    print('{"'+jsonlist[s]+'",'+jsonlistR[s]+"},")
-for s in range(len(jsonlist)):
-    print('j.at("'+jsonlist[s]+'").get_to('+jsonlistR[s]+");")
+
+# print("JSONLIST:")
+# print(jsonlist)
+# print("JSONLISTR:")
+# print(jsonlistR)
+
+i = 0
+for x in header:
+    print('{')
+    print('    "' + x.split(" ")[1] + '",')
+    print('    {')
+    for s in range(len(jsonlist[i])):
+       print('        {"'+jsonlist[i][s]+'" , '+jsonlistR[i][s]+"},")
+    print('    },')
+    print("},")
+    i += 1
+
+i = 0
+for x in header:
+    for s in range(len(jsonlist[i])):
+        print('j' + '.at(' + x.split(" ")[1] + ')' '.at("'+jsonlist[i][s]+'").get_to('+jsonlistR[i][s]+");")
+    i += 1

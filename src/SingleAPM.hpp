@@ -11,7 +11,6 @@
 #include <csignal>
 #include <iostream>
 #include <linux/i2c-dev.h>
-#include "_thirdparty/EKFImpement.hpp"
 #include "_thirdparty/ESCGenerator.hpp"
 #include "_thirdparty/FlowController.hpp"
 #include "_thirdparty/RaspberryPiBARO/src/BaroDevice.hpp"
@@ -422,7 +421,6 @@ namespace SingleAPMAPI
 			// std::unique_ptr<PowerADC> ADCDevice;
 			std::unique_ptr<ADS111x> ADCDevice;
 			std::ofstream BlackBoxFile;
-			TotalEKF EKFDevice;
 
 			pt1Filter_t BAROLPF;
 			pt1Filter_t ThrottleLPF;
