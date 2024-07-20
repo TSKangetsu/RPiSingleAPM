@@ -100,5 +100,5 @@ for x in header:
 i = 0
 for x in header:
     for s in range(len(jsonlist[i])):
-        print('j' + '.at(' + x.split(" ")[1] + ')' '.at("'+jsonlist[i][s]+'").get_to('+jsonlistR[i][s]+");")
+        print('j' + '.at("' + x.split(" ")[1] + '")' '.at("'+jsonlist[i][s]+'").get_to('+jsonlistR[i][s]+");")
     i += 1

@@ -62,7 +62,7 @@
 #define I2CADS111x_ADDR 0x49
 
 #define ADC_FRONT_GAIN 0.0909 // to ground 1KΩ , to port 10KΩ, ADC_FRONT_GAIN will be 1K / (1K + 10K) = 0.09090909;
-#define ADC_VBAT_PIN 4 // 4 is ain0 5 is ain1
+#define ADC_VBAT_PIN 4		  // 4 is ain0 5 is ain1
 
 // old rockpi4b hat R version
 // #define ADC_FRONT_GAIN 0.0934343
@@ -103,59 +103,70 @@ namespace SingleAPMAPI
 
 		struct PIDConfig
 		{
-			float _flag_PID_P__Roll_Gain;
-			float _flag_PID_P_Pitch_Gain;
-			float _flag_PID_P___Yaw_Gain;
-			float _flag_PID_P_Alt_Gain;
-			float _flag_PID_P_PosX_Gain;
-			float _flag_PID_P_PosY_Gain;
-			float _flag_PID_P_SpeedZ_Gain;
-			float _flag_PID_P_SpeedX_Gain;
-			float _flag_PID_P_SpeedY_Gain;
-			float _flag_PID_I_Alt_Gain;
-			float _flag_PID_I_PosX_Gain;
-			float _flag_PID_I_PosY_Gain;
-			float _flag_PID_I__Roll_Gain;
-			float _flag_PID_I_Pitch_Gain;
-			float _flag_PID_I___Yaw_Gain;
-			float _flag_PID_I_SpeedZ_Gain;
-			float _flag_PID_I_SpeedX_Gain;
-			float _flag_PID_I_SpeedY_Gain;
-			float _flag_PID_I__Roll_Max__Value;
-			float _flag_PID_I_Pitch_Max__Value;
-			float _flag_PID_I___Yaw_Max__Value;
-			float _flag_PID_D__Roll_Gain;
-			float _flag_PID_D_Pitch_Gain;
-			float _flag_PID_D___Yaw_Gain;
+			// AltitudePID
+			float _flag_PID_Alt_Accel_Max;
+			float _flag_PID_Alt_Level_Max;
+			float _flag_PID_Alt_Speed_Max;
 			float _flag_PID_D_SpeedZ_Gain;
+			float _flag_PID_Hover_Throttle;
+			float _flag_PID_I_Alt_Gain;
+			float _flag_PID_I_SpeedZ_Gain;
+			float _flag_PID_P_Alt_Gain;
+			float _flag_PID_P_SpeedZ_Gain;
+			float _flag_PID_Takeoff_Altitude;
+			// AttitudePID
+			float _flag_PID_AngleRate_Pitch_Gain;
+			float _flag_PID_AngleRate__Roll_Gain;
+			float _flag_PID_AngleRate___Yaw_Gain;
+			float _flag_PID_D_Pitch_Gain;
+			float _flag_PID_D__Roll_Gain;
+			float _flag_PID_D___Yaw_Gain;
+			float _flag_PID_I_Pitch_Gain;
+			float _flag_PID_I_Pitch_Max__Value;
+			float _flag_PID_I__Roll_Gain;
+			float _flag_PID_I__Roll_Max__Value;
+			float _flag_PID_I___Yaw_Gain;
+			float _flag_PID_I___Yaw_Max__Value;
+			float _flag_PID_Level_Max;
+			float _flag_PID_P_Pitch_Gain;
+			float _flag_PID_P__Roll_Gain;
+			float _flag_PID_P___Yaw_Gain;
+			float _flag_PID_RCAngle_Pitch_Gain;
+			float _flag_PID_RCAngle__Roll_Gain;
+			float _flag_PID_RCAngle___Yaw_Gain;
+			float _flag_PID_RCRate_Pitch_Gain;
+			float _flag_PID_RCRate__Roll_Gain;
+			float _flag_PID_RCRate___Yaw_Gain;
+			float _flag_PID_Rate_Limit;
+			float _flag_PID_TPA_BreakPoint;
+			float _flag_PID_TPA_Trust;
+			// NAVPID
 			float _flag_PID_D_SpeedX_Gain;
 			float _flag_PID_D_SpeedY_Gain;
-			float _flag_PID_Hover_Throttle;
-
-			float _flag_PID_Level_Max;
-			float _flag_PID_Rate_Limit;
-			float _flag_PID_Alt_Level_Max;
-			float _flag_PID_Pos_Level_Max;
-
-			float _flag_PID_AngleRate__Roll_Gain;
-			float _flag_PID_AngleRate_Pitch_Gain;
-			float _flag_PID_AngleRate___Yaw_Gain;
-			float _flag_PID_RCRate__Roll_Gain;
-			float _flag_PID_RCRate_Pitch_Gain;
-			float _flag_PID_RCRate___Yaw_Gain;
-			float _flag_PID_RCAngle__Roll_Gain;
-			float _flag_PID_RCAngle_Pitch_Gain;
-			float _flag_PID_RCAngle___Yaw_Gain;
-
-			float _flag_PID_Takeoff_Altitude;
-			float _flag_PID_Alt_Speed_Max;
-			float _flag_PID_Alt_Accel_Max;
+			float _flag_PID_I_PosX_Gain;
+			float _flag_PID_I_PosY_Gain;
+			float _flag_PID_I_SpeedX_Gain;
+			float _flag_PID_I_SpeedY_Gain;
+			float _flag_PID_P_PosX_Gain;
+			float _flag_PID_P_PosY_Gain;
+			float _flag_PID_P_SpeedX_Gain;
+			float _flag_PID_P_SpeedY_Gain;
 			float _flag_PID_PosMan_Speed_Max;
+			float _flag_PID_Pos_Level_Max;
 			float _flag_PID_Pos_Speed_Max;
-
-			float _flag_PID_TPA_Trust;
-			float _flag_PID_TPA_BreakPoint;
 		} PC;
+
+		struct OutputConfig
+		{
+			int _flag_A1_Pin;
+			int _flag_A2_Pin;
+			int _flag_B1_Pin;
+			int _flag_B2_Pin;
+			float _flag_YAWOut_Reverse;
+			float _flag_ESC_Lazy_Per;
+			int ESCPLFrequency;
+			int ESCControllerType;
+		} OC;
 
 		struct SensorConfig
 		{
@@ -183,19 +194,6 @@ namespace SingleAPMAPI
 			double _flag_COMPASS_Flip___Yaw;
 			double _flag_COMPASS_YAW_Offset;
 		} SC;
-
-		struct OutputConfig
-		{
-			int _flag_A1_Pin;
-			int _flag_A2_Pin;
-			int _flag_B1_Pin;
-			int _flag_B2_Pin;
-			float _flag_YAWOut_Reverse;
-			float _flag_ESC_Lazy_Per;
-
-			int ESCPLFrequency;
-			int ESCControllerType;
-		} OC;
 
 		struct RCConfig
 		{
