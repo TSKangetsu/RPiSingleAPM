@@ -1,12 +1,12 @@
 {
     "custom.user": "root",
-    "custom.ipaddress": "192.168.6.56",
+    "custom.ipaddress": "192.168.6.127",
     "custom.gdbserverPort": "9590",
-    "custom.gdb": "aarch64-openwrt-linux-gdb",
+    "custom.gdb": "arm-openwrt-linux-gdb",
     "custom.exe": "SingleFlight",
     "custom.exeargs": "-r 7inchDefault",
-    "custom.proxyext": "proxychains -f /etc/proxychains4_dev1.conf -q",
-    "custom.extenalcmd": "scp APMconfig.json root@192.168.6.56:/etc/",
+    "custom.proxyext": "proxychains",
+    "custom.extenalcmd": "scp APMconfig.json root@192.168.6.127:/etc/",
     "custom.targetdir": "/usr/bin/",
     "custom.runwith": " ",
     "cmake.configureArgs": [

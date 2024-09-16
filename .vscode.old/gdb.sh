@@ -7,4 +7,5 @@ done
 
 sleep 2
 
-$2 "$@"
+# proxychains -f /etc/proxychains4_dev1.conf -q $2 "$@"
+$4 $2 "$@"
